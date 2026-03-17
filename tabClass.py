@@ -2,7 +2,7 @@
 # Arch   = manyArch
 #
 # @File name:       tabClass.py
-# @brief:           标签页相关功能
+# @brief:           Tab related functionality
 # @attention:       None
 # @Author:          NGC13009
 # @History:         2026-03-17		Create
@@ -22,17 +22,17 @@ import psutil
 from utils import *
 
 
-# 源码编辑器基类
+# Source code editor base class
 class ZoomableTextEdit(QTextEdit):
 
     def __init__(self):
         super().__init__()
-        # 使用应用字体，不硬编码字体大小
+        # Use application font, don't hardcode font size
         app_font = QApplication.font()
         font_family = app_font.family() or "Consolas"
         font_size = app_font.pointSize() or 14
         self.setStyleSheet(f"background-color: #1E1E1E; color: #D4D4D4; font-family: {font_family};")
-        # 设置字体
+        # Set font
         self.setFont(app_font)
 
     def wheelEvent(self, event):
@@ -46,7 +46,7 @@ class ZoomableTextEdit(QTextEdit):
             super().wheelEvent(event)
 
 
-# 源码查看标签页
+# Source code viewing tab
 class EditorTab(QWidget):
 
     def __init__(self, script_path):
@@ -55,24 +55,24 @@ class EditorTab(QWidget):
         self.layout.setContentsMargins(0, 0, 0, 0)
 
         self.script_path = script_path
-        self.is_editing = False # 是否处于编辑模式
+        self.is_editing = False # Whether in edit mode
 
         self.editor = ZoomableTextEdit()
         self.editor.setReadOnly(True)
         self.layout.addWidget(self.editor)
 
-        # 挂载语法高亮
+        # Mount syntax highlighting
         ext = os.path.splitext(script_path)[1].lower()
         self.highlighter = ScriptHighlighter(self.editor.document(), ext)
 
         self.load_file(script_path)
 
     def set_editing(self, editing):
-        """设置编辑模式"""
+        """Set edit mode"""
         self.is_editing = editing
         self.editor.setReadOnly(not editing)
-        # 编辑模式下改变背景色以提示用户
-        # 获取当前字体设置
+        # Change background color in edit mode to alert user
+        # Get current font settings
         current_font = self.editor.font()
         font_family = current_font.family() or "Consolas"
         if editing:
@@ -90,18 +90,18 @@ class EditorTab(QWidget):
         self.editor.setPlainText(content)
 
     def save_file(self):
-        """保存文件内容"""
+        """Save file content"""
         try:
-            # 首先尝试UTF-8编码保存
+            # First try UTF-8 encoding to save
             with open(self.script_path, 'w', encoding='utf-8') as f:
                 f.write(self.editor.toPlainText())
             return True
         except Exception as e:
-            print(f"保存文件失败: {e}")
+            print(f"Save file failed: {e}")
             return False
 
 
-# 交互式终端标签页
+# Interactive terminal tab
 class TerminalTab(QWidget):
 
     def __init__(self, script_path):
@@ -110,10 +110,10 @@ class TerminalTab(QWidget):
         self.layout = QVBoxLayout(self)
         self.layout.setContentsMargins(0, 0, 0, 0)
 
-        # 终端本体
+        # Terminal body
         self.terminal = ZoomableTextEdit()
-        self.terminal.setReadOnly(False) # 允许用户直接输入
-                                         # 捕获键盘事件代理
+        self.terminal.setReadOnly(False) # Allow user direct input
+                                         # Capture keyboard event proxy
         self.terminal.keyPressEvent = self.terminal_keyPressEvent
         self.layout.addWidget(self.terminal)
 
@@ -123,28 +123,28 @@ class TerminalTab(QWidget):
         self.process.finished.connect(self.handle_finished)
 
         self.ansi_regex = re.compile(r'\x1b\[([\d;]*)m')
-        self.input_start_pos = 0 # 记录允许用户输入的起点位置
+        self.input_start_pos = 0 # Record starting position allowing user input
 
     def _terminate_process_tree(self, pid):
-        """终止进程树（包括所有子进程）。如果 psutil 可用则使用它，否则使用平台特定方法。"""
+        """Terminate process tree (including all child processes). Use psutil if available, otherwise platform-specific methods."""
         try:
-            # 尝试导入 psutil
+            # Try importing psutil
             parent = psutil.Process(pid)
             children = parent.children(recursive=True)
-            # 先终止子进程
+            # Terminate children first
             for child in children:
                 try:
                     child.terminate()
                 except:
                     pass
-            # 等待子进程退出
+            # Wait for child processes to exit
             gone, alive = psutil.wait_procs(children, timeout=3)
             for child in alive:
                 try:
                     child.kill()
                 except:
                     pass
-            # 终止父进程
+            # Terminate parent process
             try:
                 parent.terminate()
                 parent.wait(timeout=3)
@@ -155,16 +155,16 @@ class TerminalTab(QWidget):
                 except:
                     pass
         except ImportError:
-            # psutil 不可用，使用平台特定方法
+            # psutil not available, use platform-specific methods
             if os.name == 'nt':
-                # Windows: 使用 taskkill 强制终止进程树
+                # Windows: use taskkill to force terminate process tree
                 subprocess.run(['taskkill', '/F', '/T', '/PID', str(pid)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=5)
             else:
-                # Linux/macOS: 终止进程组
+                # Linux/macOS: terminate process group
                 try:
                     os.killpg(os.getpgid(pid), signal.SIGTERM)
                     time.sleep(0.5)
-                    # 如果进程组仍然存在，发送 SIGKILL
+                    # If process group still exists, send SIGKILL
                     os.killpg(os.getpgid(pid), signal.SIGKILL)
                 except:
                     pass
@@ -173,9 +173,9 @@ class TerminalTab(QWidget):
         ext = os.path.splitext(self.script_path)[1].lower()
         self.append_output(f"[PsLauncher {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] start: {self.script_path}\n", color="#00FF00")
         
-        # 设置工作目录为脚本所在的目录，确保相对路径能正确工作
+        # Set working directory to script directory to ensure relative paths work correctly
         script_dir = os.path.dirname(self.script_path)
-        if script_dir:  # 如果脚本路径包含目录部分
+        if script_dir:  # If script path includes directory part
             self.process.setWorkingDirectory(script_dir)
         
         if ext == '.bat' or ext == '.cmd':
@@ -189,7 +189,7 @@ class TerminalTab(QWidget):
         if self.process is None:
             return
         if self.process.state() != QProcess.Running:
-            # 进程未运行，清理状态
+            # Process not running, clean up state
             self.process = None
             self.append_output(f"\n^C\n[PsLauncher {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Process already stopped.\n", color="#F14C4C")
             return
@@ -197,72 +197,72 @@ class TerminalTab(QWidget):
         pid = self.process.processId()
         if pid > 0:
             try:
-                # 使用改进的进程树终止方法
+                # Use improved process tree termination method
                 self._terminate_process_tree(pid)
             except Exception as e:
                 print(f"Error terminating process tree: {e}")
 
-        # 等待进程结束（超时3秒）
+        # Wait for process to end (timeout 3 seconds)
         if not self.process.waitForFinished(3000):
-            # 如果仍未结束，使用 QProcess 的 kill 作为最后手段
+            # If still not ended, use QProcess kill as last resort
             self.process.kill()
             self.process.waitForFinished(2000)
 
-        # 清理进程对象
+        # Clean up process object
         self.process = None
 
-        # 输出停止消息
+        # Output stop message
         self.append_output(f"\n^C\n[PsLauncher {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Process terminated.\n", color="#F14C4C")
 
-    # 键盘事件拦截
+    # Keyboard event interception
     def terminal_keyPressEvent(self, event):
-        # 1. 捕获 Ctrl + C 快捷键
+        # 1. Capture Ctrl + C shortcut
         if event.modifiers() & Qt.ControlModifier and event.key() == Qt.Key_C:
             self.stop_process()
             return
 
-        # 2. 捕获 Ctrl + V 快捷键
+        # 2. Capture Ctrl + V shortcut
         if event.modifiers() & Qt.ControlModifier and event.key() == Qt.Key_V:
-            # 从剪贴板获取文本
+            # Get text from clipboard
             clipboard = QApplication.clipboard()
             text = clipboard.text()
             if text:
-                # 插入文本到当前光标位置
+                # Insert text at current cursor position
                 cursor = self.terminal.textCursor()
                 cursor.insertText(text)
-                # 确保光标在输入区域内
+                # Ensure cursor is within input area
                 if cursor.position() < self.input_start_pos:
                     self.terminal.moveCursor(QTextCursor.End)
             return
 
-        # 3. 防止用户退格/左移删除以前的控制台输出
+        # 3. Prevent user backspace/left from deleting previous console output
         if event.key() in (Qt.Key_Backspace, Qt.Key_Left):
             if self.terminal.textCursor().position() <= self.input_start_pos:
-                return # 拦截掉
+                return # Intercept
 
-        # 4. 按下回车键时，发送指令给 QProcess
+        # 4. When Enter key pressed, send command to QProcess
         if event.key() in (Qt.Key_Return, Qt.Key_Enter):
             self.terminal.moveCursor(QTextCursor.End)
-            # 获取用户敲击的命令文字
+            # Get user typed command text
             user_cmd = self.terminal.toPlainText()[self.input_start_pos:]
 
-            # 允许回车键自身在UI上换行
+            # Allow Enter key itself to create newline in UI
             super(ZoomableTextEdit, self.terminal).keyPressEvent(event)
             self.input_start_pos = self.terminal.textCursor().position()
 
-            # 将输入发送给子进程
+            # Send input to child process
             if self.process.state() == QProcess.Running:
                 self.process.write((user_cmd + '\n').encode('mbcs', errors='replace'))
             return
 
-        # 5. 如果用户乱点鼠标在历史输出区，强行拉回到最后输入区
+        # 5. If user clicks mouse in history output area, force return to last input area
         if self.terminal.textCursor().position() < self.input_start_pos:
             self.terminal.moveCursor(QTextCursor.End)
 
-        # 6. 其他普通按键放行
+        # 6. Other normal keystrokes allowed
         super(ZoomableTextEdit, self.terminal).keyPressEvent(event)
 
-    # 输出处理
+    # Output processing
     def handle_stdout(self):
         text = self.process.readAllStandardOutput().data().decode('mbcs', errors='replace')
         self.inject_output(text)
@@ -272,24 +272,24 @@ class TerminalTab(QWidget):
         self.inject_output(text, default_color="#F14C4C")
 
     def handle_finished(self):
-        self.append_output(f"\n[PsLauncher {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Process terminal.", color="#FFFF00")
+        self.append_output(f"\n[PsLauncher {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Process finished.", color="#FFFF00")
 
     def inject_output(self, text, default_color=None):
-        """ 智能输出注入：如果在输出时用户正在敲字，会先暂存用户敲的字，输出完毕后再补在后面 """
+        """ Intelligent output injection: if user is typing during output, temporarily store user input, append after output finished """
         cursor = self.terminal.textCursor()
-        # 暂存未发送的用户输入
+        # Store unsent user input
         cursor.setPosition(self.input_start_pos)
         cursor.movePosition(QTextCursor.End, QTextCursor.KeepAnchor)
         user_typing = cursor.selectedText()
         cursor.removeSelectedText()
 
-        # 解析ANSI并打印程序输出
+        # Parse ANSI and print program output
         self.parse_and_append_ansi(text, default_color)
 
-        # 更新新的起始安全位置
+        # Update new safe starting position
         self.input_start_pos = self.terminal.textCursor().position()
 
-        # 把用户还没发出去的字还给他们
+        # Return user's not-yet-sent typing to them
         if user_typing:
             fmt = QTextCharFormat()
             fmt.setForeground(QColor("#D4D4D4"))
@@ -326,16 +326,16 @@ class TerminalTab(QWidget):
         }
 
         for i, part in enumerate(parts):
-            if i % 2 == 1:                      # ANSI 色码处理
+            if i % 2 == 1:                      # ANSI color code processing
                 codes = part.split(';')
                 for code in codes:
                     if not code: continue
                     c = int(code)
                     if c == 0:
-                        fmt = QTextCharFormat() # 重置字体格式
+                        fmt = QTextCharFormat() # Reset font format
                         if default_color: fmt.setForeground(QColor(default_color))
                     elif c in colors: fmt.setForeground(QColor(colors[c]))
-            else:                               # 文本处理
+            else:                               # Text processing
                 if part:
                     cursor.setCharFormat(fmt)
                     cursor.insertText(part)
