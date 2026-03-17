@@ -2,12 +2,15 @@
 
 在一个轻量化的, 类似于vscode的界面中, 通过多标签页统一管理并运行PowerShell/Bash/cmd(Batch)脚本, 支持系统托盘常驻、子进程强杀、ANSI着色的终端输出, 像终端一样的交互式输入输出. 专为本地大模型部署（llama.cpp/litellm）等场景优化.
 
+![pic](pic.jpg)
+
 > **开发动机与应用场景:**
 > 我想在自己电脑上本地运行大模型, 并且一直使用[ollama](https://github.com/ollama/ollama). 偶然, 我发现相较于[llama.cpp](https://github.com/ggml-org/llama.cpp), ollama总是占用更多的显存, 因此我决定使用llama.cpp作为本地大模型部署后端(不可思议,因为ollama其实也是llama.cpp套了一层而已). 但是llama.cpp自身不支持多进程, 什么都得手工管理. 因此我考虑能不能自己造一个ollama类似的玩意帮我管理的更好一些.
 > 我在之前写过一个项目: [ollama-launcher](https://github.com/NGC13009/ollama-launcher). 它的目的就是纯粹的一个后端管理软件, 并且要求轻量化且迅速. 因此我考虑能不能搞一个类似的东西去实现我的需求?
 > 调研后, 我发现[litellm](https://github.com/BerriAI/litellm)是一个非常好的东西, 轻量化并且启动迅速, 这使得我没必要自己做一个网关去集散不同llama.cpp后端, 方便多了. 而且它不仅能管理本地模型并提供统一接口api, 而且还能把要钱的api也放到一起, 像是openrouter一样十分省事. 这样就不用来回配置多个程序的api了.
 > 最开始, 我直接使用PowerShell的多个标签页, 通过启动写好配置的PowerShell脚本来手工启动litellm以及多个模型的llama.cpp. 我可以手工管理`GGUF`模型文件, 我觉得这无妨. 因此这个方案其实就能用了.
 > 但是启动几个终端实在是不方便并且不够优雅, 并且我无法很方便的把他们扔到托盘后台去. 因此, 整合一下我们的目的....就诞生了这个程序.
+> ps: 如果你好奇这个过程的具体方式, 请参考[如何使用PsLauncher自定义的配置本地大模型服务](run_llama.cpp_and_litellm_by_PsLauncher.md)
 
 ## 核心亮点
 

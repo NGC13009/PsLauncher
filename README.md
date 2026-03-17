@@ -2,8 +2,11 @@
 
 Within a lightweight, VS Code-like interface, PowerShell/Bash/cmd (Batch) scripts are managed and run uniformly through multiple tabs. It supports system tray persistence, forced termination of child processes, ANSI-colored terminal output, and interactive input/output like a terminal. It is specifically optimized for scenarios such as local large-scale model deployment (llama.cpp/litellm).
 
+![pic](pic.jpg)
+
 [中文说明](README_CN.md)
 > The English version readme is provided by machine translation and may be inaccurate.
+> A good use case: [How to use PsLauncher to customize the local large model service configuration](run_llama.cpp_and_litellm_by_PsLauncher.md)
 
 ## Key Highlights
 
