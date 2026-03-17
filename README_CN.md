@@ -1,6 +1,6 @@
-# PsLauncher - 轻量级多脚本管理器
+# PsLauncher - 轻量级多脚本系统托盘管理器
 
-在一个轻量化的, 类似于vscode的界面中, 通过多标签页统一管理并运行PowerShell/Bash/cmd(Batch)脚本, 支持系统托盘常驻、子进程强杀、ANSI着色的终端输出, 像终端一样的交互式输入输出. 专为本地大模型部署（llama.cpp/litellm）等场景优化.
+在一个轻量化的, 类似于vscode的界面中, 通过多标签页统一管理并运行PowerShell/Bash/cmd(Batch)脚本, 支持**系统托盘常驻**、子进程强杀、ANSI着色的终端输出, 像终端一样的交互式输入输出. 专为本地大模型部署（llama.cpp/litellm）等场景优化.
 
 ![pic](pic.jpg)
 
