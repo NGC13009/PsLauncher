@@ -1,424 +1,416 @@
-# PsLauncher - 轻量级多脚本管理器
+# PsLauncher - Lightweight Multi-Script Manager
 
-在一个轻量化的, 类似于vscode的界面中, 通过多标签页统一管理并运行PowerShell/Bash/cmd(Batch)脚本, 支持系统托盘常驻、子进程强杀、ANSI着色的终端输出, 像终端一样的交互式输入输出. 专为本地大模型部署（llama.cpp/litellm）等场景优化.
+Within a lightweight, VS Code-like interface, PowerShell/Bash/cmd (Batch) scripts are managed and run uniformly through multiple tabs. It supports system tray persistence, forced termination of child processes, ANSI-colored terminal output, and interactive input/output like a terminal. It is specifically optimized for scenarios such as local large-scale model deployment (llama.cpp/litellm).
 
-> **开发动机与应用场景:**
-> 我想在自己电脑上本地运行大模型, 并且一直使用[ollama](https://github.com/ollama/ollama). 偶然, 我发现相较于[llama.cpp](https://github.com/ggml-org/llama.cpp), ollama总是占用更多的显存, 因此我决定使用llama.cpp作为本地大模型部署后端(不可思议,因为ollama其实也是llama.cpp套了一层而已). 但是llama.cpp自身不支持多进程, 什么都得手工管理. 因此我考虑能不能自己造一个ollama类似的玩意帮我管理的更好一些.
-> 我在之前写过一个项目: [ollama-launcher](https://github.com/NGC13009/ollama-launcher). 它的目的就是纯粹的一个后端管理软件, 并且要求轻量化且迅速. 因此我考虑能不能搞一个类似的东西去实现我的需求?
-> 调研后, 我发现[litellm](https://github.com/BerriAI/litellm)是一个非常好的东西, 轻量化并且启动迅速, 这使得我没必要自己做一个网关去集散不同llama.cpp后端, 方便多了. 而且它不仅能管理本地模型并提供统一接口api, 而且还能把要钱的api也放到一起, 像是openrouter一样十分省事. 这样就不用来回配置多个程序的api了.
-> 最开始, 我直接使用PowerShell的多个标签页, 通过启动写好配置的PowerShell脚本来手工启动litellm以及多个模型的llama.cpp. 我可以手工管理`GGUF`模型文件, 我觉得这无妨. 因此这个方案其实就能用了.
-> 但是启动几个终端实在是不方便并且不够优雅, 并且我无法很方便的把他们扔到托盘后台去. 因此, 整合一下我们的目的....就诞生了这个程序.
+[中文说明](README_CN.md)
+> The English version readme is provided by machine translation and may be inaccurate.
 
-## 核心亮点
+## Key Highlights
 
-- **多类型脚本统一管理**：支持PowerShell(.ps1)/Bash(.sh)/Batch(.bat), 支持多文件夹扫描且不递归子目录, 记忆配置文件. 让你方便的在一处管理你常用的脚本.
-- **类VSCode多标签体验**：源码查看与脚本运行输出分标签管理, 支持语法高亮、ANSI着色.
-- **全生命周期进程控制**：一键启动/中止脚本, 强杀所有关联子进程, 无残留进程.
-- **系统托盘常驻**：一键隐藏到托盘, 后台不占窗口, 随时唤起使用.
-- **交互式终端支持**：运行标签页支持实时输入, 适配交互式脚本.
-- **个性化界面定制**：支持暗色/亮色主题切换, 字体大小/DPI缩放自由调节.
+- **Unified Management of Multiple Script Types:** Supports PowerShell (.ps1), Bash (.sh), and Batch (.bat) scripts, supports multi-folder scanning without recursion to subdirectories, and remembers configuration files. This allows you to conveniently manage your frequently used scripts in one place.
+- **VSCode-like Multi-Tab Experience:** Source code viewing and script execution output are managed in separate tabs, supporting syntax highlighting and ANSI coloring.
+- **Full Lifecycle Process Control:** One-click start/stop of scripts, force-killing all associated child processes, leaving no residual processes.
+- **System Tray Resident:** One-click hiding to the system tray, running in the background without occupying a window, and easily accessible.
+- **Interactive Terminal Support:** Run tabs support real-time input, adapted for interactive scripts.
+- **Personalized Interface Customization:** Supports dark/light theme switching, and freely adjustable font size/DPI scaling.
 
-## 解决的痛点
+## Pain Points Addressed
 
-- 比如本地部署llama.cpp、litellm等工具时, 多个脚本散落在不同文件夹, 每次运行要反复切换目录、找文件
-- 或者同时启动多个服务时, 终端窗口混乱, 无法统一管理&中止
-- 一些项目的自动化脚本需要经常执行, 但是我就是运维, 我不想搞个IDE打开还得等几秒, 况且我的服务器不一定有足够的内存或者磁盘支持它.
-- 只想简单管理运行脚本, 不想为了这个需求打开VSCode等重量级IDE
-- 我的脚本运行时间长, 需要脚本工具后台常驻, 随时快速唤起执行, 不占用前台窗口资源, 也不会因为任务窗口分散我的注意力.
+- For example, when deploying tools like llama.cpp and littlem locally, multiple scripts are scattered across different folders, requiring repeated directory switching and file searches each time they run.
+- Or, when starting multiple services simultaneously, the terminal window becomes cluttered, making unified management and termination impossible.
+- Some project automation scripts need to be executed frequently, but as an operations engineer, I don't want to have to wait several seconds to open an IDE, especially since my server may not have enough memory or disk space to support it.
+- I just want simple script management and execution, without needing to open heavyweight IDEs like VS Code for this purpose.
+- My scripts run for long periods, requiring script tools to remain running in the background, allowing for quick and easy execution without consuming foreground window resources or distracting me with task windows.
 
-## 快速开始
+## Quick Start
 
-### 安装
+### Installation
 
-两种方式:
+Two methods:
 
-- 下载源代码并使用Python运行
-- 下载编译好的exe并直接运行
+- Download the source code and run it using Python
 
-#### 源码使用
+- Download the pre-compiled exe and run it directly
+
+#### Source Code Usage
 
 ```Bash
-# 配置环境
+# Configure Environment
+
 git clone https://github.com/NGC13009/PsLauncher.git
 cd PsLauncher
 pip install -r ./requirements.txt
 ```
 
-#### Windows编译好的exe
+#### Windows Compiled EXE
 
-从[release](https://github.com/NGC13009/PsLauncher/releases)页面下载exe, 解压并双击运行即可. (或者命令行高级启动, 后面有详细说明)
+Download the EXE from the [release](https://github.com/NGC13009/PsLauncher/releases) page, extract it, and double-click to run it. (Alternatively, you can use advanced command-line startup, explained in detail later.)
 
-### 启动
+### Starting the Program
 
-不管何种安装方式, 都有有两种启动方式:
+Regardless of the installation method, there are two ways to start the program:
 
-- 编译后**双击exe直接启动**程序, 这会自动载入相关配置.
-- 通过命令行启动程序(或者Python源代码), 这可以设定两个参数, 设定一次后程序会保存配置文件, 后续无需再次设置.
+- **Double-click the exe file after compilation to start the program directly.** This will automatically load the relevant configuration.
+- **Start the program via the command line (or Python source code).** This allows you to set two parameters. After setting them once, the program will save the configuration file, and you won't need to set them again later.
 
-使用命令行:
-
-```bash
---scale N   界面字体缩放因子（例如: 1.5, 相当于Windows上的DPI缩放150%）
---light     添加该参数以使用亮色主题（默认暗色）
-```
-
-例子:
+Using the command line:
 
 ```bash
-# 编译后exe启动
-PsLauncher.exe --scale 2.0                # 缩放200%
-PsLauncher.exe --scale 1.5 --light        # 亮色主题，缩放150%
-
-# 源码启动
-python PsLauncher.py --scale 1.5 --light  # 缩放150%
+--scale N         Interface font scaling factor (e.g., 1.5, equivalent to 150% DPI scaling on Windows)
+--light           Add this parameter to use a light theme (default is dark)
 ```
 
-### 使用
+Example:
 
-- 打开程序后，通过菜单栏「设置-添加脚本目录」，添加你的脚本存放文件夹（如llama.cpp、litellm所在目录）
-- 左侧列表会自动扫描并分类展示目录下的所有脚本，点击即可在新标签页查看源码
-- 选中脚本后点击「启动」，即可在新标签页运行脚本，查看实时输出，或进行交互式输入 (就像是真正的终端一样). 点击「中止」可一键停止所有相关进程
-- 简单编辑当前脚本
-- 多个标签页可以方便切换查看, 使用鼠标滚轮也可以滚动超出屏幕的多个标签页.
-- 工具栏是可以挪动位置的
+```bash
+# Start the compiled exe
+PsLauncher.exe --scale 2.0 # Scale 200%
+PsLauncher.exe --scale 1.5 --light # Light theme, scale 150%
 
-### 配置
+# Start from source code
+python PsLauncher.py --scale 1.5 --light # Scale 150%
+```
 
-你也可以手工修改配置文件.
+### Usage
 
-- 程序支持 JSON 格式的配置文件, 用于保存用户指定的扫描路径、字体大小等配置.
-- 配置文件默认路径为 `config.json`, 格式如下:
+- After opening the program, add your script storage folder (e.g., the directory containing llama.cpp and littlem) via the menu bar "Settings - Add Script Directory".
+- The left-hand list will automatically scan and categorize all scripts in the directory. Click on a script to view its source code in a new tab.
+- Select a script and click "Start" to run it in a new tab, view real-time output, or perform interactive input (just like a real terminal). Click "Stop" to stop all related processes with one click.
+- Simple editing of the current script
+- Multiple tabs can be easily switched between. You can also scroll through tabs that extend beyond the screen using the mouse wheel.
+- The toolbar is movable.
+
+### Configuration
+
+You can also manually modify the configuration file.
+
+- The program supports JSON format configuration files to store user-specified configurations such as scan paths and font sizes.
+- The default path to the configuration file is `config.json`, and its format is as follows:
 
 ```json
-// PsLauncher 程序配置文件: 配置文件支持注释. 您可以在此手动添加要扫描的文件夹路径. 
 {
     "folders": [
         "C:/application/LLMexe/llama.cpp",
         "C:/application/LLMexe/test_script",
         "C:/application/LLMexe/litellm"
     ],
-    "font_scale": 1.5,  // 界面字体缩放因子（例如：1.5相当于Windows上的DPI缩放150%）
-    "dark_mode": true  // 是否启用暗色模式（默认true）
+    "font_scale": 1.5,  // Interface font scaling factor (e.g., 1.5 is equivalent to 150% DPI scaling on Windows)
+    "dark_mode": true   // Whether to enable dark mode (default is true)
 }
 ```
 
-### 注意事项
+### Notes
 
-- 如果需要源码执行, 请确保系统已安装 Python 3.x 和 Qt5/Qt6.
-- 一些情况下, 程序可能运行时需要管理员权限（视脚本内容而定）.
-- (目前已知问题): 一些情况下终端字符着色似乎是错的
-- (目前已知问题): 终端标签内, 在选中的时候无法使用`ctrl+c`复制, 这会直接发送中断信号. 这可能是按下ctrl时会自动先捕获按键导致的. 如果需要复制内容, 请使用工具栏的按钮.
+- If you need to execute from source, please ensure that Python 3.x and Qt5/Qt6 are installed on your system.
+- In some case, the program may require administrator privileges to run (depending on the script content).
+- (Currently known issue): Terminal character coloring appears to be incorrect in some cases.
+- (Currently known issue): Within a terminal tab, you cannot use `ctrl+c` to copy while it is selected; this will directly send an interrupt signal. This may be due to the automatic capture of keystrokes when ctrl is pressed. If you need to copy content, please use the button in the toolbar.
 
-## 详细使用方法与功能说明
+## Detailed Usage and Function Description
 
-### 程序界面构成
+### Program Interface Structure
 
-PsLauncher 采用类 VSCode 的界面布局，主要分为以下几个区域：
+PsLauncher adopts a VSCode-like interface layout, mainly divided into the following areas:
 
-1. **菜单栏** - 位于窗口顶部，按功能分类组织所有操作
-2. **工具栏** - 菜单栏下方，提供常用功能的快捷按钮，支持拖动调整位置
-3. **左侧文件列表** - 资源管理器，显示已添加文件夹中的所有脚本文件
-4. **右侧标签页区域** - 主要工作区，支持多标签页切换查看和编辑
+1. **Menu Bar** - Located at the top of the window, organizing all operations by function.
+2. **Toolbar** - Below the menu bar, providing shortcut buttons for frequently used functions, which can be dragged to adjust their position.
+3. **Left-side File List** - An explorer displaying all script files in added folders.
+4. **Right-side Tab Area** - The main workspace, supporting multi-tab switching for viewing and editing.
 
-### 菜单栏功能详解
+### Menu Bar Function Details
 
-#### 系统菜单
+#### System Menu
 
-- **保存当前配置** (F2) - 立即保存当前配置到配置文件
-- **隐藏窗口到系统托盘** (F10) - 将程序窗口隐藏到系统托盘，后台运行
+- **Save Current Configuration** (F2) - Immediately saves the current configuration to a configuration file.
+- **Hide Window to System Tray** (F10) - Hides the program window to the system tray, running it in the background.
 
-#### 文件菜单
+#### File Menu
 
-- **添加文件夹路径** (F2) - 添加新的脚本文件夹到扫描列表
-- **移除选中的文件夹路径** (F3) - 从扫描列表中移除选中的文件夹
+- **Add Folder Path** (F2) - Adds a new script folder to the scan list.
+- **Remove Selected Folder Path** (F3) - Remove selected folders from the scan list
 
-#### 编辑菜单
+#### Edit Menu
 
-- **复制选定内容** (F11) - 复制当前焦点控件中选中的文本
-- **粘贴** (F12) - 将剪贴板内容粘贴到当前焦点控件
-- **复制标签页全部到剪贴板** - 复制当前标签页全部文本内容
-- **编辑脚本源代码** (F4) - 进入/退出脚本编辑模式，支持保存更改
+- **Copy Selected Content** (F11) - Copy the text selected in the currently focused control
+- **Paste** (F12) - Paste the clipboard content into the currently focused control
+- **Copy Tab All to Clipboard** - Copy all text content of the current tab
+- **Edit Script Source Code** (F4) - Enter/exit script editing mode, supports saving changes
 
-#### 工具菜单
+#### Tools Menu
 
-- **启动脚本** (F5) - 运行当前选中的脚本
-- **终止脚本** (F6) - 停止当前标签页中运行的脚本
+- **Start Script** (F5) - Run the currently selected script
+- **Terminate Script** (F6) - Stop the script running in the current tab
 
-#### 脚本管理菜单
+#### Script Management Menu
 
-- **新建路径** - 在选中文件夹下创建新文件夹
-- **新建脚本** - 在选中文件夹中创建新脚本文件
-- **重命名脚本** - 重命名选中的脚本文件
-- **复制脚本** - 复制选中的脚本文件（可重命名）
-- **移动脚本** - 将脚本移动到其他已添加的文件夹
-- **删除脚本** - 永久删除选中的脚本文件（不经过回收站）
+- **Create Path** - Create a new folder under the selected folder
+- **Create Script** - Create a new script file in the selected folder
+- **Rename Script** - Rename the selected script file
+- **Copy Script** - Copy the selected script file (can be renamed)
+- **Move Script** - Move the script to another added folder
+- **Delete Script** - Permanently delete the selected script file (without going through the recycle bin)
 
-#### 标签菜单
+#### Tab Menu
 
-- **关闭所有源码标签页** (F8) - 关闭所有源代码查看标签页
-- **关闭所有运行标签页** (F9) - 关闭所有终端运行标签页（会停止运行中的进程）
-- **关闭所有标签页** - 关闭所有标签页，包括源码和终端标签
+- **Close all source code tabs** (F8) - Close all source code viewing tabs
+- **Close all run tabs** (F9) - Close all terminal run tabs (will stop running processes)
+- **Close all tabs** - Close all tabs, including source code and terminal tabs
 
-#### 帮助菜单
+#### Help Menu
 
-- **帮助** (F1) - 打开帮助文档
-- **关于** - 显示程序信息和版权信息
+- **Help** (F1) - Open help documentation
+- **About** - Display program information and copyright information
 
-### 工具栏功能详解
+### Toolbar Function Details
 
-工具栏按钮按功能分组，使用分隔符分隔：
+Toolbar buttons are grouped by function, separated by separators:
 
-1. **窗口管理组**
-   - 📌**隐藏** - 隐藏窗口到系统托盘，悬浮提示："隐藏窗口到系统托盘, 通过单击托盘图标即可恢复窗口"
+1. **Window Management Group**
+   - 📌 **Hide** - Hides the window to the system tray. Hover tooltip: "Hidden window to system tray. Restore the window by clicking the tray icon."
 
-2. **脚本控制组**
-   - ▶️**运行** - 运行当前焦点标签页的脚本，悬浮提示："运行当前焦点标签页的脚本"
-   - ⏹️**中止** - 中止当前焦点标签页的脚本，悬浮提示："中止当前焦点标签页的脚本"
+2. **Script Control Group**
+   - ▶️ **Run** - Runs the script in the currently focused tab. Hover tooltip: "Runs the script in the currently focused tab."
+   - ⏹️ **Abort** - Aborts the script in the currently focused tab. Hover tooltip: "Aborts the script in the currently focused tab."
 
-3. **文本操作组**
-   - 📋**复制** - 复制当前选中的文本到剪贴板，悬浮提示："复制当前选中的文本到剪贴板"
-   - 📤**粘贴** - 粘贴当前剪贴板内容到光标位置，悬浮提示："粘贴当前剪贴板内容到光标位置"
-   - 📄**复制全部** - 复制焦点标签页全部文本到剪贴板，悬浮提示："复制焦点标签页全部文本到剪贴板"
+3. **Text Operation Group**
+   - 📋 **Copy** - Copies the currently selected text to the clipboard. Hover tooltip: "Copies the currently selected text to the clipboard."
+   - 📤 **Paste** - Pastes the current clipboard content to the cursor position. Hover tooltip: "Paste the current clipboard content to the cursor position."
+   - 📄 **Copy All** - Copy all text from the focused tab to the clipboard. Hovering tooltip: "Copy all text from the focused tab to the clipboard."
 
-4. **编辑功能组**
-   - ✏️**快速编辑**（💾**保存**） - 进入/退出编辑模式，保存脚本更改，悬浮提示："进入/退出编辑模式，保存脚本更改"（编辑模式时变为"保存脚本更改"）
+4. **Edit Function Group**
+   - ✏️ **Quick Edit** (💾 **Save**) - Enter/exit edit mode, save script changes. Hovering tooltip: "Enter/exit edit mode, save script changes" (changes to "Save script changes" in edit mode).
 
-5. **标签页管理组**
-   - 🗑️**关闭所有源码** - 关闭所有只读源代码查看标签页，悬浮提示："关闭所有只读源代码查看标签页"
-   - 🚫**中止所有终端** - 关闭所有终端标签页，包括运行中的以及已经结束的，悬浮提示："关闭所有终端标签页, 包括运行中的以及已经结束的"
-   - 💥**关闭所有标签** - 关闭所有标签，这会关闭所有源代码标签页，同时关闭所有终端标签页，如果终端内正在执行，那么将强制中止，悬浮提示："关闭所有标签, 这会关闭所有源代码标签页, 同时关闭所有终端标签页, 如果终端内正在执行, 那么将强制中止. 可能导致执行中的程序或脚本不能正常退出."
+5. **Tab Management Group**
+   - 🗑️ **Close All Source Code** - Close all read-only source code viewing tabs. Hovering tooltip: "Close all read-only source code viewing tabs."
+   - 🚫 **Terminate All Terminals** - Close all terminal tabs, including running and terminated ones. Hovering tooltip: "Close all terminal tabs, including running and terminated ones."
+   - 💥 **Close All Tabs** - Close all tabs. This will close all source code tabs and all terminal tabs. If execution is in progress within a terminal, it will be forcibly terminated. Hovering tooltip: "Close all tabs, this will close all source code tabs." Simultaneously close all terminal tabs; if anything is running in the terminal, it will be forcibly terminated. This may prevent running programs or scripts from exiting normally.
 
-### 左侧文件列表功能
+### Left-Side File List Functionality
 
-左侧文件列表（资源管理器）是脚本管理的主要入口：
+The left-side file list (Windows Explorer) is the main entry point for script management:
 
-1. **单击操作**
-   - 单击**文件夹项**：展开/折叠文件夹
-   - 单击**脚本项**：在右侧打开一个新的源码查看标签页，显示脚本源代码
+1. **Click Actions**
+   - Clicking a **folder item**: Expands/collapses the folder
+   - Clicking a **script item**: Opens a new source code view tab on the right, displaying the script's source code
 
-2. **文件类型支持**
-   - 支持 `.ps1` (PowerShell脚本)
-   - 支持 `.bat`、`.cmd` (批处理脚本)
-   - 支持 `.sh` (Bash脚本)
+2. **File Type Support**
+   - Supports `.ps1` (PowerShell scripts)
+   - Supports `.bat` and `.cmd` (batch scripts)
+   - Supports `.sh` (Bash scripts)
 
-3. **扫描规则**
-   - 仅扫描已添加文件夹的根目录，不递归子目录
-   - 实时更新显示，添加/删除文件后可通过刷新菜单更新
+3. **Scanning Rules**
+   - Only scans the root directory of added folders, not recursively scanning subdirectories
+   - Real-time updates; refresh the display after adding/deleting files via the refresh menu
 
-### 右侧标签页功能
+### Right-Side Tab Functionality
 
-右侧区域采用多标签页设计，支持两种类型的标签页：
+The right-side area uses a multi-tab design, supporting two types of tabs:
 
-#### 1. 源码查看标签页 (📝 前缀)
+#### 1. Source Code View Tab (📝 prefix)
 
-- **查看模式**：默认只读模式，显示脚本源代码
-  - 支持语法高亮（PowerShell/Bash/Batch语法）
-  - 支持代码折叠（通过Ctrl+鼠标滚轮缩放）
-  - 暗色主题背景，类似VSCode风格
-- **编辑模式**：通过点击"✏️快速编辑"按钮进入
-  - 背景色变为深灰色以示区别
-  - 可修改脚本内容
-  - 编辑完成后点击"💾保存"保存更改
-  - 自动处理UTF-8/GBK编码 (可能也不是那么好用...)
+- **View Mode**: Default read-only mode, displays script source code
+- Supports syntax highlighting (PowerShell/Bash/Batch syntax)
+- Supports code folding (zoom in/out using Ctrl + mouse wheel)
+- Dark theme background, similar to VSCode
+- **Edit Mode**: Enter by clicking the "✏️ Quick Edit" button
+- Background color changes to dark gray for distinction
+- Script content can be modified
+- Click "💾 Save" to save changes after editing
+- Automatically handles UTF-8/GBK encoding (may not be very reliable...)
 
-#### 2. 终端运行标签页 (🖥️ 前缀)
+#### 2. Terminal Run Tab (🖥️ prefix)
 
-- **ANSI着色支持**：正确显示彩色终端输出
-- **交互式输入**：支持向运行中的进程输入命令
-- **进程控制**：
-  - 运行脚本：显示启动时间戳和脚本路径
-  - 中止脚本：强制终止进程及其所有子进程
-  - 进程结束：显示结束时间戳
+- **ANSI Coloring Support**: Correctly displays colored terminal output
+- **Interactive Input**: Supports entering commands into running processes
+- **Process Control**:
+- Run Script: Displays start timestamp and script path
+- Abort Script: Forcefully terminates the process and all its child processes
+- Process End: Displays end timestamp
 
-### 终端交互式操作指南
+### Terminal Interactive Operation Guide
 
-终端标签页提供类似真实终端的交互体验：
+The Terminal tab provides an interactive experience similar to a real terminal:
 
-#### 键盘操作
+#### Keyboard Operations
 
-- **Enter/Return键**：发送当前输入行的命令给进程
-- **Ctrl+C**：发送中断信号给运行中的进程（强制中止）
-- **Ctrl+V**：粘贴剪贴板内容到输入位置（不发送给进程）
-- **Backspace/Left键**：限制在输入区域内删除/移动，不能修改历史输出
+- **Enter/Return Keys**: Send the command of the current input line to the process.
+- **Ctrl+C**: Send an interrupt signal to the running process (force termination).
+- **Ctrl+V**: Paste clipboard content to the input location (does not send to the process).
+- **Backspace/Left Keys**: Restrict deletion/moving within the input area; cannot modify historical output.
 
-#### 输入保护机制
+#### Input Protection Mechanism
 
-- 输入区域和历史输出区域分离
-- 用户只能在当前输入行内编辑
-- 防止误操作修改已输出的历史内容
-- 复制输出内容时，需使用工具栏的"复制"按钮
+- Separate input and historical output areas.
+- Users can only edit within the current input line.
+- Prevents accidental modification of previously output content.
+- When copying output content, use the "Copy" button on the toolbar.
 
-#### 进程管理
+#### Process Management
 
-- **启动进程**：在新标签页中运行脚本，自动根据文件类型调用相应解释器
-- **终止进程**：强制终止进程树，确保无残留进程
-- **进程状态**：实时显示标准输出和标准错误流
-- **异常处理**：进程异常退出时显示相应提示
+- **Start Process**: Runs the script in a new tab, automatically calling the appropriate interpreter based on the file type.
+- **Terminate Process**: Forcefully terminates the process tree, ensuring no residual processes.
+- **Process Status**: Displays standard output and standard error streams in real time.
+- **Exception Handling**: Displays appropriate prompts when a process exits abnormally.
 
-### 右键菜单
+### Right-Click Menu
 
-左侧文件树支持右键菜单操作, 右侧标签页也支持相应的右键操作.
+The left-side file tree supports right-click menu operations. The right-side tabs also support corresponding right-click operations.
 
-### 系统托盘功能
+### System Tray Functions
 
-#### 托盘图标操作
+#### Tray Icon Operations
 
-- **单击托盘图标**：恢复显示程序窗口
-- **右键托盘图标**：显示托盘菜单
+- **Click the tray icon**: Restore the program window
+- **Right-click the tray icon**: Display the tray menu
 
-#### 托盘菜单功能
+#### Tray Menu Functions
 
-- **打开窗口**：从托盘恢复显示程序
-- **退出程序**：安全退出程序（会先试图停止所有运行中的脚本）
+- **Open Window**: Restore the program from the tray
+- **Exit Program**: Safely exit the program (will first attempt to stop all running scripts)
 
-#### 托盘通知
+#### Tray Notifications
 
-- 隐藏到托盘时显示提示信息
-- 程序状态变化时可通过托盘图标感知
+- Display a notification message when hidden in the tray
+- Changes in program status can be detected via the tray icon
 
-### 快捷键汇总
+### Keyboard Shortcuts Summary
 
-| 快捷键 | 功能 | 说明 |
+| Keyboard Shortcuts | Functions | Descriptions |
 |--------|------|------|
-| F1 | 打开帮助 | 显示帮助文档 |
-| F2 | 添加文件夹路径 | 添加新的脚本文件夹 |
-| F3 | 移除文件夹路径 | 移除选中的文件夹 |
-| F4 | 编辑/保存脚本 | 切换编辑模式或保存更改 |
-| F5 | 启动脚本 | 运行当前选中的脚本 |
-| F6 | 终止脚本 | 停止当前运行的脚本 |
-| F8 | 关闭所有源码标签页 | 清理源代码查看标签 |
-| F9 | 关闭所有运行标签页 | 清理终端运行标签 |
-| F10 | 隐藏到系统托盘 | 最小化到托盘运行 |
-| F11 | 复制选定内容 | 复制选中的文本 |
-| F12 | 粘贴 | 粘贴剪贴板内容 |
-| Ctrl+C | 中断进程 | 发送中断信号给运行中的进程 |
-| Ctrl+V | 粘贴文本 | 粘贴到当前输入位置 |
+| F1 | Open Help | Display Help Documentation |
+| F2 | Add Folder Path | Add New Script Folder |
+| F3 | Remove Folder Path | Remove Selected Folder |
+| F4 | Edit/Save Script | Switch Edit Mode or Save Changes |
+| F5 | Start Script | Run Currently Selected Script |
+| F6 | Terminate Script | Stop Currently Running Script |
+| F8 | Close All Source Code Tabs | Clear Source Code Viewing Tabs |
+| F9 | Close All Running Tabs | Clear Terminal Running Tabs |
+| F10 | Hide to System Tray | Minimize to Tray |
+| F11 | Copy Selected Content | Copy Selected Text |
+| F12 | Paste | Paste Clipboard Content |
+| Ctrl+C | Interrupt Process | Send Interrupt Signal to Running Process |
+| Ctrl+V | Paste Text | Paste into the current input location |
 
-### 使用流程示例
+### Example Usage Flow
 
-1. **初始设置**
+1. **Initial Setup**
+   1. Start the program
+   2. Click "File" → "Add Folder Path" or press F2
+   3. Select the folder containing the script (e.g., the llama.cpp directory)
+   4. The program automatically scans the script files in that folder
 
-   1. 启动程序
-   2. 点击"文件"→"添加文件夹路径"或按F2
-   3. 选择包含脚本的文件夹（如llama.cpp目录）
-   4. 程序自动扫描该文件夹下的脚本文件
+2. **Viewing and Editing the Script**
+   1. Click the script file in the file list on the left
+   2. The source code tab opens on the right to display the code
+   3. To modify, click the "✏️Quick Edit" button to enter edit mode
+   4. After modification, click "💾Save" to save the changes
 
-2. **查看和编辑脚本**
+3. **Running the Script**
+   1. Click the script file in the file list on the left
+   2. Click the "▶️Run" button in the toolbar or press F5
+   3. The terminal tab opens on the right to run the script
+   4. View the real-time output and perform interactive input
+   5. To stop, click the "⏹️Stop" button or press F6
 
-   1. 在左侧文件列表中单击脚本文件
-   2. 右侧打开源码标签页显示代码
-   3. 如需修改，点击"✏️快速编辑"按钮进入编辑模式
-   4. 修改后点击"💾保存"保存更改
+4. **Multi-task Management**
+   1. Allows opening multiple scripts simultaneously to view source code.
+   2. Allows running multiple scripts simultaneously on different tabs.
+   3. Use the mouse wheel to scroll through the tab bar and switch tabs.
+   4. Use the tab management function to close tabs in batches.
 
-3. **运行脚本**
+5. **Runs in the background**
+   1. Click the "📌Hide" button in the toolbar or press F10.
+   2. The program window is hidden in the system tray.
+   3. The script continues to run in the background.
+   4. Click the tray icon to restore the window at any time.
 
-   1. 在左侧文件列表中单击脚本文件
-   2. 点击工具栏"▶️运行"按钮或按F5
-   3. 右侧打开终端标签页运行脚本
-   4. 查看实时输出，可进行交互式输入
-   5. 如需停止，点击"⏹️中止"按钮或按F6
+### Frequently Asked Questions
 
-4. **多任务管理**
+**Q: How do I copy terminal output?**
+A: Use the "📋Copy" button in the toolbar to copy selected text, or use "📄Copy All" to copy the entire tab's content. Note: Pressing Ctrl+C directly in the terminal tab will send an interrupt signal to the process.
 
-   1. 可同时打开多个脚本查看源码
-   2. 可同时运行多个脚本在不同标签页
-   3. 使用鼠标滚轮滚动标签栏切换标签页
-   4. 使用标签管理功能批量关闭标签页
+**Q: What if saving in edit mode fails?**
+A: This may be a file permission issue. Try running the program with administrator privileges, or check if the file is being used by another program.
 
-5. **后台运行**
+**Q: How do I adjust the interface font size?**
+A: Start the program using the command-line parameter `--scale`, or modify the `font_scale` value in the configuration file.
 
-   1. 点击工具栏"📌隐藏"按钮或按F10
-   2. 程序窗口隐藏到系统托盘
-   3. 脚本继续在后台运行
-   4. 单击托盘图标随时恢复窗口
+**Q: What if there is no output after the script runs?**
+A: Check if the script requires interactive input. The terminal supports interactive operation. Try typing the command in the input area and pressing Enter.
 
-### 常见问题解答
+**Q: How do I completely delete a script file?**
+A: Use the "Script Management" → "Delete Script" function. Note that this operation directly deletes the file without going through the recycle bin.
 
-**Q: 如何复制终端输出内容？**
-A: 使用工具栏的"📋复制"按钮复制选中文本，或使用"📄复制全部"复制整个标签页内容。注意：在终端标签页中直接按Ctrl+C会发送中断信号给进程。
+## Development Information and Developer Guidelines
 
-**Q: 编辑模式保存失败怎么办？**
-A: 可能是文件权限问题，请尝试以管理员权限运行程序，或检查文件是否被其他程序占用。
+- **Language**: Python 3.x
+- **GUI Framework**: PyQt5 / PyQt6
+- **Script Execution**: PowerShell
+- **Syntax Highlighting**: PyQt-based syntax analysis module
+- **ANSI Support**: ANSI highlighting via terminal emulator
 
-**Q: 如何调整界面字体大小？**
-A: 通过命令行参数 `--scale` 启动程序，或在配置文件中修改 `font_scale` 值。
+### Compilation Method
 
-**Q: 脚本运行后没有输出怎么办？**
-A: 检查脚本是否需要交互式输入，终端支持交互式操作，尝试在输入区域键入命令后按Enter键。
+First, ensure the environment is configured. Besides `requirements.txt`, you also need to run `pip install pyinstaller`.
 
-**Q: 如何彻底删除脚本文件？**
-A: 使用"脚本管理"→"删除脚本"功能，注意此操作直接删除文件，不经过回收站。
-
-## 开发信息与开发者须知
-
-- **语言**: Python 3.x
-- **GUI 框架**: PyQt5 / PyQt6
-- **脚本执行**: PowerShell
-- **语法高亮**: 基于 PyQt 的语法分析模块
-- **ANSI 支持**: 通过终端模拟器实现 ANSI 着色
-
-### 编译方式
-
-首先确保环境, 除了`requirements.txt`, 还需要`pip install pyinstaller`.
-
-之后, 执行以下命令
+Then, execute the following command:
 
 ```bash
 pyinstaller -w ./PsLauncher.py -i ./logo.ico -y --distpath ./exe  --paths ./
 ```
 
-这个程序只有一个图标是媒体数据, 并且已经被处理为base64写死到源代码了, 因此不需要任何额外的资源配置操作, 直接编译即可.
+This program only has one icon representing media data, and this data has already been processed and hardcoded into the source code as base64. Therefore, no additional resource configuration is required; simply compile it.
 
-## AI 开发者须知
+## AI Developer Guidelines
 
- 如果你是AI那尤其要好好看这里! 开发时应该尽可能:
+If you are an AI developer, pay special attention to this! During development, you should:
 
-- **Ctrl+C**: 在终端标签页中, 如果有文本被选中, 则复制选中文本到剪贴板；否则发送中断信号给运行中的进程.
-- **Ctrl+V**: 总是粘贴剪贴板内容到当前焦点控件, 而不是发送给运行中的程序.
-- 所有工具栏按钮的功能都在菜单栏中有对应的菜单项, 按功能分类组织:
-- 工具栏按钮按功能分组, 使用分隔符分隔不同类型的功能:
-- 保持代码风格和注释风格
-- **尤其重要**: 这是GUI程序, 测试必须且仅能由人类处理, 你如果是AI, 那么改好后进行简单的自动语法检查, 然后直接结束并提交给人类做进一步测试, 作为AI你无需执行完整程序, 因为你可能不具备GUI操作能力. 您作为AI有义务告知人类需要进行哪些测试或交互测试.
-- **尤其重要**: 如果你是AI, 那么永远不要尝试读取`source_ico.py`, 这里面就一个base64编码的字符串叫`icon_base64_data`, 用于给程序提供图标. 读取它没有任何意义并且也会让你很累.
+- **Ctrl+C**: In the terminal tab, if text is selected, copy the selected text to the clipboard; otherwise, send an interrupt signal to the running process.
+- **Ctrl+V**: Always paste clipboard content to the currently focused control, instead of sending it to the running program.
+- All toolbar buttons have corresponding menu items in the menu bar, organized by function:
+- Group toolbar buttons by function, using separators to separate different types of functions:
+- Maintain good coding and commenting style.
+- **Especially Important**: This is a GUI program. Testing must and can only be done by humans. If you are an AI, after modifying it, perform a simple automatic syntax check, then finish and submit it to humans for further testing. As an AI, you do not need to execute the complete program because you may not have GUI operation capabilities. You, as the AI, have an obligation to inform humans which tests or interactive tests are needed.
+- **Especially Important**: If you are an AI, never try to read `source_ico.py`. There's only one base64 encoded string here called `icon_base64_data`, used to provide the icon for the program. Reading it is meaningless and will only make your time and effort tedious.
 
-## 人类开发者须知
+## Notice to Human Developers
 
-您作为人类, 有义务协助ai执行GUI功能测试. 请按照下面的检查清单逐一确认是否需要检查 (比如更改过相应的代码, 那么就得检查). 清单仅供参考, 如果有新的需求请注意随时添加:
+As a human, you have an obligation to assist the AI ​​in performing GUI functionality testing. Please check the following checklist item by item to confirm if it needs to be checked (e.g., if corresponding code has been modified, then it must be checked). The checklist is for reference only; please add it as needed if new requirements arise:
 
-- [x] 正常启动
-- [x] 通过json配置更改界面缩放
-- [x] 菜单栏功能依次检查正常
-- [x] 工具栏功能依次检查正常
-- [x] 工具栏拖动后位置正确
-- [x] 资源管理器显示正常
-- [x] 资源管理器右键菜单功能依次检查正常
-- [x] 资源管理器: 复制, 新建, 删除等功能
-- [x] 源代码标签正常
-- [x] 源代码标签右键菜单
-- [x] 源代码标签修改功能, 保存等
-- [x] 多个源代码标签切换
-- [x] 任务终端标签正常
-- [x] 任务终端标签右键菜单
-- [x] 任务终端标签修改功能, 保存等
-- [x] 多个任务终端标签切换
-- [x] 任务终端交互输入
-- [x] 任务终端的中断功能
-- [x] 任务终端: 子进程是否可以在关闭标签页时正常退出
-- [x] 任务终端: 子进程是否可以在统一关闭标签页时正常退出
-- [x] 任务终端: 子进程是否可以在退出整个程序时正常退出
-- [x] 任务终端: 多个子进程相互不影响
-- [x] 托盘: 可隐藏
-- [x] 托盘: 可恢复
-- [x] 托盘: 托盘提示正常
-- [x] 托盘: 可退出且无残留子进程
-- [x] 任务终端: 启动脚本后, 是从脚本路径运行的
+- [x] Normal startup
+- [x] Changing interface scaling via JSON configuration
+- [x] Menu bar functionality checked correctly
+- [x] Toolbar functionality checked correctly
+- [x] Toolbar position correct after dragging
+- [x] File Explorer displays correctly
+- [x] File Explorer right-click menu functionality checked correctly
+- [x] File Explorer: Copy, New, Delete, etc. functions
+- [x] Source code tabs function correctly
+- [x] Source code tab right-click menu
+- [x] Source code tab modification functionality, save, etc.
+- [x] Switching between multiple source code tabs
+- [x] Task terminal tabs function correctly
+- [x] Task terminal tab right-click menu
+- [x] Task terminal tab modification functionality, save, etc.
+- [x] Switching between multiple task terminal tabs
+- [x] Task terminal interactive input
+- [x] Task terminal interrupt function
+- [x] Task terminal: Can child processes exit normally when the tab is closed?
+- [x] Task terminal: Can child processes exit normally when all tabs are closed?
+- [x] Task terminal: Can child processes exit normally when the entire program exits?
+- [x] Task terminal: Multiple child processes do not affect each other
+- [x] Tray: Can be hidden
+- [x] Tray: Can be restored
+- [x] Tray: Tray display is normal
+- [x] Tray: Can exit without residual child processes
+- [x] Task terminal: After starting the script, it runs from the script path
 
-检查完成后记得恢复检查框!
+Remember to restore the check box after checking!
 
-## 版权信息
+## Copyright
 
 NGC13009
 
 [NGC13009/PsLauncher](https://github.com/NGC13009/PsLauncher.git)
 
-GPLv3许可
+GPLv3 License
