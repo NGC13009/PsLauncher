@@ -466,8 +466,16 @@ class MainWindow(QMainWindow):
         idx = self.tabs.addTab(editor, tab_name)
         self.tabs.setCurrentIndex(idx)
 
-    def run_selected_script(self):
-        # 获取当前焦点标签页
+    def run_selected_script(self, script_path=None):
+        # 如果提供了脚本路径（例如从右键菜单调用），直接运行该脚本
+        if script_path:
+            if os.path.isfile(script_path) and script_path.lower().endswith(('.ps1', '.bat', '.sh')):
+                self.open_terminal_tab(script_path)
+            else:
+                QMessageBox.information(self, "失败", "选择的路径不是一个支持的脚本文件（.ps1, .bat, .sh）。", QMessageBox.Ok)
+            return
+        
+        # 没有提供脚本路径，基于当前焦点标签页获取脚本路径
         current_widget = self.tabs.currentWidget()
         if current_widget is None:
             # 如果没有打开的标签页，回退到使用文件树当前项
@@ -491,13 +499,8 @@ class MainWindow(QMainWindow):
             # 源码标签页：运行对应的脚本
             script_path = current_widget.script_path
         elif isinstance(current_widget, TerminalTab):
-            # 终端标签页：重新运行脚本或提示用户
-            reply = QMessageBox.question(self, "确认", "当前标签页已在运行脚本，是否重新启动？", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-            if reply == QMessageBox.Yes:
-                current_widget.stop_process()
-                script_path = current_widget.script_path
-            else:
-                return
+            # 终端标签页：总是启动新的终端标签页，运行同样的脚本
+            script_path = current_widget.script_path
         else:
             QMessageBox.information(self, "失败", "当前标签页不是脚本标签页，无法运行。", QMessageBox.Ok)
             return
@@ -1288,7 +1291,7 @@ class MainWindow(QMainWindow):
                 elif os.path.isfile(path) and path.lower().endswith(('.ps1', '.bat', '.sh')):
                     # 脚本项：显示脚本管理菜单
                     run_action = QAction("▶️ 运行", self)
-                    run_action.triggered.connect(self.run_selected_script)
+                    run_action.triggered.connect(lambda: self.run_selected_script(path))
                     menu.addAction(run_action)
 
                     menu.addSeparator()
