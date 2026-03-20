@@ -32,7 +32,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("PsLauncher")
-        self.resize(1050, 750)
+        self.resize(1366, 768)
 
         self.config = load_json_with_comments(CONFIG_FILE)
         self.setup_ui()
@@ -240,11 +240,11 @@ class MainWindow(QMainWindow):
         self.paste_btn.triggered.connect(self.paste_text)
         toolbar.addAction(self.paste_btn)
 
-        self.copy_all_btn = QAction(self)
-        self.copy_all_btn.setText("📄 Copy All")
-        self.copy_all_btn.setToolTip("Copy all text from focused tab to clipboard")
-        self.copy_all_btn.triggered.connect(self.copy_all_text)
-        toolbar.addAction(self.copy_all_btn)
+        self.close_editor_tabs_btn = QAction(self)
+        self.close_editor_tabs_btn.setText("🗑️ Close All Source")
+        self.close_editor_tabs_btn.setToolTip("Close all read-only source code tabs")
+        self.close_editor_tabs_btn.triggered.connect(self.close_all_editor_tabs)
+        toolbar.addAction(self.close_editor_tabs_btn)
 
         # Edit/Save button
         self.edit_save_btn = QAction(self)
@@ -256,11 +256,7 @@ class MainWindow(QMainWindow):
         toolbar.addSeparator()
 
         # Quick close buttons
-        self.close_editor_tabs_btn = QAction(self)
-        self.close_editor_tabs_btn.setText("🗑️ Close All Source")
-        self.close_editor_tabs_btn.setToolTip("Close all read-only source code tabs")
-        self.close_editor_tabs_btn.triggered.connect(self.close_all_editor_tabs)
-        toolbar.addAction(self.close_editor_tabs_btn)
+
 
         self.close_terminal_tabs_btn = QAction(self)
         self.close_terminal_tabs_btn.setText("🚫 Stop All Terminals")

@@ -14,7 +14,7 @@ from PyQt5.QtGui import *
 from source_help_page import html_content
 
 __version__ = "1.0.0"
-__devdate__ = "March 16, 2026"
+__devdate__ = "March 20, 2026"
 __githublink__ = "https://github.com/NGC13009/PsLauncher.git"
 
 
