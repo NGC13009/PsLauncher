@@ -360,7 +360,7 @@ class MainWindow(QMainWindow):
         self.tabs.setTabsClosable(True)
         self.tabs.tabCloseRequested.connect(self.close_tab)
         # 连接标签页切换信号
-        self.tabs.currentChanged.connect(self.update_edit_save_state)
+        self.tabs.currentChanged.connect(self.on_tab_changed)
         # 设置右键菜单
         self.tabs.setContextMenuPolicy(Qt.CustomContextMenu)
         self.tabs.customContextMenuRequested.connect(self.show_tabs_context_menu)
@@ -467,18 +467,46 @@ class MainWindow(QMainWindow):
         self.tabs.setCurrentIndex(idx)
 
     def run_selected_script(self):
-        item = self.tree.currentItem()
-        if not item:
-            QMessageBox.information(self, "失败", "没有焦点的标签, 你必须先选中一个程序才能点击运行按钮", QMessageBox.Ok)
-            return
-        script_path = item.data(0, Qt.UserRole)
-        if script_path:
-            if os.path.isfile(script_path) and script_path.lower().endswith(('.ps1', '.bat', '.sh')):
-                self.open_terminal_tab(script_path)
+        # 获取当前焦点标签页
+        current_widget = self.tabs.currentWidget()
+        if current_widget is None:
+            # 如果没有打开的标签页，回退到使用文件树当前项
+            item = self.tree.currentItem()
+            if not item:
+                QMessageBox.information(self, "失败", "没有焦点的标签, 你必须先选中一个程序才能点击运行按钮", QMessageBox.Ok)
+                return
+            script_path = item.data(0, Qt.UserRole)
+            if script_path:
+                if os.path.isfile(script_path) and script_path.lower().endswith(('.ps1', '.bat', '.sh')):
+                    self.open_terminal_tab(script_path)
+                else:
+                    QMessageBox.information(self, "失败", "选择的路径不是一个支持的脚本文件（.ps1, .bat, .sh）。", QMessageBox.Ok)
             else:
-                QMessageBox.information(self, "失败", "选择的路径不是一个支持的脚本文件（.ps1, .bat, .sh）。", QMessageBox.Ok)
+                QMessageBox.information(self, "失败", "没有焦点的标签, 你必须先选中一个程序才能点击运行按钮", QMessageBox.Ok)
+            return
+        
+        # 根据当前标签页类型获取脚本路径
+        script_path = None
+        if isinstance(current_widget, EditorTab):
+            # 源码标签页：运行对应的脚本
+            script_path = current_widget.script_path
+        elif isinstance(current_widget, TerminalTab):
+            # 终端标签页：重新运行脚本或提示用户
+            reply = QMessageBox.question(self, "确认", "当前标签页已在运行脚本，是否重新启动？", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            if reply == QMessageBox.Yes:
+                current_widget.stop_process()
+                script_path = current_widget.script_path
+            else:
+                return
         else:
-            QMessageBox.information(self, "失败", "没有焦点的标签, 你必须先选中一个程序才能点击运行按钮", QMessageBox.Ok)
+            QMessageBox.information(self, "失败", "当前标签页不是脚本标签页，无法运行。", QMessageBox.Ok)
+            return
+        
+        # 运行脚本
+        if script_path and os.path.isfile(script_path) and script_path.lower().endswith(('.ps1', '.bat', '.sh')):
+            self.open_terminal_tab(script_path)
+        else:
+            QMessageBox.information(self, "失败", "无法获取有效的脚本路径。", QMessageBox.Ok)
 
     def open_terminal_tab(self, script_path):
         filename = os.path.basename(script_path)
@@ -1299,6 +1327,61 @@ class MainWindow(QMainWindow):
             menu.addAction(add_action)
 
         menu.exec_(self.tree.viewport().mapToGlobal(position))
+
+    def on_tab_changed(self, index):
+        """标签页切换时的处理"""
+        self.update_edit_save_state()
+        self.sync_tree_selection()
+    
+    def sync_tree_selection(self):
+        """根据当前标签页同步文件树选择"""
+        current_widget = self.tabs.currentWidget()
+        if current_widget is None:
+            # 没有标签页，清除文件树选择
+            self.tree.setCurrentItem(None)
+            return
+        
+        # 获取脚本路径
+        script_path = None
+        if isinstance(current_widget, EditorTab):
+            script_path = current_widget.script_path
+        elif isinstance(current_widget, TerminalTab):
+            script_path = current_widget.script_path
+        else:
+            # 其他类型的标签页，不清除选择
+            return
+        
+        if not script_path or not os.path.exists(script_path):
+            return
+        
+        # 在文件树中查找对应的项
+        self.find_and_select_tree_item(script_path)
+    
+    def find_and_select_tree_item(self, script_path):
+        """在文件树中查找并选中对应的项"""
+        # 遍历所有顶级项（文件夹）
+        for i in range(self.tree.topLevelItemCount()):
+            folder_item = self.tree.topLevelItem(i)
+            folder_path = folder_item.data(0, Qt.UserRole)
+            if folder_path and script_path.startswith(folder_path):
+                # 在这个文件夹下查找脚本项
+                for j in range(folder_item.childCount()):
+                    script_item = folder_item.child(j)
+                    item_path = script_item.data(0, Qt.UserRole)
+                    if item_path == script_path:
+                        # 找到匹配的项，选中它并确保可见
+                        self.tree.setCurrentItem(script_item)
+                        # 确保父文件夹展开
+                        folder_item.setExpanded(True)
+                        # 滚动到该项
+                        self.tree.scrollToItem(script_item)
+                        return
+                # 如果没有找到脚本项，选中文件夹
+                self.tree.setCurrentItem(folder_item)
+                return
+        
+        # 如果没有找到匹配项，清除选择
+        self.tree.setCurrentItem(None)
 
     def on_tree_item_hovered(self, item, column):
         """树形控件项悬浮事件，显示工具提示"""
