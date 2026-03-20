@@ -25,13 +25,13 @@ from utils import *
 # 源码编辑器基类
 class ZoomableTextEdit(QTextEdit):
 
-    def __init__(self):
+    def __init__(self, font_family, isdark):
         super().__init__()
         # 使用应用字体，不硬编码字体大小
         app_font = QApplication.font()
-        font_family = app_font.family() or "Consolas"
-        font_size = app_font.pointSize() or 14
-        self.setStyleSheet(f"background-color: #1E1E1E; color: #D4D4D4; font-family: {font_family};")
+        backgroundcolor = '#1E1E1E' if isdark else '#efefef'
+        color = '#efefef' if isdark else '#1e1e1e'
+        self.setStyleSheet(f"background-color: {backgroundcolor}; color: {color}; font-family: {font_family};")
         # 设置字体
         self.setFont(app_font)
 
@@ -49,7 +49,7 @@ class ZoomableTextEdit(QTextEdit):
 # 源码查看标签页
 class EditorTab(QWidget):
 
-    def __init__(self, script_path):
+    def __init__(self, script_path, font_family, isdark):
         super().__init__()
         self.layout = QVBoxLayout(self)
         self.layout.setContentsMargins(0, 0, 0, 0)
@@ -57,15 +57,17 @@ class EditorTab(QWidget):
         self.script_path = script_path
         self.is_editing = False # 是否处于编辑模式
 
-        self.editor = ZoomableTextEdit()
+        self.editor = ZoomableTextEdit(font_family, isdark)
         self.editor.setReadOnly(True)
         self.layout.addWidget(self.editor)
 
         # 挂载语法高亮
         ext = os.path.splitext(script_path)[1].lower()
-        self.highlighter = ScriptHighlighter(self.editor.document(), ext)
+        self.highlighter = ScriptHighlighter(self.editor.document(), ext, isdark)
 
         self.load_file(script_path)
+        self.font_family = font_family
+        self.isdark = isdark
 
     def set_editing(self, editing):
         """设置编辑模式"""
@@ -75,10 +77,13 @@ class EditorTab(QWidget):
         # 获取当前字体设置
         current_font = self.editor.font()
         font_family = current_font.family() or "Consolas"
+        backgroundcolor = '#1e1e1e' if self.isdark else '#efefef'
+        backgroundcoloredit = '#3c3c3c' if self.isdark else '#c1c1c1'
+        color = '#efefef' if self.isdark else '#1e1e1e'
         if editing:
-            self.editor.setStyleSheet(f"background-color: #2A2A2A; color: #D4D4D4; font-family: {font_family};")
+            self.setStyleSheet(f"background-color: {backgroundcoloredit}; color: {color}; font-family: {font_family};")
         else:
-            self.editor.setStyleSheet(f"background-color: #1E1E1E; color: #D4D4D4; font-family: {font_family};")
+            self.setStyleSheet(f"background-color: {backgroundcolor}; color: {color}; font-family: {font_family};")
 
     def load_file(self, path):
         try:
@@ -104,14 +109,14 @@ class EditorTab(QWidget):
 # 交互式终端标签页
 class TerminalTab(QWidget):
 
-    def __init__(self, script_path):
+    def __init__(self, script_path, font_family, isdark):
         super().__init__()
         self.script_path = script_path
         self.layout = QVBoxLayout(self)
         self.layout.setContentsMargins(0, 0, 0, 0)
 
         # 终端本体
-        self.terminal = ZoomableTextEdit()
+        self.terminal = ZoomableTextEdit(font_family, isdark)
         self.terminal.setReadOnly(False) # 允许用户直接输入
                                          # 捕获键盘事件代理
         self.terminal.keyPressEvent = self.terminal_keyPressEvent
@@ -172,12 +177,12 @@ class TerminalTab(QWidget):
     def start_process(self):
         ext = os.path.splitext(self.script_path)[1].lower()
         self.append_output(f"[PsLauncher {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] start: {self.script_path}\n", color="#00FF00")
-        
+
         # 设置工作目录为脚本所在的目录，确保相对路径能正确工作
         script_dir = os.path.dirname(self.script_path)
-        if script_dir:  # 如果脚本路径包含目录部分
+        if script_dir: # 如果脚本路径包含目录部分
             self.process.setWorkingDirectory(script_dir)
-        
+
         if ext == '.bat' or ext == '.cmd':
             self.process.start("cmd.exe", ["/c", self.script_path])
         elif ext == '.ps1':
@@ -292,7 +297,7 @@ class TerminalTab(QWidget):
         # 把用户还没发出去的字还给他们
         if user_typing:
             fmt = QTextCharFormat()
-            fmt.setForeground(QColor("#D4D4D4"))
+            fmt.setForeground(QColor("#efefef"))
             cursor.setCharFormat(fmt)
             cursor.insertText(user_typing)
 

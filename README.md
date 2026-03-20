@@ -58,8 +58,18 @@ pip install -r ./requirements.txt
 使用命令行:
 
 ```bash
---scale N   界面字体缩放因子（例如: 1.5, 相当于Windows上的DPI缩放150%）
---light     添加该参数以使用亮色主题（默认暗色）
+usage: PsLauncher.py [-h] [--scale SCALE] [--light] [--dark] [--font FONT] [--height HEIGHT] [--width WIDTH]
+
+PsLauncher - 通用脚本启动器
+
+options:
+  -h, --help       展示帮助
+  --scale SCALE    设定窗口DPI缩放系数 例如 1.5
+  --light          设定明亮主题
+  --dark           设定暗色主题
+  --font FONT      设定字体            例如 'Consolas'
+  --height HEIGHT  窗口高度            例如 768
+  --width WIDTH    窗口宽度            例如 1366
 ```
 
 例子:
@@ -97,8 +107,11 @@ python PsLauncher.py --scale 1.5 --light  # 缩放150%
         "C:/application/LLMexe/test_script",
         "C:/application/LLMexe/litellm"
     ],
-    "font_scale": 1.5,  // 界面字体缩放因子（例如：1.5相当于Windows上的DPI缩放150%）
-    "dark_mode": true  // 是否启用暗色模式（默认true）
+    "font_scale": 1.5,        // 界面字体缩放因子（例如：1.5相当于Windows上的DPI缩放150%）
+    "dark_mode": true,        // 是否启用暗色模式（默认true）
+    "height_value": 1366,     // 调整窗口宽度
+    "width_value": 768,       // 调整窗口高度
+    "font_family": "Consolas" // 编辑器字体
 }
 ```
 
@@ -108,6 +121,7 @@ python PsLauncher.py --scale 1.5 --light  # 缩放150%
 - 一些情况下, 程序可能运行时需要管理员权限（视脚本内容而定）.
 - (目前已知问题): 一些情况下终端字符着色似乎是错的
 - (目前已知问题): 终端标签内, 在选中的时候无法使用`ctrl+c`复制, 这会直接发送中断信号. 这可能是按下ctrl时会自动先捕获按键导致的. 如果需要复制内容, 请使用工具栏的按钮.
+- (目前已知问题): 编辑时编辑器背景颜色应该会变以提示用户, 但是现在完全没有这个视觉效果.
 
 ## 详细使用方法与功能说明
 
@@ -213,7 +227,7 @@ PsLauncher 采用类 VSCode 的界面布局，主要分为以下几个区域：
 
 - **查看模式**：默认只读模式，显示脚本源代码
   - 支持语法高亮（PowerShell/Bash/Batch语法）
-  - 支持代码折叠（通过Ctrl+鼠标滚轮缩放）
+  - 支持通过Ctrl+鼠标滚轮缩放
   - 暗色主题背景，类似VSCode风格
 - **编辑模式**：通过点击"✏️快速编辑"按钮进入
   - 背景色变为深灰色以示区别

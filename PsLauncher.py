@@ -29,12 +29,22 @@ CONFIG_FILE = "launcher_config.json"
 # 主窗口
 class MainWindow(QMainWindow):
 
-    def __init__(self):
+    def __init__(self, font_family, h, w, dark_mode):
         super().__init__()
         self.setWindowTitle("PsLauncher")
-        self.resize(1050, 750)
-
+        self.resize(w, h)
         self.config = load_json_with_comments(CONFIG_FILE)
+
+        # other shit
+        self.font_family = font_family
+        self.height_value = h
+        self.width_value = w
+        self.config['font_family'] = font_family
+        self.config['height_value'] = h
+        self.config['width_value'] = w
+        self.config['dark_mode'] = dark_mode
+        self.dark_mode = dark_mode
+
         self.setup_ui()
         self.refresh_tree()
         self.set_window_icon()
@@ -240,6 +250,7 @@ class MainWindow(QMainWindow):
         self.paste_btn.triggered.connect(self.paste_text)
         toolbar.addAction(self.paste_btn)
 
+        toolbar.addSeparator()
         self.close_editor_tabs_btn = QAction(self)
         self.close_editor_tabs_btn.setText("🗑️关闭所有源码")
         self.close_editor_tabs_btn.setToolTip("关闭所有只读源代码查看标签页")
@@ -256,6 +267,7 @@ class MainWindow(QMainWindow):
         toolbar.addSeparator()
 
         # 快捷关闭按钮
+
         self.close_terminal_tabs_btn = QAction(self)
         self.close_terminal_tabs_btn.setText("🚫中止所有终端")
         self.close_terminal_tabs_btn.setToolTip("关闭所有终端标签页, 包括运行中的以及已经结束的")
@@ -274,15 +286,74 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(splitter)
         self.tree = QTreeWidget()
         self.tree.setHeaderLabel("资源管理器")
+        font = QFont(self.font_family, 14) # 字体族，字号
+                                           # font.setBold(True) # 加粗
+        self.tree.setFont(font)            # 应用到整个树形控件
         self.tree.itemClicked.connect(self.on_tree_item_clicked)
-        # 设置右键菜单
+                                           # 设置右键菜单
         self.tree.setContextMenuPolicy(Qt.CustomContextMenu)
         self.tree.customContextMenuRequested.connect(self.show_tree_context_menu)
-        # 设置悬浮提示
+                                           # 设置悬浮提示
         self.tree.setMouseTracking(True)
         self.tree.viewport().setMouseTracking(True)
         self.tree.itemEntered.connect(self.on_tree_item_hovered)
         splitter.addWidget(self.tree)
+
+        # ======================== 文件树样式 ======================================
+        backgroundcolor = '#1E1E1E' if self.dark_mode else '#efefef'
+        backgroundcolor2 = '#3c3c3c' if self.dark_mode else '#d1d1d1'
+        backgroundcolor3 = '#d4d4d4' if self.dark_mode else '#3c3c3c'
+        color = '#efefef' if self.dark_mode else '#1e1e1e'
+
+        # 样式
+        dark_stylesheet = f"""
+        /* 主窗口背景 */
+        QMainWindow {{
+            background-color: {backgroundcolor};
+        }}
+        
+        /* 分割器背景 */
+        QSplitter {{
+            background-color: {backgroundcolor};
+        }}
+        QSplitter::handle {{
+            background-color: {backgroundcolor2};
+            width: 2px;
+            height: 2px;
+        }}
+        
+        /* 树形控件样式 */
+        QTreeWidget {{
+            background-color: {backgroundcolor};
+            color: {backgroundcolor3};
+            border: none;
+            outline: none;
+        }}
+        QTreeWidget::item {{
+            padding: 5px;
+            border: none;
+        }}
+        QTreeWidget::item:selected {{
+            background-color: #264f78;  /* 选中项深蓝色 */
+            color: #ffffff;
+        }}
+        QTreeWidget::item:hover {{
+            background-color: {backgroundcolor2};  /* 悬停稍亮 */
+        }}
+        QTreeWidget::branch {{
+            background-color: {backgroundcolor};  /* 分支箭头区域背景 */
+        }}
+        
+        /* 表头样式 */
+        QHeaderView::section {{
+            background-color: {backgroundcolor2};
+            color: {backgroundcolor3};
+            padding: 5px;
+            border: none;
+            border-right: 1px solid {backgroundcolor};
+        }}
+        """
+        self.setStyleSheet(dark_stylesheet)
 
         # ======================== 标签们 ======================================
         self.tabs = QTabWidget()
@@ -391,7 +462,7 @@ class MainWindow(QMainWindow):
                 self.tabs.setCurrentIndex(i)
                 return
 
-        editor = EditorTab(script_path)
+        editor = EditorTab(script_path, self.font_family, self.dark_mode)
         idx = self.tabs.addTab(editor, tab_name)
         self.tabs.setCurrentIndex(idx)
 
@@ -413,7 +484,7 @@ class MainWindow(QMainWindow):
         filename = os.path.basename(script_path)
         # 为运行的程序创建一个独立标签页，使用不同emoji以视觉区分
         tab_name = f"🖥️ {filename}"
-        terminal = TerminalTab(script_path)
+        terminal = TerminalTab(script_path, self.font_family, self.dark_mode)
         idx = self.tabs.addTab(terminal, tab_name)
         self.tabs.setCurrentIndex(idx)
         terminal.start_process()
@@ -811,8 +882,16 @@ class MainWindow(QMainWindow):
             event.ignore() # 忽略关闭事件，只是隐藏到托盘
             return
 
-        # 显示确认对话框
-        reply = QMessageBox.question(self, '确认退出', '确定要退出 PsLauncher 吗？这将停止所有正在运行的脚本。', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if self.tabs.count() != 0:
+            # 显示确认对话框
+            reply = QMessageBox.Yes # 轮了一遍全是源代码tab那还确认个dier
+            for i in range(self.tabs.count()):
+                widget = self.tabs.widget(i)
+                if isinstance(widget, TerminalTab):
+                    reply = QMessageBox.question(self, '确认退出', '确定要退出 PsLauncher 吗？这将停止所有正在运行的脚本。', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                    break
+        else:
+            reply = QMessageBox.Yes
 
         if reply == QMessageBox.Yes:
             # 关闭时自动保存配置并强制终止所有进程
@@ -1340,9 +1419,13 @@ def apply_font_scaling(app, scale_factor):
 if __name__ == '__main__':
     QApplication.setAttribute(Qt.AA_UseDesktopOpenGL, True)
     # 解析命令行参数
-    parser = argparse.ArgumentParser(description='PsLauncher - PowerShell和Batch脚本启动器')
-    parser.add_argument('--scale', type=float, help='界面字体缩放因子（例如：1.2表示放大20%）')
-    parser.add_argument('--light', action='store_true', help='使用亮色主题（默认暗色）')
+    parser = argparse.ArgumentParser(description='PsLauncher - A general script launcher')
+    parser.add_argument('--scale', type=float, help='window DPI scale')
+    parser.add_argument('--light', action='store_true', help='use light theme')
+    parser.add_argument('--dark', action='store_true', help='use dark theme')
+    parser.add_argument('--font', type=str, help='set font family')
+    parser.add_argument('--height', type=int, help='window height')
+    parser.add_argument('--width', type=int, help='window width')
     args = parser.parse_args()
 
     app = QApplication(sys.argv)
@@ -1351,10 +1434,21 @@ if __name__ == '__main__':
     config = load_json_with_comments(CONFIG_FILE)
 
     # 应用主题
-    if not args.light and config.get("dark_mode", True):
-        apply_dark_theme(app)
-    else:
+    dark_mode = True
+    if args.light:
         app.setStyle("Fusion")
+        dark_mode = False
+    else:
+        if args.dark:
+            apply_dark_theme(app)
+            dark_mode = True
+        else:
+            if config.get("dark_mode", True):
+                apply_dark_theme(app)
+                dark_mode = True
+            else:
+                app.setStyle("Fusion")
+                dark_mode = False
 
     # 应用字体缩放（命令行参数优先于配置文件）
     scale_factor = 1.0
@@ -1366,6 +1460,20 @@ if __name__ == '__main__':
     if scale_factor != 1.0:
         apply_font_scaling(app, scale_factor)
 
-    window = MainWindow()
+    # 应用字体
+    font_family = config["font_family"]
+    if args.font:
+        font_family = args.font
+
+    # 窗口尺寸
+    height = config["height_value"]
+    if args.height:
+        height = args.height
+
+    width = config["width_value"]
+    if args.width:
+        width = args.width
+
+    window = MainWindow(font_family, height, width, dark_mode)
     window.show()
     sys.exit(app.exec_())
