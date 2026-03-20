@@ -29,12 +29,22 @@ CONFIG_FILE = "launcher_config.json"
 # Main window
 class MainWindow(QMainWindow):
 
-    def __init__(self):
+    def __init__(self, font_family, h, w, dark_mode):
         super().__init__()
         self.setWindowTitle("PsLauncher")
-        self.resize(1366, 768)
-
+        self.resize(w, h)
         self.config = load_json_with_comments(CONFIG_FILE)
+
+        # other shit
+        self.font_family = font_family
+        self.height_value = h
+        self.width_value = w
+        self.config['font_family'] = font_family
+        self.config['height_value'] = h
+        self.config['width_value'] = w
+        self.config['dark_mode'] = dark_mode
+        self.dark_mode = dark_mode
+
         self.setup_ui()
         self.refresh_tree()
         self.set_window_icon()
@@ -66,7 +76,7 @@ class MainWindow(QMainWindow):
             if not icon_set:
                 print("Unable to load program icon, using default icon")
         except Exception as e:
-                print(f"Error setting window icon: {e}")
+            print(f"Error setting window icon: {e}")
 
     def setup_ui(self):
         menubar = self.menuBar()
@@ -257,7 +267,6 @@ class MainWindow(QMainWindow):
 
         # Quick close buttons
 
-
         self.close_terminal_tabs_btn = QAction(self)
         self.close_terminal_tabs_btn.setText("🚫 Stop All Terminals")
         self.close_terminal_tabs_btn.setToolTip("Close all terminal tabs, including running and completed ones")
@@ -266,25 +275,85 @@ class MainWindow(QMainWindow):
 
         self.close_all_tabs_btn = QAction(self)
         self.close_all_tabs_btn.setText("💥 Close All Tabs")
-        self.close_all_tabs_btn.setToolTip("Close all tabs, this will close all source code tabs and all terminal tabs. If a terminal is running, it will be forcibly terminated. May cause running programs/scripts to exit abnormally.")
+        self.close_all_tabs_btn.setToolTip(
+            "Close all tabs, this will close all source code tabs and all terminal tabs. If a terminal is running, it will be forcibly terminated. May cause running programs/scripts to exit abnormally."
+        )
         self.close_all_tabs_btn.triggered.connect(self.close_all_tabs)
         toolbar.addAction(self.close_all_tabs_btn)
 
         # ======================== Explorer ======================================
-
         splitter = QSplitter(Qt.Horizontal)
         self.setCentralWidget(splitter)
         self.tree = QTreeWidget()
         self.tree.setHeaderLabel("Explorer")
+        font = QFont(self.font_family, 14) # 字体族，字号
+                                           # font.setBold(True) # 加粗
+        self.tree.setFont(font)            # 应用到整个树形控件
         self.tree.itemClicked.connect(self.on_tree_item_clicked)
-        # Set context menu
+                                           # 设置右键菜单
         self.tree.setContextMenuPolicy(Qt.CustomContextMenu)
         self.tree.customContextMenuRequested.connect(self.show_tree_context_menu)
-        # Set hover tooltips
+                                           # 设置悬浮提示
         self.tree.setMouseTracking(True)
         self.tree.viewport().setMouseTracking(True)
         self.tree.itemEntered.connect(self.on_tree_item_hovered)
         splitter.addWidget(self.tree)
+
+        # ======================== 文件树样式 ======================================
+        backgroundcolor = '#1E1E1E' if self.dark_mode else '#efefef'
+        backgroundcolor2 = '#3c3c3c' if self.dark_mode else '#d1d1d1'
+        backgroundcolor3 = '#d4d4d4' if self.dark_mode else '#3c3c3c'
+        color = '#efefef' if self.dark_mode else '#1e1e1e'
+
+        # 样式
+        dark_stylesheet = f"""
+        /* 主窗口背景 */
+        QMainWindow {{
+            background-color: {backgroundcolor};
+        }}
+        
+        /* 分割器背景 */
+        QSplitter {{
+            background-color: {backgroundcolor};
+        }}
+        QSplitter::handle {{
+            background-color: {backgroundcolor2};
+            width: 2px;
+            height: 2px;
+        }}
+        
+        /* 树形控件样式 */
+        QTreeWidget {{
+            background-color: {backgroundcolor};
+            color: {backgroundcolor3};
+            border: none;
+            outline: none;
+        }}
+        QTreeWidget::item {{
+            padding: 5px;
+            border: none;
+        }}
+        QTreeWidget::item:selected {{
+            background-color: #264f78;  /* 选中项深蓝色 */
+            color: #ffffff;
+        }}
+        QTreeWidget::item:hover {{
+            background-color: {backgroundcolor2};  /* 悬停稍亮 */
+        }}
+        QTreeWidget::branch {{
+            background-color: {backgroundcolor};  /* 分支箭头区域背景 */
+        }}
+        
+        /* 表头样式 */
+        QHeaderView::section {{
+            background-color: {backgroundcolor2};
+            color: {backgroundcolor3};
+            padding: 5px;
+            border: none;
+            border-right: 1px solid {backgroundcolor};
+        }}
+        """
+        self.setStyleSheet(dark_stylesheet)
 
         # ======================== Tabs ======================================
         self.tabs = QTabWidget()
@@ -393,7 +462,7 @@ class MainWindow(QMainWindow):
                 self.tabs.setCurrentIndex(i)
                 return
 
-        editor = EditorTab(script_path)
+        editor = EditorTab(script_path, self.font_family, self.dark_mode)
         idx = self.tabs.addTab(editor, tab_name)
         self.tabs.setCurrentIndex(idx)
 
@@ -415,7 +484,7 @@ class MainWindow(QMainWindow):
         filename = os.path.basename(script_path)
         # Create separate tab for running program with different emoji for visual distinction
         tab_name = f"🖥️ {filename}"
-        terminal = TerminalTab(script_path)
+        terminal = TerminalTab(script_path, self.font_family, self.dark_mode)
         idx = self.tabs.addTab(terminal, tab_name)
         self.tabs.setCurrentIndex(idx)
         terminal.start_process()
@@ -514,7 +583,8 @@ class MainWindow(QMainWindow):
             return
 
         # Show confirmation dialog
-        reply = QMessageBox.question(self, 'Confirmation', f'Are you sure you want to close all {terminal_count} running tabs? This will stop all running scripts.', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        reply = QMessageBox.question(self, 'Confirmation', f'Are you sure you want to close all {terminal_count} running tabs? This will stop all running scripts.', QMessageBox.Yes | QMessageBox.No,
+                                     QMessageBox.No)
 
         if reply == QMessageBox.Yes:
             tabs_to_close = []
@@ -577,7 +647,9 @@ class MainWindow(QMainWindow):
 
         if terminal_tabs:
             terminal_count = len(terminal_tabs)
-            reply = QMessageBox.question(self, 'Confirmation', f'Are you sure you want to close all {total_tabs} tabs?\nThis includes {terminal_count} terminal tabs, which will stop all running scripts.', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            reply = QMessageBox.question(self, 'Confirmation',
+                                         f'Are you sure you want to close all {total_tabs} tabs?\nThis includes {terminal_count} terminal tabs, which will stop all running scripts.',
+                                         QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         else:
             reply = QMessageBox.question(self, 'Confirmation', f'Are you sure you want to close all {total_tabs} tabs?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
 
@@ -653,7 +725,10 @@ class MainWindow(QMainWindow):
 
         if not editor_tab.is_editing:
             # Currently not in edit mode, try to enter edit mode
-            reply = QMessageBox.question(self, 'Confirmation', 'Are you sure you want to enter edit mode?\nYou can modify scripts in edit mode, click save when done.\nThis edit feature is suitable for small parameter changes, not for complex autocompletion or strict syntax checking.', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            reply = QMessageBox.question(
+                self, 'Confirmation',
+                'Are you sure you want to enter edit mode?\nYou can modify scripts in edit mode, click save when done.\nThis edit feature is suitable for small parameter changes, not for complex autocompletion or strict syntax checking.',
+                QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             if reply == QMessageBox.Yes:
                 editor_tab.set_editing(True)
                 # Update button and menu text
@@ -675,7 +750,8 @@ class MainWindow(QMainWindow):
                     self.edit_save_action.setToolTip("Enter/exit edit mode, save script changes")
                     self.edit_save_btn.setToolTip("Enter/exit edit mode, save script changes")
                 else:
-                    QMessageBox.warning(self, "Failure", "File save failed. Please check file permissions or path. If it's a system directory, administrator privileges may be required.", QMessageBox.Ok)
+                    QMessageBox.warning(self, "Failure", "File save failed. Please check file permissions or path. If it's a system directory, administrator privileges may be required.",
+                                        QMessageBox.Ok)
             else:
                 # User canceled save, need to reload file to discard changes
                 editor_tab.set_editing(False)
@@ -813,8 +889,16 @@ class MainWindow(QMainWindow):
             event.ignore() # Ignore close event, just hide to tray
             return
 
-        # Show confirmation dialog
-        reply = QMessageBox.question(self, 'Confirm Exit', 'Are you sure you want to exit PsLauncher? This will stop all running scripts.', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if self.tabs.count() != 0:
+            # 显示确认对话框
+            reply = QMessageBox.Yes # 轮了一遍全是源代码tab那还确认个dier
+            for i in range(self.tabs.count()):
+                widget = self.tabs.widget(i)
+                if isinstance(widget, TerminalTab):
+                    reply = QMessageBox.question(self, '确认退出', '确定要退出 PsLauncher 吗？这将停止所有正在运行的脚本。', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                    break
+        else:
+            reply = QMessageBox.Yes
 
         if reply == QMessageBox.Yes:
             # Auto save configuration and force terminate all processes on close
@@ -882,7 +966,8 @@ class MainWindow(QMainWindow):
                 self.save_config()
                 self.refresh_tree()
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"Failed to create folder: {str(e)}. Sometimes this is due to permission issues, please check if running with administrator privileges.", QMessageBox.Ok)
+            QMessageBox.critical(self, "Error", f"Failed to create folder: {str(e)}. Sometimes this is due to permission issues, please check if running with administrator privileges.",
+                                 QMessageBox.Ok)
 
     def new_script_in_folder(self):
         """Create new script in current selected folder path"""
@@ -914,9 +999,10 @@ class MainWindow(QMainWindow):
                 return
 
         # Popup dialog for user to input filename
-        file_name, ok = QInputDialog.getText(self, "New Script", "Enter script file name (with extension, e.g.: myscript.ps1):\n"
-                                         "Note: Program will not automatically add extension. If you don't enter an extension, file will have no extension.\n"
-                                         "Note: PsLauncher only scans .ps1, .bat, .sh extensions. If extension is incorrect, file won't appear immediately after creation.", QLineEdit.Normal, "new_script.ps1")
+        file_name, ok = QInputDialog.getText(
+            self, "New Script", "Enter script file name (with extension, e.g.: myscript.ps1):\n"
+            "Note: Program will not automatically add extension. If you don't enter an extension, file will have no extension.\n"
+            "Note: PsLauncher only scans .ps1, .bat, .sh extensions. If extension is incorrect, file won't appear immediately after creation.", QLineEdit.Normal, "new_script.ps1")
         if not ok or not file_name.strip():
             return
 
@@ -925,17 +1011,19 @@ class MainWindow(QMainWindow):
 
         # If new extension is not supported type, show confirmation
         if new_ext and new_ext not in ['.ps1', '.bat', '.sh']:
-            reply = QMessageBox.question(self, "Extension Warning", f"You entered extension {new_ext} which is not a supported script type for PsLauncher (.ps1, .bat, .sh).\n"
-                                         "This will cause file to not appear in the list unless you manually edit the filename extension later.\n\n"
-                                         "Continue with this name?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            reply = QMessageBox.question(
+                self, "Extension Warning", f"You entered extension {new_ext} which is not a supported script type for PsLauncher (.ps1, .bat, .sh).\n"
+                "This will cause file to not appear in the list unless you manually edit the filename extension later.\n\n"
+                "Continue with this name?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             if reply == QMessageBox.No:
                 return
 
         # If no extension, prompt user for confirmation
         if not new_ext:
-            reply = QMessageBox.question(self, "No Extension Warning", f"You entered a filename without extension, which may cause file to not appear in the list.\n"
-                                         "It's recommended to use .ps1, .bat, .sh or other supported extensions.\n\n"
-                                         "Continue with this name?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            reply = QMessageBox.question(
+                self, "No Extension Warning", f"You entered a filename without extension, which may cause file to not appear in the list.\n"
+                "It's recommended to use .ps1, .bat, .sh or other supported extensions.\n\n"
+                "Continue with this name?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             if reply == QMessageBox.No:
                 return
 
@@ -986,10 +1074,11 @@ class MainWindow(QMainWindow):
         old_ext = os.path.splitext(old_file_name)[1].lower() # Original file extension
 
         # Popup dialog for user to input new filename
-        new_file_name, ok = QInputDialog.getText(self, "Rename Script", f"Enter new script filename:\n"
-                                                 "Current filename: {old_file_name}\n"
-                                                 "Note: Program will not automatically add extension. If you don't enter an extension, file will have no extension.\n"
-                                                 "Note: PsLauncher only scans .ps1, .bat, .sh extensions. If extension is incorrect, file won't appear immediately after rename.", QLineEdit.Normal, old_file_name)
+        new_file_name, ok = QInputDialog.getText(
+            self, "Rename Script", f"Enter new script filename:\n"
+            "Current filename: {old_file_name}\n"
+            "Note: Program will not automatically add extension. If you don't enter an extension, file will have no extension.\n"
+            "Note: PsLauncher only scans .ps1, .bat, .sh extensions. If extension is incorrect, file won't appear immediately after rename.", QLineEdit.Normal, old_file_name)
         if not ok or not new_file_name.strip():
             return
 
@@ -1003,17 +1092,19 @@ class MainWindow(QMainWindow):
 
         # If new extension is not supported type, show confirmation
         if new_ext and new_ext not in ['.ps1', '.bat', '.sh']:
-            reply = QMessageBox.question(self, "Extension Warning", f"You entered extension {new_ext} which is not a supported script type for PsLauncher (.ps1, .bat, .sh).\n"
-                                         "This will cause renamed file to not appear in the list unless you manually edit the filename extension later.\n\n"
-                                         "Continue with rename?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            reply = QMessageBox.question(
+                self, "Extension Warning", f"You entered extension {new_ext} which is not a supported script type for PsLauncher (.ps1, .bat, .sh).\n"
+                "This will cause renamed file to not appear in the list unless you manually edit the filename extension later.\n\n"
+                "Continue with rename?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             if reply == QMessageBox.No:
                 return
 
         # If no extension, prompt user for confirmation
         if not new_ext:
-            reply = QMessageBox.question(self, "No Extension Warning", f"You entered a filename without extension, which may cause file to not appear in the list.\n"
-                                         "It's recommended to use .ps1, .bat, .sh or other supported extensions.\n\n"
-                                         "Continue with rename?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            reply = QMessageBox.question(
+                self, "No Extension Warning", f"You entered a filename without extension, which may cause file to not appear in the list.\n"
+                "It's recommended to use .ps1, .bat, .sh or other supported extensions.\n\n"
+                "Continue with rename?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             if reply == QMessageBox.No:
                 return
 
@@ -1052,10 +1143,11 @@ class MainWindow(QMainWindow):
         default_new_name = name + "_copy" + ext
 
         # Popup dialog to prompt user to rename file
-        new_file_name, ok = QInputDialog.getText(self, "Copy Script", f"Enter copied script filename:\n"
-                                                 f"Original filename: {old_file_name}\n"
-                                                 "Note: Program will not automatically add extension. If you don't enter an extension, file will have no extension.\n"
-                                                 "Note: PsLauncher only scans .ps1, .bat, .sh extensions. If extension is incorrect, file won't appear immediately after creation.", QLineEdit.Normal, default_new_name)
+        new_file_name, ok = QInputDialog.getText(
+            self, "Copy Script", f"Enter copied script filename:\n"
+            f"Original filename: {old_file_name}\n"
+            "Note: Program will not automatically add extension. If you don't enter an extension, file will have no extension.\n"
+            "Note: PsLauncher only scans .ps1, .bat, .sh extensions. If extension is incorrect, file won't appear immediately after creation.", QLineEdit.Normal, default_new_name)
 
         if not ok or not new_file_name.strip():
             return # User canceled or input empty
@@ -1152,7 +1244,8 @@ class MainWindow(QMainWindow):
         file_name = os.path.basename(script_path)
 
         # Show confirmation dialog
-        reply = QMessageBox.question(self, "Confirm Delete", f"Are you sure you want to delete script '{file_name}'?\nThis action is irreversible! File is deleted directly, not moved to recycle bin.", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        reply = QMessageBox.question(self, "Confirm Delete", f"Are you sure you want to delete script '{file_name}'?\nThis action is irreversible! File is deleted directly, not moved to recycle bin.",
+                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if reply == QMessageBox.No:
             return
 
@@ -1177,7 +1270,10 @@ class MainWindow(QMainWindow):
                     # Folder item: show folder related menu
                     # Script management menu functions
                     tree_folder_action = QAction("📁 This is a folder", self)
-                    tree_folder_action.triggered.connect(lambda: QMessageBox.warning(self, "Information", "Folder has no context menu operations. All operations should be performed through the menu bar above.\nContext menu is only for consistency, to avoid OCD feeling like the program is missing a feature...", QMessageBox.Ok))
+                    tree_folder_action.triggered.connect(lambda: QMessageBox.warning(
+                        self, "Information",
+                        "Folder has no context menu operations. All operations should be performed through the menu bar above.\nContext menu is only for consistency, to avoid OCD feeling like the program is missing a feature...",
+                        QMessageBox.Ok))
                     menu.addAction(tree_folder_action)
 
                 elif os.path.isfile(path) and path.lower().endswith(('.ps1', '.bat', '.sh')):
@@ -1342,9 +1438,13 @@ def apply_font_scaling(app, scale_factor):
 if __name__ == '__main__':
     QApplication.setAttribute(Qt.AA_UseDesktopOpenGL, True)
     # Parse command line arguments
-    parser = argparse.ArgumentParser(description='PsLauncher - PowerShell and Batch script launcher')
-    parser.add_argument('--scale', type=float, help='UI font scaling factor (e.g.: 1.2 for 20% larger)')
-    parser.add_argument('--light', action='store_true', help='Use light theme (default dark)')
+    parser = argparse.ArgumentParser(description='PsLauncher - A general script launcher')
+    parser.add_argument('--scale', type=float, help='window DPI scale')
+    parser.add_argument('--light', action='store_true', help='use light theme')
+    parser.add_argument('--dark', action='store_true', help='use dark theme')
+    parser.add_argument('--font', type=str, help='set font family')
+    parser.add_argument('--height', type=int, help='window height')
+    parser.add_argument('--width', type=int, help='window width')
     args = parser.parse_args()
 
     app = QApplication(sys.argv)
@@ -1352,11 +1452,22 @@ if __name__ == '__main__':
     # Load configuration file
     config = load_json_with_comments(CONFIG_FILE)
 
-    # Apply theme
-    if not args.light and config.get("dark_mode", True):
-        apply_dark_theme(app)
-    else:
+    # 应用主题
+    dark_mode = True
+    if args.light:
         app.setStyle("Fusion")
+        dark_mode = False
+    else:
+        if args.dark:
+            apply_dark_theme(app)
+            dark_mode = True
+        else:
+            if config.get("dark_mode", True):
+                apply_dark_theme(app)
+                dark_mode = True
+            else:
+                app.setStyle("Fusion")
+                dark_mode = False
 
     # Apply font scaling (command line argument takes priority over config)
     scale_factor = 1.0
@@ -1368,6 +1479,20 @@ if __name__ == '__main__':
     if scale_factor != 1.0:
         apply_font_scaling(app, scale_factor)
 
-    window = MainWindow()
+    # 应用字体
+    font_family = config["font_family"]
+    if args.font:
+        font_family = args.font
+
+    # 窗口尺寸
+    height = config["height_value"]
+    if args.height:
+        height = args.height
+
+    width = config["width_value"]
+    if args.width:
+        width = args.width
+
+    window = MainWindow(font_family, height, width, dark_mode)
     window.show()
     sys.exit(app.exec_())
