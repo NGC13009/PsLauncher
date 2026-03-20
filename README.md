@@ -59,8 +59,18 @@ Regardless of the installation method, there are two ways to start the program:
 Using the command line:
 
 ```bash
---scale N         Interface font scaling factor (e.g., 1.5, equivalent to 150% DPI scaling on Windows)
---light           Add this parameter to use a light theme (default is dark)
+usage: PsLauncher.py [-h] [--scale SCALE] [--light] [--dark] [--font FONT] [--height HEIGHT] [--width WIDTH]
+
+PsLauncher - A general script launcher
+
+options:
+  -h, --help       show this help message and exit
+  --scale SCALE    Interface font scaling factor (e.g., 1.5, equivalent to 150% DPI scaling on Windows)
+  --light          use light theme
+  --dark           use dark theme
+  --font FONT      set font family
+  --height HEIGHT  window height
+  --width WIDTH    window width
 ```
 
 Example:
@@ -97,8 +107,11 @@ You can also manually modify the configuration file.
         "C:/application/LLMexe/test_script",
         "C:/application/LLMexe/litellm"
     ],
-    "font_scale": 1.5,  // Interface font scaling factor (e.g., 1.5 is equivalent to 150% DPI scaling on Windows)
-    "dark_mode": true   // Whether to enable dark mode (default is true)
+    "font_scale": 1.5,        // Interface font scaling factor (e.g., 1.5 is equivalent to 150% DPI scaling on Windows)
+    "dark_mode": true,        // Whether to enable dark mode (default is true)
+    "height_value": 1366,     // window size height
+    "width_value": 768,       // window size width
+    "font_family": "Consolas" // font family
 }
 ```
 
@@ -213,7 +226,7 @@ The right-side area uses a multi-tab design, supporting two types of tabs:
 
 - **View Mode**: Default read-only mode, displays script source code
 - Supports syntax highlighting (PowerShell/Bash/Batch syntax)
-- Supports code folding (zoom in/out using Ctrl + mouse wheel)
+- Supports zoom in/out using Ctrl + mouse wheel
 - Dark theme background, similar to VSCode
 - **Edit Mode**: Enter by clicking the "✏️ Quick Edit" button
 - Background color changes to dark gray for distinction
