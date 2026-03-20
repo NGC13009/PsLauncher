@@ -1,9 +1,11 @@
 html_content = '''\
-<h1>PsLauncher - Lightweight Multi-Script Manager</h1>
-<p>Within a lightweight, VS Code-like interface, PowerShell/Bash/cmd (Batch) scripts are managed and run uniformly through multiple tabs. It supports system tray persistence, forced termination of child processes, ANSI-colored terminal output, and interactive input/output like a terminal. It is specifically optimized for scenarios such as local large-scale model deployment (llama.cpp/litellm).</p>
+<h1>PsLauncher - Lightweight Multi-Script Tray Manager</h1>
+<p>Within a lightweight, VS Code-like interface, PowerShell/Bash/cmd (Batch) scripts are managed and run uniformly through multiple tabs. It supports <strong>system tray persistence</strong>, forced termination of child processes, ANSI-colored terminal output, and interactive input/output like a terminal. It is specifically optimized for scenarios such as local large-scale model deployment (llama.cpp/litellm). In theory, this can even manage assistant applications like OpenCLAW.</p>
+<p><img alt="pic" src="pic.jpg" /></p>
 <p><a href="README_CN.md">中文说明</a></p>
 <blockquote>
-<p>The English version readme is provided by machine translation and may be inaccurate.</p>
+<p>The English version readme is provided by machine translation and may be inaccurate.
+A good use case: <a href="run_llama.cpp_and_litellm_by_PsLauncher.md">How to use PsLauncher to customize the local large model service configuration</a></p>
 </blockquote>
 <h2>Key Highlights</h2>
 <ul>
@@ -49,8 +51,18 @@ pip install -r ./requirements.txt
 <li><strong>Start the program via the command line (or Python source code).</strong> This allows you to set two parameters. After setting them once, the program will save the configuration file, and you won't need to set them again later.</li>
 </ul>
 <p>Using the command line:</p>
-<pre><code class="language-bash">--scale N         Interface font scaling factor (e.g., 1.5, equivalent to 150% DPI scaling on Windows)
---light           Add this parameter to use a light theme (default is dark)
+<pre><code class="language-bash">usage: PsLauncher.py [-h] [--scale SCALE] [--light] [--dark] [--font FONT] [--height HEIGHT] [--width WIDTH]
+
+PsLauncher - A general script launcher
+
+options:
+  -h, --help       show this help message and exit
+  --scale SCALE    Interface font scaling factor (e.g., 1.5, equivalent to 150% DPI scaling on Windows)
+  --light          use light theme
+  --dark           use dark theme
+  --font FONT      set font family
+  --height HEIGHT  window height
+  --width WIDTH    window width
 </code></pre>
 <p>Example:</p>
 <pre><code class="language-bash"># Start the compiled exe
@@ -81,8 +93,11 @@ python PsLauncher.py --scale 1.5 --light # Scale 150%
         &quot;C:/application/LLMexe/test_script&quot;,
         &quot;C:/application/LLMexe/litellm&quot;
     ],
-    &quot;font_scale&quot;: 1.5,  // Interface font scaling factor (e.g., 1.5 is equivalent to 150% DPI scaling on Windows)
-    &quot;dark_mode&quot;: true   // Whether to enable dark mode (default is true)
+    &quot;font_scale&quot;: 1.5,        // Interface font scaling factor (e.g., 1.5 is equivalent to 150% DPI scaling on Windows)
+    &quot;dark_mode&quot;: true,        // Whether to enable dark mode (default is true)
+    &quot;height_value&quot;: 1366,     // window size height
+    &quot;width_value&quot;: 768,       // window size width
+    &quot;font_family&quot;: &quot;Consolas&quot; // font family
 }
 </code></pre>
 <h3>Notes</h3>
@@ -207,7 +222,7 @@ python PsLauncher.py --scale 1.5 --light # Scale 150%
 <ul>
 <li><strong>View Mode</strong>: Default read-only mode, displays script source code</li>
 <li>Supports syntax highlighting (PowerShell/Bash/Batch syntax)</li>
-<li>Supports code folding (zoom in/out using Ctrl + mouse wheel)</li>
+<li>Supports zoom in/out using Ctrl + mouse wheel</li>
 <li>Dark theme background, similar to VSCode</li>
 <li><strong>Edit Mode</strong>: Enter by clicking the "✏️ Quick Edit" button</li>
 <li>Background color changes to dark gray for distinction</li>
