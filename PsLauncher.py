@@ -240,11 +240,11 @@ class MainWindow(QMainWindow):
         self.paste_btn.triggered.connect(self.paste_text)
         toolbar.addAction(self.paste_btn)
 
-        self.copy_all_btn = QAction(self)
-        self.copy_all_btn.setText("📄复制全部")
-        self.copy_all_btn.setToolTip("复制焦点标签页全部文本到剪贴板")
-        self.copy_all_btn.triggered.connect(self.copy_all_text)
-        toolbar.addAction(self.copy_all_btn)
+        self.close_editor_tabs_btn = QAction(self)
+        self.close_editor_tabs_btn.setText("🗑️关闭所有源码")
+        self.close_editor_tabs_btn.setToolTip("关闭所有只读源代码查看标签页")
+        self.close_editor_tabs_btn.triggered.connect(self.close_all_editor_tabs)
+        toolbar.addAction(self.close_editor_tabs_btn)
 
         # 编辑/保存按钮
         self.edit_save_btn = QAction(self)
@@ -256,12 +256,6 @@ class MainWindow(QMainWindow):
         toolbar.addSeparator()
 
         # 快捷关闭按钮
-        self.close_editor_tabs_btn = QAction(self)
-        self.close_editor_tabs_btn.setText("🗑️关闭所有源码")
-        self.close_editor_tabs_btn.setToolTip("关闭所有只读源代码查看标签页")
-        self.close_editor_tabs_btn.triggered.connect(self.close_all_editor_tabs)
-        toolbar.addAction(self.close_editor_tabs_btn)
-
         self.close_terminal_tabs_btn = QAction(self)
         self.close_terminal_tabs_btn.setText("🚫中止所有终端")
         self.close_terminal_tabs_btn.setToolTip("关闭所有终端标签页, 包括运行中的以及已经结束的")
