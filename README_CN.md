@@ -1,8 +1,6 @@
-# PsLauncher - 轻量级多脚本系统托盘管理器
+# PsLauncher - 轻量级多脚本管理器
 
-在一个轻量化的, 类似于vscode的界面中, 通过多标签页统一管理并运行PowerShell/Bash/cmd(Batch)脚本, 支持**系统托盘常驻**、子进程强杀、ANSI着色的终端输出, 像终端一样的交互式输入输出. 专为本地大模型部署（llama.cpp/litellm）等场景优化.
-
-![pic](pic.jpg)
+在一个轻量化的, 类似于vscode的界面中, 通过多标签页统一管理并运行PowerShell/Bash/cmd(Batch)脚本, 支持系统托盘常驻、子进程强杀、ANSI着色的终端输出, 像终端一样的交互式输入输出. 专为本地大模型部署（llama.cpp/litellm）等场景优化.
 
 > **开发动机与应用场景:**
 > 我想在自己电脑上本地运行大模型, 并且一直使用[ollama](https://github.com/ollama/ollama). 偶然, 我发现相较于[llama.cpp](https://github.com/ggml-org/llama.cpp), ollama总是占用更多的显存, 因此我决定使用llama.cpp作为本地大模型部署后端(不可思议,因为ollama其实也是llama.cpp套了一层而已). 但是llama.cpp自身不支持多进程, 什么都得手工管理. 因此我考虑能不能自己造一个ollama类似的玩意帮我管理的更好一些.
@@ -10,7 +8,6 @@
 > 调研后, 我发现[litellm](https://github.com/BerriAI/litellm)是一个非常好的东西, 轻量化并且启动迅速, 这使得我没必要自己做一个网关去集散不同llama.cpp后端, 方便多了. 而且它不仅能管理本地模型并提供统一接口api, 而且还能把要钱的api也放到一起, 像是openrouter一样十分省事. 这样就不用来回配置多个程序的api了.
 > 最开始, 我直接使用PowerShell的多个标签页, 通过启动写好配置的PowerShell脚本来手工启动litellm以及多个模型的llama.cpp. 我可以手工管理`GGUF`模型文件, 我觉得这无妨. 因此这个方案其实就能用了.
 > 但是启动几个终端实在是不方便并且不够优雅, 并且我无法很方便的把他们扔到托盘后台去. 因此, 整合一下我们的目的....就诞生了这个程序.
-> ps: 如果你好奇这个过程的具体方式, 请参考[如何使用PsLauncher自定义的配置本地大模型服务](run_llama.cpp_and_litellm_by_PsLauncher.md)
 
 ## 核心亮点
 
@@ -61,8 +58,18 @@ pip install -r ./requirements.txt
 使用命令行:
 
 ```bash
---scale N   界面字体缩放因子（例如: 1.5, 相当于Windows上的DPI缩放150%）
---light     添加该参数以使用亮色主题（默认暗色）
+usage: PsLauncher.py [-h] [--scale SCALE] [--light] [--dark] [--font FONT] [--height HEIGHT] [--width WIDTH]
+
+PsLauncher - 通用脚本启动器
+
+options:
+  -h, --help       展示帮助
+  --scale SCALE    设定窗口DPI缩放系数 例如 1.5
+  --light          设定明亮主题
+  --dark           设定暗色主题
+  --font FONT      设定字体            例如 'Consolas'
+  --height HEIGHT  窗口高度            例如 768
+  --width WIDTH    窗口宽度            例如 1366
 ```
 
 例子:
@@ -100,8 +107,11 @@ python PsLauncher.py --scale 1.5 --light  # 缩放150%
         "C:/application/LLMexe/test_script",
         "C:/application/LLMexe/litellm"
     ],
-    "font_scale": 1.5,  // 界面字体缩放因子（例如：1.5相当于Windows上的DPI缩放150%）
-    "dark_mode": true  // 是否启用暗色模式（默认true）
+    "font_scale": 1.5,        // 界面字体缩放因子（例如：1.5相当于Windows上的DPI缩放150%）
+    "dark_mode": true,        // 是否启用暗色模式（默认true）
+    "height_value": 1366,     // 调整窗口宽度
+    "width_value": 768,       // 调整窗口高度
+    "font_family": "Consolas" // 编辑器字体
 }
 ```
 
@@ -111,6 +121,7 @@ python PsLauncher.py --scale 1.5 --light  # 缩放150%
 - 一些情况下, 程序可能运行时需要管理员权限（视脚本内容而定）.
 - (目前已知问题): 一些情况下终端字符着色似乎是错的
 - (目前已知问题): 终端标签内, 在选中的时候无法使用`ctrl+c`复制, 这会直接发送中断信号. 这可能是按下ctrl时会自动先捕获按键导致的. 如果需要复制内容, 请使用工具栏的按钮.
+- (目前已知问题): 编辑时编辑器背景颜色应该会变以提示用户, 但是现在完全没有这个视觉效果.
 
 ## 详细使用方法与功能说明
 
@@ -216,7 +227,7 @@ PsLauncher 采用类 VSCode 的界面布局，主要分为以下几个区域：
 
 - **查看模式**：默认只读模式，显示脚本源代码
   - 支持语法高亮（PowerShell/Bash/Batch语法）
-  - 支持代码折叠（通过Ctrl+鼠标滚轮缩放）
+  - 支持通过Ctrl+鼠标滚轮缩放
   - 暗色主题背景，类似VSCode风格
 - **编辑模式**：通过点击"✏️快速编辑"按钮进入
   - 背景色变为深灰色以示区别
