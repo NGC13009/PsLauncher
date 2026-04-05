@@ -1300,12 +1300,9 @@ class MainWindow(QMainWindow):
                 if os.path.isdir(path):
                     # Folder item: show folder related menu
                     # Script management menu functions
-                    tree_folder_action = QAction("📁 This is a folder", self)
-                    tree_folder_action.triggered.connect(lambda: QMessageBox.warning(
-                        self, "Information",
-                        "Folder has no context menu operations. All operations should be performed through the menu bar above.\nContext menu is only for consistency, to avoid OCD feeling like the program is missing a feature...",
-                        QMessageBox.Ok))
-                    menu.addAction(tree_folder_action)
+                    open_folder_action = QAction("📂 Open folder", self)
+                    open_folder_action.triggered.connect(lambda: os.startfile(path))
+                    menu.addAction(open_folder_action)
 
                 elif os.path.isfile(path) and path.lower().endswith(('.ps1', '.bat', '.sh')):
                     # Script item: show script management menu
