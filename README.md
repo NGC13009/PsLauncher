@@ -27,6 +27,8 @@ Within a lightweight, VS Code-like interface, PowerShell/Bash/cmd (Batch) script
 
 ## Quick Start
 
+> The in-program documentation is automatically generated from Markdown. Therefore, the Markdown files or GitHub web rendering will display correctly, but the built-in documentation within the program may not always be fully accessible. Please refer to the Markdown or web documentation as the authoritative source.
+
 ### Installation
 
 Two methods:
@@ -152,10 +154,20 @@ PsLauncher adopts a VSCode-like interface layout, mainly divided into the follow
 - **Copy Tab All to Clipboard** - Copy all text content of the current tab
 - **Edit Script Source Code** (F4) - Enter/exit script editing mode, supports saving changes
 
-#### Tools Menu
+#### Run Menu
 
 - **Start Script** (F5) - Run the currently selected script
 - **Terminate Script** (F6) - Stop the script running in the current tab
+
+#### View Menu
+
+- **Toggle Word Wrap** - Enable/disable text automatic line wrapping
+- **Syntax Highlighting Style** - Set code highlighting theme:
+  - Automatic (auto-detects based on script type)
+  - PowerShell
+  - bash
+  - command
+  - Disable (turn off highlighting)
 
 #### Script Management Menu
 
@@ -209,12 +221,15 @@ The left-side file list (Windows Explorer) is the main entry point for script ma
    - Clicking a **folder item**: Expands/collapses the folder
    - Clicking a **script item**: Opens a new source code view tab on the right, displaying the script's source code
 
-2. **File Type Support**
+2. **Double-click operation**
+   - Double-clicking a folder toggles the expansion or collapse of its contents.
+
+3. **File Type Support**
    - Supports `.ps1` (PowerShell scripts)
    - Supports `.bat` and `.cmd` (batch scripts)
    - Supports `.sh` (Bash scripts)
 
-3. **Scanning Rules**
+4. **Scanning Rules**
    - Only scans the root directory of added folders, not recursively scanning subdirectories
    - Real-time updates; refresh the display after adding/deleting files via the refresh menu
 
@@ -292,7 +307,7 @@ The left-side file tree supports right-click menu operations. The right-side tab
 ### Keyboard Shortcuts Summary
 
 | Keyboard Shortcuts | Functions | Descriptions |
-|--------|------|------|
+| -------- | ------ | ------ |
 | F1 | Open Help | Display Help Documentation |
 | F2 | Add Folder Path | Add New Script Folder |
 | F3 | Remove Folder Path | Remove Selected Folder |
@@ -306,6 +321,29 @@ The left-side file tree supports right-click menu operations. The right-side tab
 | F12 | Paste | Paste Clipboard Content |
 | Ctrl+C | Interrupt Process | Send Interrupt Signal to Running Process |
 | Ctrl+V | Paste Text | Paste into the current input location |
+
+### Configuration File
+
+Some settings cannot be configured directly within the application.
+
+Locate the root directory of the executable file to find the configuration file (if it doesn't exist, running the program once will generate it).
+
+Open it in a text editor to manually modify parameters, such as the default window size, etc.
+
+```python
+_default_config = {
+    "folders": [],                       # list[str]: List of folder paths
+    "font_scale": 1.5,                   # float: Font size scaling
+    "dark_mode": True,                   # bool: Enable dark mode
+    'height_value': 1080,                # int
+    'width_value': 1920,                 # int
+    'font_family': 'Consolas',           # str
+    'line_wrap_mode': True,              # bool
+    'supported_extensions': ['.ps1', '.bat', '.sh'], # list[str]: List of file extensions to display in the file tree (must include at least ['.ps1', '.bat', '.sh'])
+    'runnable_extensions': ['.ps1', '.bat', '.sh'],  # list[str]: List of file extensions that can be executed (must include at least ['.ps1', '.bat', '.sh'])
+    'syntax_highlight_mode': 'auto'      # Syntax highlighting mode: 'auto', 'ps1', 'bash', 'command', 'none'
+}
+```
 
 ### Example Usage Flow
 
@@ -376,6 +414,12 @@ pyinstaller -w ./PsLauncher.py -i ./logo.ico -y --distpath ./exe  --paths ./
 ```
 
 This program only has one icon representing media data, and this data has already been processed and hardcoded into the source code as base64. Therefore, no additional resource configuration is required; simply compile it.
+
+### Multi-language Support
+
+The script `code_translator.py` is used to translate the program into multiple languages.
+
+> The author (@NGC13009) developed the project using a local repository. After initial development in Chinese, the code was automatically (and not necessarily reliably) translated into English and pushed to the current repository. The Chinese version was compiled locally by the author, while the English version is compiled using the current repository.
 
 ## AI Developer Guidelines
 

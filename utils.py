@@ -2,7 +2,7 @@
 # Arch   = manyArch
 #
 # @File name:       utils.py
-# @brief:           通用函数
+# @brief:           General functions
 # @attention:       None
 # @Author:          ngc13009
 # @History:         2026-03-17		Create
@@ -15,17 +15,31 @@ from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 import os
 
-_default_config = {"folders": [], "font_scale": 1.0, "dark_mode": True, 'height_value': 768, 'width_value': 1366, 'font_family': 'Consolas'}
+DEFAULT_EXT = ['.ps1', '.bat', '.sh']
+CONFIG_FILE = "launcher_config.json"
+
+_default_config = {
+    "folders": [],                       # list[str] List of folder paths
+    "font_scale": 1.0,                   # float Font size scaling
+    "dark_mode": True,                   # bool Dark mode enabled
+    'height_value': 768,                 # int
+    'width_value': 1366,                 # int
+    'font_family': 'Consolas',           # str
+    'line_wrap_mode': True,              # bool
+    'supported_extensions': DEFAULT_EXT, # list[str] List of supported file extensions (displayed in file tree), must include at least the content of DEFAULT_EXT
+    'runnable_extensions': DEFAULT_EXT,  # list[str] List of runnable file extensions (can be executed), must include at least the content of DEFAULT_EXT
+    'syntax_highlight_mode': 'auto'      # Syntax highlighting mode: enum 'auto', 'ps1', 'bash', 'command', 'none'
+}
 
 
-# 解析JSON中的注释
+# Parse comments in JSON
 def load_json_with_comments(filepath):
     if not os.path.exists(filepath):
         return _default_config
     with open(filepath, 'r', encoding='utf-8') as f:
         content = f.read()
-    content = re.sub(r'/\*.*?\*/', '', content, flags=re.DOTALL) # 移除块注释 /* ... */
-    content = re.sub(r'//.*', '', content)                       # 移除行注释 // ...
+    content = re.sub(r'/\*.*?\*/', '', content, flags=re.DOTALL) # Remove block comments /* ... */
+    content = re.sub(r'//.*', '', content)                       # Remove line comments // ...
     try:
         config = json.loads(content)
         return {**_default_config, **config}
@@ -34,89 +48,114 @@ def load_json_with_comments(filepath):
         return _default_config
 
 
-# 存储配置
+# Store configuration
 def save_json_with_comments(filepath, config):
     data = {**_default_config, **config}
     json_str = json.dumps(data, indent=4, ensure_ascii=False)
-    comment = "// PsLauncher program configuration file.\n" # Write with an explanatory comment
+    comment = "// PsLauncher program configuration file\n" # Include a descriptive comment when writing
     with open(filepath, 'w', encoding='utf-8') as f:
         f.write(comment + json_str)
 
 
-# 语法着色器
+# Syntax highlighter
 class ScriptHighlighter(QSyntaxHighlighter):
 
-    def __init__(self, document, ext, isdark):
+    def __init__(self, document, ext, isdark, syntax_mode='auto'):
         super().__init__(document)
         self.rules = []
 
-        # 定义类似 VS Code Dark 主题的配色
+        # If syntax mode is 'auto', select highlighting mode based on file extension
+        if syntax_mode == 'auto':
+            # Select highlighting mode based on file extension
+            if ext == '.ps1':
+                syntax_mode = 'ps1'
+            elif ext == '.bat' or ext == '.cmd':
+                syntax_mode = 'command'
+            elif ext == '.sh':
+                syntax_mode = 'bash'
+            else:
+                # For other files, attempt to select the closest highlighting mode based on common extensions
+                if ext in ['.json', '.yaml', '.yml', '.xml', '.html', '.htm']:
+                    # These files have similar structures, use ps1 highlighting as an approximation
+                    syntax_mode = 'ps1'
+                elif ext in ['.py', '.js', '.ts', '.java', '.cpp', '.c', '.cs']:
+                    # Programming language file, use bash coloring as an approximation (has similar control structures)
+                    syntax_mode = 'bash'
+                else:
+                    # Unknown file type, no coloring
+                    syntax_mode = 'none'
+
+        # If syntax mode is 'none', do not create any syntax rules
+        if syntax_mode == 'none':
+            return
+
+        # Define color scheme similar to VS Code Dark theme
         blue = "#569CD6" if isdark else "#008CFF"
         orange = "#CE9178" if isdark else "#893412"
         green = "#6A9955" if isdark else "#2F7D0A"
         lightblue = "#9CDCFE" if isdark else "#0B6B9F"
 
         keyword_fmt = QTextCharFormat()
-        keyword_fmt.setForeground(QColor(blue)) # 蓝色
+        keyword_fmt.setForeground(QColor(blue)) # Blue
         keyword_fmt.setFontWeight(QFont.Bold)
 
         string_fmt = QTextCharFormat()
-        string_fmt.setForeground(QColor(orange)) # 橙色
+        string_fmt.setForeground(QColor(orange)) # Orange
 
         comment_fmt = QTextCharFormat()
-        comment_fmt.setForeground(QColor(green)) # 绿色
+        comment_fmt.setForeground(QColor(green)) # Green
 
         var_fmt = QTextCharFormat()
-        var_fmt.setForeground(QColor(lightblue)) # 浅蓝
+        var_fmt.setForeground(QColor(lightblue)) # Light blue
 
-        # PowerShell 语法规则
-        if ext == '.ps1':
+        # PowerShell syntax rules
+        if syntax_mode == 'ps1':
             keywords = ["if", "else", "elseif", "switch", "while", "for", "foreach", "in", "return", "function", "param", "Write-Host", "Write-Output", "try", "catch"]
             for kw in keywords:
                 self.rules.append((QRegExp(r'\b' + kw + r'\b', Qt.CaseInsensitive), keyword_fmt))
-            self.rules.append((QRegExp(r'\$[A-Za-z0-9_]+'), var_fmt)) # 变量
-            self.rules.append((QRegExp(r'".*"'), string_fmt))         # 双引号字符串
-            self.rules.append((QRegExp(r"'.*'"), string_fmt))         # 单引号字符串
-            self.rules.append((QRegExp(r'#.*'), comment_fmt))         # 单行注释
+            self.rules.append((QRegExp(r'\$[A-Za-z0-9_]+'), var_fmt)) # Variable
+            self.rules.append((QRegExp(r'".*"'), string_fmt))         # Double-quoted string
+            self.rules.append((QRegExp(r"'.*'"), string_fmt))         # Single-quoted string
+            self.rules.append((QRegExp(r'#.*'), comment_fmt))         # Single-line comment
 
-        # Batch 语法规则
-        elif ext == '.bat' or ext == '.cmd':
+        # Batch/Command syntax rules
+        elif syntax_mode == 'command':
             keywords = ["echo", "set", "if", "else", "exist", "goto", "call", "exit", "pause", "start"]
             for kw in keywords:
                 self.rules.append((QRegExp(r'\b' + kw + r'\b', Qt.CaseInsensitive), keyword_fmt))
-            self.rules.append((QRegExp(r'%[A-Za-z0-9_]+%'), var_fmt))   # 变量
-            self.rules.append((QRegExp(r'".*"'), string_fmt))           # 字符串
-            self.rules.append((QRegExp(r'(?i)^::.*'), comment_fmt))     # :: 注释
-            self.rules.append((QRegExp(r'(?i)\brem\b.*'), comment_fmt)) # REM 注释
+            self.rules.append((QRegExp(r'%[A-Za-z0-9_]+%'), var_fmt))   # Variable
+            self.rules.append((QRegExp(r'".*"'), string_fmt))           # String
+            self.rules.append((QRegExp(r'(?i)^::.*'), comment_fmt))     # :: Comment
+            self.rules.append((QRegExp(r'(?i)\brem\b.*'), comment_fmt)) # REM Comment
 
-        # Bash 语法规则
-        elif ext == '.sh':
-            # 1. 关键字（注意：Bash 关键字通常为小写，区分大小写）
+        # Bash syntax rules
+        elif syntax_mode == 'bash':
+            # 1. Keywords (Note: Bash keywords are usually lowercase and case-sensitive)
             keywords = [
                 "if", "then", "else", "elif", "fi", "case", "esac", "for", "do", "done", "while", "until", "function", "return", "exit", "echo", "printf", "read", "set", "unset", "export", "source"
             ]
             for kw in keywords:
                 self.rules.append((QRegExp(r'\b' + kw + r'\b'), keyword_fmt))
 
-            # 2. 特殊符号关键字（如 [ ] [[ ]] (( ))）
-            # 注意：使用 \s 或行首/行尾锚定，避免误匹配字符串中的符号
-            self.rules.append((QRegExp(r'(^|\s)\[($|\s)'), keyword_fmt))   # [ 命令
-            self.rules.append((QRegExp(r'(^|\s)\]($|\s)'), keyword_fmt))   # ] 命令
-            self.rules.append((QRegExp(r'(^|\s)\[\[($|\s)'), keyword_fmt)) # [[ 关键字
-            self.rules.append((QRegExp(r'(^|\s)\]\]($|\s)'), keyword_fmt)) # ]] 关键字
-            self.rules.append((QRegExp(r'(^|\s)\(\(($|\s)'), keyword_fmt)) # (( 算术扩展
-            self.rules.append((QRegExp(r'(^|\s)\)\)($|\s)'), keyword_fmt)) # )) 算术扩展
+            # 2. Special symbol keywords (e.g., [ ] [[ ]] (( )))
+            # Note: Use \s or line start/end anchors to avoid matching symbols within strings
+            self.rules.append((QRegExp(r'(^|\s)\[($|\s)'), keyword_fmt))   # [ Command
+            self.rules.append((QRegExp(r'(^|\s)\]($|\s)'), keyword_fmt))   # ] Command
+            self.rules.append((QRegExp(r'(^|\s)\[\[($|\s)'), keyword_fmt)) # [[ Keyword
+            self.rules.append((QRegExp(r'(^|\s)\]\]($|\s)'), keyword_fmt)) # ]] Keyword
+            self.rules.append((QRegExp(r'(^|\s)\(\(($|\s)'), keyword_fmt)) # (( Arithmetic expansion
+            self.rules.append((QRegExp(r'(^|\s)\)\)($|\s)'), keyword_fmt)) # )) Arithmetic expansion
 
-            # 3. 变量：$var 或 ${var}
-            self.rules.append((QRegExp(r'\$[A-Za-z0-9_]+'), var_fmt))     # 普通变量 $var
-            self.rules.append((QRegExp(r'\$\{[A-Za-z0-9_]+\}'), var_fmt)) # 花括号变量 ${var}
+            # 3. Variables: $var or ${var}
+            self.rules.append((QRegExp(r'\$[A-Za-z0-9_]+'), var_fmt))     # Plain variable $var
+            self.rules.append((QRegExp(r'\$\{[A-Za-z0-9_]+\}'), var_fmt)) # Brace variable ${var}
 
-            # 4. 字符串
-            self.rules.append((QRegExp(r'".*"'), string_fmt)) # 双引号字符串
-            self.rules.append((QRegExp(r"'.*'"), string_fmt)) # 单引号字符串
-            self.rules.append((QRegExp(r'`.*`'), string_fmt)) # 反引号命令替换
+            # 4. Strings
+            self.rules.append((QRegExp(r'".*"'), string_fmt)) # Double-quoted string
+            self.rules.append((QRegExp(r"'.*'"), string_fmt)) # Single-quoted string
+            self.rules.append((QRegExp(r'`.*`'), string_fmt)) # Backtick command substitution
 
-            # 5. 注释：# 开头（注意：Bash 没有多行注释，这里只处理单行）
+            # 5. Comments: # start (Note: Bash has no multi-line comments, only single-line here)
             self.rules.append((QRegExp(r'#.*'), comment_fmt))
 
     def highlightBlock(self, text):

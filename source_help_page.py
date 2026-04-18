@@ -25,6 +25,9 @@ A good use case: <a href="run_llama.cpp_and_litellm_by_PsLauncher.md">How to use
 <li>My scripts run for long periods, requiring script tools to remain running in the background, allowing for quick and easy execution without consuming foreground window resources or distracting me with task windows.</li>
 </ul>
 <h2>Quick Start</h2>
+<blockquote>
+<p>The in-program documentation is automatically generated from Markdown. Therefore, the Markdown files or GitHub web rendering will display correctly, but the built-in documentation within the program may not always be fully accessible. Please refer to the Markdown or web documentation as the authoritative source.</p>
+</blockquote>
 <h3>Installation</h3>
 <p>Two methods:</p>
 <ul>
@@ -134,10 +137,20 @@ python PsLauncher.py --scale 1.5 --light # Scale 150%
 <li><strong>Copy Tab All to Clipboard</strong> - Copy all text content of the current tab</li>
 <li><strong>Edit Script Source Code</strong> (F4) - Enter/exit script editing mode, supports saving changes</li>
 </ul>
-<h4>Tools Menu</h4>
+<h4>Run Menu</h4>
 <ul>
 <li><strong>Start Script</strong> (F5) - Run the currently selected script</li>
 <li><strong>Terminate Script</strong> (F6) - Stop the script running in the current tab</li>
+</ul>
+<h4>View Menu</h4>
+<ul>
+<li><strong>Toggle Word Wrap</strong> - Enable/disable text automatic line wrapping</li>
+<li><strong>Syntax Highlighting Style</strong> - Set code highlighting theme:</li>
+<li>Automatic (auto-detects based on script type)</li>
+<li>PowerShell</li>
+<li>bash</li>
+<li>command</li>
+<li>Disable (turn off highlighting)</li>
 </ul>
 <h4>Script Management Menu</h4>
 <ul>
@@ -201,6 +214,12 @@ python PsLauncher.py --scale 1.5 --light # Scale 150%
 <li>Clicking a <strong>folder item</strong>: Expands/collapses the folder</li>
 <li>
 <p>Clicking a <strong>script item</strong>: Opens a new source code view tab on the right, displaying the script's source code</p>
+</li>
+<li>
+<p><strong>Double-click operation</strong></p>
+</li>
+<li>
+<p>Double-clicking a folder toggles the expansion or collapse of its contents.</p>
 </li>
 <li>
 <p><strong>File Type Support</strong></p>
@@ -357,6 +376,23 @@ python PsLauncher.py --scale 1.5 --light # Scale 150%
 </tr>
 </tbody>
 </table>
+<h3>Configuration File</h3>
+<p>Some settings cannot be configured directly within the application.</p>
+<p>Locate the root directory of the executable file to find the configuration file (if it doesn't exist, running the program once will generate it).</p>
+<p>Open it in a text editor to manually modify parameters, such as the default window size, etc.</p>
+<pre><code class="language-python">_default_config = {
+    &quot;folders&quot;: [],                       # list[str]: List of folder paths
+    &quot;font_scale&quot;: 1.5,                   # float: Font size scaling
+    &quot;dark_mode&quot;: True,                   # bool: Enable dark mode
+    'height_value': 1080,                # int
+    'width_value': 1920,                 # int
+    'font_family': 'Consolas',           # str
+    'line_wrap_mode': True,              # bool
+    'supported_extensions': ['.ps1', '.bat', '.sh'], # list[str]: List of file extensions to display in the file tree (must include at least ['.ps1', '.bat', '.sh'])
+    'runnable_extensions': ['.ps1', '.bat', '.sh'],  # list[str]: List of file extensions that can be executed (must include at least ['.ps1', '.bat', '.sh'])
+    'syntax_highlight_mode': 'auto'      # Syntax highlighting mode: 'auto', 'ps1', 'bash', 'command', 'none'
+}
+</code></pre>
 <h3>Example Usage Flow</h3>
 <ol>
 <li><strong>Initial Setup</strong></li>
@@ -427,6 +463,11 @@ A: Use the "Script Management" → "Delete Script" function. Note that this oper
 <pre><code class="language-bash">pyinstaller -w ./PsLauncher.py -i ./logo.ico -y --distpath ./exe  --paths ./
 </code></pre>
 <p>This program only has one icon representing media data, and this data has already been processed and hardcoded into the source code as base64. Therefore, no additional resource configuration is required; simply compile it.</p>
+<h3>Multi-language Support</h3>
+<p>The script <code>code_translator.py</code> is used to translate the program into multiple languages.</p>
+<blockquote>
+<p>The author (@NGC13009) developed the project using a local repository. After initial development in Chinese, the code was automatically (and not necessarily reliably) translated into English and pushed to the current repository. The Chinese version was compiled locally by the author, while the English version is compiled using the current repository.</p>
+</blockquote>
 <h2>AI Developer Guidelines</h2>
 <p>If you are an AI developer, pay special attention to this! During development, you should:</p>
 <ul>
