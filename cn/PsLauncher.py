@@ -11,6 +11,7 @@ import sys
 import os
 import argparse
 import base64
+import subprocess
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
@@ -55,6 +56,73 @@ class MainWindow(QMainWindow):
 
         # 跟踪窗口是否隐藏到托盘
         self.hidden_to_tray = False
+
+        # 安装全局事件过滤器，强制拦截 Ctrl+C/V/X/Y/Z
+        QApplication.instance().installEventFilter(self)
+
+    def eventFilter(self, obj, event):
+        """全局事件过滤器：拦截 Ctrl+C/V/X/Y/Z"""
+        if event.type() == QEvent.KeyPress:
+            if event.modifiers() & Qt.ControlModifier:
+                # 检查事件目标是否在终端标签页内
+                if self._is_in_terminal(obj):
+                    # 终端标签页内的处理
+                    if event.key() == Qt.Key_V:
+                        # Ctrl+V 始终粘贴
+                        self.paste_text()
+                        return True
+                    elif event.key() in (Qt.Key_C, Qt.Key_X):
+                        # 有选中文本时复制/剪切，否则不拦截（让终端发送给进程）
+                        focused = QApplication.focusWidget()
+                        if focused and hasattr(focused, 'textCursor') and focused.textCursor().hasSelection():
+                            if event.key() == Qt.Key_C:
+                                self.copy_selected_text()
+                            else:
+                                self.cut_selected_text()
+                            return True
+                        # 无选中文本：不拦截，让 terminal_keyPressEvent 发送给进程
+                        return False
+                    else:
+                        # 其他 Ctrl+组合键均不拦截，直接发送给进程
+                        return False
+                else:
+                    # 非终端标签页：保持原有拦截行为
+                    if event.key() == Qt.Key_C:
+                        self.copy_selected_text()
+                        return True
+                    elif event.key() == Qt.Key_V:
+                        self.paste_text()
+                        return True
+                    elif event.key() == Qt.Key_X:
+                        self.cut_selected_text()
+                        return True
+                    elif event.key() == Qt.Key_Z:
+                        # 撤销操作
+                        focused_widget = QApplication.focusWidget()
+                        if isinstance(focused_widget, QTextEdit):
+                            focused_widget.undo()
+                        return True
+                    elif event.key() == Qt.Key_Y:
+                        # 重做操作
+                        focused_widget = QApplication.focusWidget()
+                        if isinstance(focused_widget, QTextEdit):
+                            focused_widget.redo()
+                        return True
+        return super().eventFilter(obj, event)
+
+    def _is_in_terminal(self, obj):
+        """判断事件目标对象或其父级是否在终端标签页内"""
+        widget = obj if isinstance(obj, QWidget) else QApplication.focusWidget()
+        if widget is None:
+            return False
+        while widget is not None:
+            if isinstance(widget, TerminalTab):
+                return True
+            try:
+                widget = widget.parent()
+            except RuntimeError:
+                break
+        return False
 
     def set_window_icon(self):
         """设置窗口图标"""
@@ -141,10 +209,17 @@ class MainWindow(QMainWindow):
         run_action.setShortcut("F5")
         tools_menu.addAction(run_action)
 
-        stop_action = QAction("终止脚本", self)
+        stop_action = QAction("终止脚本（强制中止）", self)
         stop_action.triggered.connect(self.stop_current_script)
         stop_action.setShortcut("F6")
         tools_menu.addAction(stop_action)
+
+        # 发送 Ctrl+C 中断
+        send_ctrlc_action = QAction("发送 Ctrl+C 中断", self)
+        send_ctrlc_action.triggered.connect(self.send_ctrl_c_to_current_terminal)
+        send_ctrlc_action.setShortcut("F7")
+        send_ctrlc_action.setToolTip("向当前终端进程发送 Ctrl+C 中断信号 (0x03)")
+        tools_menu.addAction(send_ctrlc_action)
 
         # 查看菜单
         view_menu = menubar.addMenu("查看")
@@ -296,16 +371,24 @@ class MainWindow(QMainWindow):
         toolbar.addAction(self.run_btn)
 
         self.stop_btn = QAction(self)
-        self.stop_btn.setText("⏹️中止")
-        self.stop_btn.setToolTip("中止当前焦点标签页的脚本")
+        self.stop_btn.setText("⏹️终止")
+        self.stop_btn.setToolTip("终止当前焦点标签页的脚本（强制终止进程树）")
         self.stop_btn.triggered.connect(self.stop_current_script)
         toolbar.addAction(self.stop_btn)
+
+        # 发送 Ctrl+C 中断按钮
+        self.send_ctrlc_btn = QAction(self)
+        self.send_ctrlc_btn.setText("❌中断")
+        self.send_ctrlc_btn.setToolTip("向当前终端进程发送 Ctrl+C 中断信号（0x03），用于优雅中断正在运行的脚本")
+        self.send_ctrlc_btn.triggered.connect(self.send_ctrl_c_to_current_terminal)
+        toolbar.addAction(self.send_ctrlc_btn)
+
         toolbar.addSeparator()
 
         # 复制/粘贴功能按钮
         self.copy_btn = QAction(self)
         self.copy_btn.setText("📋复制")
-        self.copy_btn.setToolTip("复制当前选中的文本到剪贴板")
+        self.copy_btn.setToolTip("复制当前选中的文本到剪贴板，如果未选中任何内容则复制当前焦点页面的所有文本。")
 
         self.copy_btn.triggered.connect(self.copy_selected_text)
         toolbar.addAction(self.copy_btn)
@@ -627,6 +710,14 @@ class MainWindow(QMainWindow):
         if isinstance(current_widget, TerminalTab):
             current_widget.stop_process()
 
+    def send_ctrl_c_to_current_terminal(self):
+        """向当前终端标签页的进程发送 Ctrl+C 中断信号"""
+        current_widget = self.tabs.currentWidget()
+        if isinstance(current_widget, TerminalTab):
+            current_widget.send_ctrl_c()
+        else:
+            QMessageBox.information(self, "提示", "当前标签页不是终端标签页，无法发送 Ctrl+C 中断。", QMessageBox.Ok)
+
     def close_tab(self, index):
         widget = self.tabs.widget(index)
 
@@ -796,7 +887,7 @@ class MainWindow(QMainWindow):
             self.update_edit_save_state()
 
     def copy_selected_text(self):
-        """复制当前焦点控件的选中文本到剪贴板"""
+        """复制当前焦点控件的选中文本到剪贴板；未选中文本时复制当前标签页全部内容"""
         # 获取当前焦点控件
         focused_widget = QApplication.focusWidget()
         if focused_widget and hasattr(focused_widget, 'textCursor'):
@@ -805,6 +896,22 @@ class MainWindow(QMainWindow):
                 selected_text = cursor.selectedText()
                 clipboard = QApplication.clipboard()
                 clipboard.setText(selected_text)
+                return
+
+        # 未选中任何文本或焦点控件不支持选中：复制当前标签页全部内容
+        current_widget = self.tabs.currentWidget()
+        if current_widget:
+            text = ""
+            if isinstance(current_widget, EditorTab):
+                text = current_widget.editor.toPlainText()
+            elif isinstance(current_widget, TerminalTab):
+                text = current_widget.terminal.toPlainText()
+            else:
+                return
+
+            if text:
+                clipboard = QApplication.clipboard()
+                clipboard.setText(text)
 
     def paste_text(self):
         """从剪贴板粘贴文本到当前焦点控件"""
@@ -1370,6 +1477,15 @@ class MainWindow(QMainWindow):
         except Exception as e:
             QMessageBox.critical(self, "错误", f"删除失败：{str(e)}", QMessageBox.Ok)
 
+    def open_in_vsc(self, file_path):
+        """在VSCode中打开指定文件"""
+        try:
+            subprocess.run(['code', file_path], check=True)
+        except FileNotFoundError:
+            QMessageBox.warning(self, "失败", "未找到 VSCode（code 命令）。\n请确保 VSCode 已安装并添加到系统环境变量 PATH 中。", QMessageBox.Ok)
+        except Exception as e:
+            QMessageBox.warning(self, "失败", f"调用 VSCode 时出错：\n{str(e)}", QMessageBox.Ok)
+
     def show_tree_context_menu(self, position):
         """显示树形控件的右键菜单"""
         item = self.tree.itemAt(position)
@@ -1399,6 +1515,12 @@ class MainWindow(QMainWindow):
                         edit_action = QAction("✏️ 编辑/保存", self)
                         edit_action.triggered.connect(lambda: (self.open_editor_tab(path), self.toggle_edit_save()))
                         menu.addAction(edit_action)
+
+                        # 用 VSCode 编辑
+                        vsc_action = QAction("💻 用 VSC 编辑", self)
+                        vsc_action.setToolTip("尝试调用 VSCode 打开该文件进行编辑")
+                        vsc_action.triggered.connect(lambda: self.open_in_vsc(path))
+                        menu.addAction(vsc_action)
 
                         menu.addSeparator()
 

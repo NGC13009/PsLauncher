@@ -11,6 +11,7 @@ import sys
 import os
 import argparse
 import base64
+import subprocess
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
@@ -56,6 +57,73 @@ class MainWindow(QMainWindow):
         # Track whether the window is hidden to the tray
         self.hidden_to_tray = False
 
+        # 安装全局事件过滤器，强制拦截 Ctrl+C/V/X/Y/Z
+        QApplication.instance().installEventFilter(self)
+
+    def eventFilter(self, obj, event):
+        """全局事件过滤器：拦截 Ctrl+C/V/X/Y/Z"""
+        if event.type() == QEvent.KeyPress:
+            if event.modifiers() & Qt.ControlModifier:
+                # 检查事件目标是否在终端标签页内
+                if self._is_in_terminal(obj):
+                    # 终端标签页内的处理
+                    if event.key() == Qt.Key_V:
+                        # Ctrl+V 始终粘贴
+                        self.paste_text()
+                        return True
+                    elif event.key() in (Qt.Key_C, Qt.Key_X):
+                        # 有选中文本时复制/剪切，否则不拦截（让终端发送给进程）
+                        focused = QApplication.focusWidget()
+                        if focused and hasattr(focused, 'textCursor') and focused.textCursor().hasSelection():
+                            if event.key() == Qt.Key_C:
+                                self.copy_selected_text()
+                            else:
+                                self.cut_selected_text()
+                            return True
+                        # 无选中文本：不拦截，让 terminal_keyPressEvent 发送给进程
+                        return False
+                    else:
+                        # 其他 Ctrl+组合键均不拦截，直接发送给进程
+                        return False
+                else:
+                    # 非终端标签页：保持原有拦截行为
+                    if event.key() == Qt.Key_C:
+                        self.copy_selected_text()
+                        return True
+                    elif event.key() == Qt.Key_V:
+                        self.paste_text()
+                        return True
+                    elif event.key() == Qt.Key_X:
+                        self.cut_selected_text()
+                        return True
+                    elif event.key() == Qt.Key_Z:
+                        # 撤销操作
+                        focused_widget = QApplication.focusWidget()
+                        if isinstance(focused_widget, QTextEdit):
+                            focused_widget.undo()
+                        return True
+                    elif event.key() == Qt.Key_Y:
+                        # 重做操作
+                        focused_widget = QApplication.focusWidget()
+                        if isinstance(focused_widget, QTextEdit):
+                            focused_widget.redo()
+                        return True
+        return super().eventFilter(obj, event)
+
+    def _is_in_terminal(self, obj):
+        """判断事件目标对象或其父级是否在终端标签页内"""
+        widget = obj if isinstance(obj, QWidget) else QApplication.focusWidget()
+        if widget is None:
+            return False
+        while widget is not None:
+            if isinstance(widget, TerminalTab):
+                return True
+            try:
+                widget = widget.parent()
+            except RuntimeError:
+                break
+        return False
+
     def set_window_icon(self):
         """Set window icon"""
         try:
@@ -80,8 +148,8 @@ class MainWindow(QMainWindow):
     def setup_ui(self):
         menubar = self.menuBar()
 
-        # ======================== 菜单 ======================================
-        # 系统菜单
+        # ======================== Menu ======================================
+        # System menu
 
         sys_menu = menubar.addMenu("System")
 
@@ -141,10 +209,17 @@ class MainWindow(QMainWindow):
         run_action.setShortcut("F5")
         tools_menu.addAction(run_action)
 
-        stop_action = QAction("Stop script", self)
+        stop_action = QAction("Stop script (force terminate)", self)
         stop_action.triggered.connect(self.stop_current_script)
         stop_action.setShortcut("F6")
         tools_menu.addAction(stop_action)
+
+        # Send Ctrl+C interrupt
+        send_ctrlc_action = QAction("Send Ctrl+C interrupt", self)
+        send_ctrlc_action.triggered.connect(self.send_ctrl_c_to_current_terminal)
+        send_ctrlc_action.setShortcut("F7")
+        send_ctrlc_action.setToolTip("Send Ctrl+C interrupt signal (0x03) to the current terminal process")
+        tools_menu.addAction(send_ctrlc_action)
 
         # View menu
         view_menu = menubar.addMenu("View")
@@ -297,15 +372,23 @@ class MainWindow(QMainWindow):
 
         self.stop_btn = QAction(self)
         self.stop_btn.setText("⏹️Stop")
-        self.stop_btn.setToolTip("Stop the script of the currently focused tab")
+        self.stop_btn.setToolTip("Stop the script of the currently focused tab (force terminate process tree)")
         self.stop_btn.triggered.connect(self.stop_current_script)
         toolbar.addAction(self.stop_btn)
+
+        # Send Ctrl+C interrupt button
+        self.send_ctrlc_btn = QAction(self)
+        self.send_ctrlc_btn.setText("❌Interrupt")
+        self.send_ctrlc_btn.setToolTip("Send Ctrl+C interrupt signal (0x03) to the current terminal process, used for graceful interruption of running scripts")
+        self.send_ctrlc_btn.triggered.connect(self.send_ctrl_c_to_current_terminal)
+        toolbar.addAction(self.send_ctrlc_btn)
+
         toolbar.addSeparator()
 
         # Copy/Paste function buttons
         self.copy_btn = QAction(self)
         self.copy_btn.setText("📋Copy")
-        self.copy_btn.setToolTip("Copy the selected text to the clipboard")
+        self.copy_btn.setToolTip("Copy the selected text to the clipboard. If no text is selected, copy all text from the current focused tab.")
 
         self.copy_btn.triggered.connect(self.copy_selected_text)
         toolbar.addAction(self.copy_btn)
@@ -448,23 +531,23 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, "Info", "No removable folders are available.")
             return
 
-        # 获取当前选中的文件夹项
+        # Get the currently selected folder item
         current_item = self.tree.currentItem()
         selected_folder = None
 
         if current_item:
-            # 检查选中的是文件夹项还是脚本项
+            # Check whether it is a folder item or a script item
             script_path = current_item.data(0, Qt.UserRole)
             if script_path:
-                # 选中的是脚本项，获取其父文件夹
+                # Selected is a script item, get its parent folder
                 parent = current_item.parent()
                 if parent:
-                    selected_folder = parent.data(0, Qt.UserRole)   # 父文件夹的完整路径
+                    selected_folder = parent.data(0, Qt.UserRole)   # Full path of the parent folder
             else:
-                                                                    # 选中的可能是文件夹项
-                selected_folder = current_item.data(0, Qt.UserRole) # 文件夹的完整路径
+                                                                    # Selected may be a folder item
+                selected_folder = current_item.data(0, Qt.UserRole) # Full path of the folder
 
-        # 如果选中了文件夹，提供确认对话框
+        # If a folder is selected, provide a confirmation dialog
         if selected_folder and selected_folder in self.config["folders"]:
             folder_name = os.path.basename(selected_folder.rstrip(os.sep))
             reply = QMessageBox.question(self, 'Confirm', f'Are you sure you want to remove folder "{folder_name}"?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
@@ -474,7 +557,7 @@ class MainWindow(QMainWindow):
                 self.save_config()
                 return
 
-        # 如果没有选中的文件夹或选中的不是文件夹，显示文件夹选择对话框
+        # If no folder is selected or the selected is not a folder, display a folder selection dialog
         folder, ok = QInputDialog.getItem(self, "Remove Folder", "Select folder to remove:", self.config["folders"], 0, False)
         if ok and folder:
             folder_name = os.path.basename(folder.rstrip(os.sep))
@@ -628,6 +711,14 @@ class MainWindow(QMainWindow):
         current_widget = self.tabs.currentWidget()
         if isinstance(current_widget, TerminalTab):
             current_widget.stop_process()
+
+    def send_ctrl_c_to_current_terminal(self):
+        """Send Ctrl+C interrupt signal to the current terminal tab's process"""
+        current_widget = self.tabs.currentWidget()
+        if isinstance(current_widget, TerminalTab):
+            current_widget.send_ctrl_c()
+        else:
+            QMessageBox.information(self, "Prompt", "The current tab is not a terminal tab and cannot send Ctrl+C interrupt.", QMessageBox.Ok)
 
     def close_tab(self, index):
         widget = self.tabs.widget(index)
@@ -810,6 +901,22 @@ class MainWindow(QMainWindow):
                 selected_text = cursor.selectedText()
                 clipboard = QApplication.clipboard()
                 clipboard.setText(selected_text)
+                return
+
+        # No text selected or the focused widget does not support selection: copy all content of the current tab
+        current_widget = self.tabs.currentWidget()
+        if current_widget:
+            text = ""
+            if isinstance(current_widget, EditorTab):
+                text = current_widget.editor.toPlainText()
+            elif isinstance(current_widget, TerminalTab):
+                text = current_widget.terminal.toPlainText()
+            else:
+                return
+
+            if text:
+                clipboard = QApplication.clipboard()
+                clipboard.setText(text)
 
     def paste_text(self):
         """Paste text from clipboard to the currently focused widget"""
@@ -1387,6 +1494,15 @@ class MainWindow(QMainWindow):
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Delete failed: {str(e)}", QMessageBox.Ok)
 
+    def open_in_vsc(self, file_path):
+        """Open the specified file in VSCode"""
+        try:
+            subprocess.run(['code', file_path], check=True)
+        except FileNotFoundError:
+            QMessageBox.warning(self, "Failed", "VSCode (code command) not found.\nPlease ensure VSCode is installed and added to the system environment variable PATH.", QMessageBox.Ok)
+        except Exception as e:
+            QMessageBox.warning(self, "Failed", f"Error calling VSCode:\n{str(e)}", QMessageBox.Ok)
+
     def show_tree_context_menu(self, position):
         """Display the right-click menu for the tree widget"""
         item = self.tree.itemAt(position)
@@ -1416,6 +1532,12 @@ class MainWindow(QMainWindow):
                         edit_action = QAction("✏️ Edit/Save", self)
                         edit_action.triggered.connect(lambda: (self.open_editor_tab(path), self.toggle_edit_save()))
                         menu.addAction(edit_action)
+
+                        # Edit with VSCode
+                        vsc_action = QAction("💻 Edit with VSC", self)
+                        vsc_action.setToolTip("Try calling VSCode to open the file for editing")
+                        vsc_action.triggered.connect(lambda: self.open_in_vsc(path))
+                        menu.addAction(vsc_action)
 
                         menu.addSeparator()
 
@@ -1549,7 +1671,7 @@ class MainWindow(QMainWindow):
 
         menu.addSeparator()
 
-        # 对源代码标签，支持编辑或保存功能
+        # For source code tabs, support edit or save functionality
         current_widget = self.tabs.widget(tab_idx)
         if isinstance(current_widget, EditorTab):
             if current_widget.is_editing:
@@ -1563,17 +1685,17 @@ class MainWindow(QMainWindow):
 
         menu.addSeparator()
 
-        # 关闭标签页
+        # Close tab
         close_action = QAction("🗑️ Close Tab", self)
         close_action.triggered.connect(lambda: self.close_tab(tab_idx))
         menu.addAction(close_action)
 
-        # 显示菜单
+        # Show menu
         menu.exec_(self.tabs.mapToGlobal(position))
 
     def cut_selected_text(self):
         """Cut selected text from the focused widget to the clipboard"""
-        # 获取当前焦点控件
+        # Get the currently focused control
         focused_widget = QApplication.focusWidget()
         if focused_widget and hasattr(focused_widget, 'textCursor'):
             cursor = focused_widget.textCursor()
@@ -1581,12 +1703,12 @@ class MainWindow(QMainWindow):
                 selected_text = cursor.selectedText()
                 clipboard = QApplication.clipboard()
                 clipboard.setText(selected_text)
-                # 删除选中文本
+                # Delete selected text
                 cursor.removeSelectedText()
 
     def toggle_line_wrap_mode(self):
         """Toggle line wrap mode"""
-        # 切换配置状态
+        # Toggle configuration state
         self.config['line_wrap_mode'] = not self.config['line_wrap_mode']
         self.toggle_wrap_action.setChecked(self.config['line_wrap_mode'])
 

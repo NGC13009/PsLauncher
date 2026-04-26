@@ -46,7 +46,7 @@ class ZoomableTextEdit(QTextEdit):
             event.accept()
         else:
             super().wheelEvent(event)
-    
+
     def set_line_wrap_mode(self, enabled):
         """设置自动换行模式"""
         if enabled:
@@ -77,7 +77,7 @@ class EditorTab(QWidget):
 
         self.load_file(script_path)
         self.font_family = font_family
-        
+
         # 保存当前语法模式（初始为auto）
         self.current_syntax_mode = 'auto'
 
@@ -124,15 +124,10 @@ class EditorTab(QWidget):
     def apply_syntax_highlight_mode(self, mode):
         """应用语法着色模式"""
         self.current_syntax_mode = mode
-        
+
         # 创建新的语法高亮器
-        self.highlighter = ScriptHighlighter(
-            self.editor.document(), 
-            self.ext, 
-            self.isdark, 
-            syntax_mode=mode
-        )
-        
+        self.highlighter = ScriptHighlighter(self.editor.document(), self.ext, self.isdark, syntax_mode=mode)
+
         # 重新高亮整个文档
         self.highlighter.rehighlight()
 
@@ -160,7 +155,7 @@ class TerminalTab(QWidget):
 
         self.ansi_regex = re.compile(r'\x1b\[([\d;]*)m')
         self.input_start_pos = 0 # 记录允许用户输入的起点位置
-        
+
     def set_line_wrap_mode(self, enabled):
         """设置自动换行模式"""
         self.terminal.set_line_wrap_mode(enabled)
@@ -254,14 +249,19 @@ class TerminalTab(QWidget):
         # 输出停止消息
         self.append_output(f"\n^C\n[PsLauncher {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Process terminated.\n", color="#F14C4C")
 
+    def send_ctrl_c(self):
+        """向当前运行的进程发送 Ctrl+C (0x03) 中断信号"""
+        if self.process is not None and self.process.state() == QProcess.Running:
+            self.append_output(f"\n^C\n[PsLauncher {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Sending Ctrl+C interruption...\n", color="#F14C4C")
+            # 向标准输入写入 Ctrl+C 字节 (0x03)
+            self.process.write(b'\x03')
+        else:
+            self.append_output(f"\n[PsLauncher {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] No running process to interrupt.\n", color="#FFFF00")
+
     # 键盘事件拦截
     def terminal_keyPressEvent(self, event):
-        # 1. 捕获 Ctrl + C 快捷键
-        if event.modifiers() & Qt.ControlModifier and event.key() == Qt.Key_C:
-            self.stop_process()
-            return
 
-        # 2. 捕获 Ctrl + V 快捷键
+        # 1. 捕获 Ctrl + V 快捷键（始终粘贴）
         if event.modifiers() & Qt.ControlModifier and event.key() == Qt.Key_V:
             # 从剪贴板获取文本
             clipboard = QApplication.clipboard()
@@ -273,6 +273,18 @@ class TerminalTab(QWidget):
                 # 确保光标在输入区域内
                 if cursor.position() < self.input_start_pos:
                     self.terminal.moveCursor(QTextCursor.End)
+            return
+
+        # 2. 其他 Ctrl+组合键（非纯修饰键本身）→ 发送给子进程
+        if event.modifiers() & Qt.ControlModifier and event.key() not in (Qt.Key_Control, Qt.Key_Shift, Qt.Key_Alt, Qt.Key_Meta):
+            if self.process is not None and self.process.state() == QProcess.Running:
+                key = event.key()
+                if Qt.Key_A <= key <= Qt.Key_Z:
+                    # Ctrl+A~Z → 发送 0x01~0x1A 到子进程
+                    ctrl_byte = bytes([key - Qt.Key_A + 1])
+                    self.process.write(ctrl_byte)
+                # 其他 Ctrl 组合键忽略
+            # 即使进程未运行也不放行到文本控件（避免意外插入特殊字符）
             return
 
         # 3. 防止用户退格/左移删除以前的控制台输出
@@ -295,11 +307,16 @@ class TerminalTab(QWidget):
                 self.process.write((user_cmd + '\n').encode('mbcs', errors='replace'))
             return
 
-        # 5. 如果用户乱点鼠标在历史输出区，强行拉回到最后输入区
+        # 5. 如果是纯修饰键（Ctrl/Shift/Alt 本身），不重新定位光标，不破坏选区
+        if event.key() in (Qt.Key_Control, Qt.Key_Shift, Qt.Key_Alt, Qt.Key_Meta):
+            super(ZoomableTextEdit, self.terminal).keyPressEvent(event)
+            return
+
+        # 6. 如果用户乱点鼠标在历史输出区，强行拉回到最后输入区
         if self.terminal.textCursor().position() < self.input_start_pos:
             self.terminal.moveCursor(QTextCursor.End)
 
-        # 6. 其他普通按键放行
+        # 7. 其他普通按键放行
         super(ZoomableTextEdit, self.terminal).keyPressEvent(event)
 
     # 输出处理

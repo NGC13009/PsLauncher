@@ -90,7 +90,7 @@ python PsLauncher.py --scale 1.5 --light # Scale 150%
 
 - After opening the program, add your script storage folder (e.g., the directory containing llama.cpp and littlem) via the menu bar "Settings - Add Script Directory".
 - The left-hand list will automatically scan and categorize all scripts in the directory. Click on a script to view its source code in a new tab.
-- Select a script and click "Start" to run it in a new tab, view real-time output, or perform interactive input (just like a real terminal). Click "Stop" to stop all related processes with one click.
+- After selecting a script, click Start to run it in a new tab. You can view real-time output, perform interactive input (just like a real terminal), or click Stop to forcefully terminate all related processes. Click Interrupt to send a Ctrl+C signal for a graceful shutdown.
 - Simple editing of the current script
 - Multiple tabs can be easily switched between. You can also scroll through tabs that extend beyond the screen using the mouse wheel.
 - The toolbar is movable.
@@ -122,7 +122,6 @@ You can also manually modify the configuration file.
 - If you need to execute from source, please ensure that Python 3.x and Qt5/Qt6 are installed on your system.
 - In some case, the program may require administrator privileges to run (depending on the script content).
 - (Currently known issue): Terminal character coloring appears to be incorrect in some cases.
-- (Currently known issue): Within a terminal tab, you cannot use `ctrl+c` to copy while it is selected; this will directly send an interrupt signal. This may be due to the automatic capture of keystrokes when ctrl is pressed. If you need to copy content, please use the button in the toolbar.
 
 ## Detailed Usage and Function Description
 
@@ -157,7 +156,8 @@ PsLauncher adopts a VSCode-like interface layout, mainly divided into the follow
 #### Run Menu
 
 - **Start Script** (F5) - Run the currently selected script
-- **Terminate Script** (F6) - Stop the script running in the current tab
+- **Stop Script (Force Terminate)** (F6) - Forcefully terminate the script running in the current tab and all its child processes (kill process tree)
+- **Send Ctrl+C Interrupt** (F7) - Send a Ctrl+C interrupt signal (0x03) to the current terminal process for a graceful shutdown
 
 #### View Menu
 
@@ -198,10 +198,11 @@ Toolbar buttons are grouped by function, separated by separators:
 
 2. **Script Control Group**
    - ▶️ **Run** - Runs the script in the currently focused tab. Hover tooltip: "Runs the script in the currently focused tab."
-   - ⏹️ **Abort** - Aborts the script in the currently focused tab. Hover tooltip: "Aborts the script in the currently focused tab."
+   - ⏹️ **Stop** - Forcefully terminates the script in the currently focused tab (kills the process tree), Hover tooltip: "Stop the script in the currently focused tab (force kill process tree)"
+   - ❌ **Interrupt** - Sends a Ctrl+C interrupt signal (0x03) to the current terminal process for a graceful shutdown, Hover tooltip: "Send a Ctrl+C interrupt signal (0x03) to the current terminal process for a graceful shutdown"
 
 3. **Text Operation Group**
-   - 📋 **Copy** - Copies the currently selected text to the clipboard. Hover tooltip: "Copies the currently selected text to the clipboard."
+   - 📋 **Copy** - Copies selected text to the clipboard (if no text is selected, copies all content from the focused tab), Hover tooltip: "Copy selected text to the clipboard; if no content is selected, copy all text from the focused tab."
    - 📤 **Paste** - Pastes the current clipboard content to the cursor position. Hover tooltip: "Paste the current clipboard content to the cursor position."
    - 📄 **Copy All** - Copy all text from the focused tab to the clipboard. Hovering tooltip: "Copy all text from the focused tab to the clipboard."
 
@@ -264,10 +265,13 @@ The Terminal tab provides an interactive experience similar to a real terminal:
 
 #### Keyboard Operations
 
-- **Enter/Return Keys**: Send the command of the current input line to the process.
-- **Ctrl+C**: Send an interrupt signal to the running process (force termination).
-- **Ctrl+V**: Paste clipboard content to the input location (does not send to the process).
-- **Backspace/Left Keys**: Restrict deletion/moving within the input area; cannot modify historical output.
+- **Enter/Return Key**: Sends the command of the current input line to the process
+- **Ctrl+C**: Handled uniformly by the global event filter; if text is selected, it copies to the clipboard, otherwise triggers global copy logic (copies all content from the focused tab) or delegates to the focused control. It no longer forcibly terminates the process directly.
+- **Ctrl+X**: Cuts the selected text of the currently focused control
+- **Ctrl+Z**: Performs undo operation on the currently focused QTextEdit control
+- **Ctrl+Y**: Performs redo operation on the currently focused QTextEdit control
+- **Ctrl+V**: Pastes clipboard content to the input location (does not send to the process)
+- **Backspace/Left Key**: Deletion/movement is restricted within the input area and cannot modify historical output
 
 #### Input Protection Mechanism
 
@@ -285,7 +289,11 @@ The Terminal tab provides an interactive experience similar to a real terminal:
 
 ### Right-Click Menu
 
-The left-side file tree supports right-click menu operations. The right-side tabs also support corresponding right-click operations.
+The file tree on the left supports right-click menu operations, and the tabs on the right support corresponding right-click actions.
+
+#### New Right-Click Menu Features
+
+- **💻 Edit with VSCode**: Added to the right-click menu of the left-side file tree; attempts to call VSCode (`code` command) to open the selected file for editing. If VSCode is not installed or not added to PATH, a friendly error message will be displayed.
 
 ### System Tray Functions
 
@@ -306,21 +314,25 @@ The left-side file tree supports right-click menu operations. The right-side tab
 
 ### Keyboard Shortcuts Summary
 
-| Keyboard Shortcuts | Functions | Descriptions |
-| -------- | ------ | ------ |
-| F1 | Open Help | Display Help Documentation |
-| F2 | Add Folder Path | Add New Script Folder |
-| F3 | Remove Folder Path | Remove Selected Folder |
-| F4 | Edit/Save Script | Switch Edit Mode or Save Changes |
-| F5 | Start Script | Run Currently Selected Script |
-| F6 | Terminate Script | Stop Currently Running Script |
-| F8 | Close All Source Code Tabs | Clear Source Code Viewing Tabs |
-| F9 | Close All Running Tabs | Clear Terminal Running Tabs |
-| F10 | Hide to System Tray | Minimize to Tray |
-| F11 | Copy Selected Content | Copy Selected Text |
-| F12 | Paste | Paste Clipboard Content |
-| Ctrl+C | Interrupt Process | Send Interrupt Signal to Running Process |
-| Ctrl+V | Paste Text | Paste into the current input location |
+| Shortcut | Function | Description |
+| :--- | :--- | :--- |
+| F1 | Open Help | Display help documentation |
+| F2 | Add Folder Path | Add a new script folder |
+| F3 | Remove Folder Path | Remove the selected folder |
+| F4 | Edit/Save Script | Toggle edit mode or save changes |
+| F5 | Start Script | Run the currently selected script |
+| F6 | Stop Script (Force Terminate) | Forcefully terminate the currently running script and all its child processes (kill process tree) |
+| F7 | Send Ctrl+C Interrupt | Send a Ctrl+C interrupt signal (0x03) to the current terminal process for a graceful shutdown |
+| F8 | Close All Source Tabs | Clear source code viewing tabs |
+| F9 | Close All Run Tabs | Clear terminal running tabs |
+| F10 | Hide to System Tray | Minimize to tray to run |
+| F11 | Copy Selected Content | Copy selected text |
+| F12 | Paste | Paste clipboard content |
+| Ctrl+C | Copy / Global Handling | If text is selected, copy to clipboard; if no selection, trigger global copy (copy all content from the tab) or delegate to the focused control |
+| Ctrl+V | Paste | Paste clipboard content to the currently focused control |
+| Ctrl+X | Cut | Cut the selected text of the currently focused control |
+| Ctrl+Z | Undo | Perform undo operation on the currently focused QTextEdit control |
+| Ctrl+Y | Redo | Perform redo operation on the currently focused QTextEdit control |
 
 ### Configuration File
 
@@ -364,7 +376,7 @@ _default_config = {
    2. Click the "▶️Run" button in the toolbar or press F5
    3. The terminal tab opens on the right to run the script
    4. View the real-time output and perform interactive input
-   5. To stop, click the "⏹️Stop" button or press F6
+   5. To force stop, click the "⏹️ Stop" button or press F6 (kills process tree); to gracefully interrupt, click the "❌ Interrupt" button or press F7 (sends Ctrl+C signal)
 
 4. **Multi-task Management**
    1. Allows opening multiple scripts simultaneously to view source code.
@@ -381,7 +393,7 @@ _default_config = {
 ### Frequently Asked Questions
 
 **Q: How do I copy terminal output?**
-A: Use the "📋Copy" button in the toolbar to copy selected text, or use "📄Copy All" to copy the entire tab's content. Note: Pressing Ctrl+C directly in the terminal tab will send an interrupt signal to the process.
+A: Use the toolbar's "📋 Copy" button to copy selected text (or press Ctrl+C directly), or use "📄 Copy All" to copy the entire tab content. Now Ctrl+C is handled by the global event filter: it copies selected text if any, or copies all content from the focused tab if nothing is selected.
 
 **Q: What if saving in edit mode fails?**
 A: This may be a file permission issue. Try running the program with administrator privileges, or check if the file is being used by another program.
@@ -395,25 +407,44 @@ A: Check if the script requires interactive input. The terminal supports interac
 **Q: How do I completely delete a script file?**
 A: Use the "Script Management" → "Delete Script" function. Note that this operation directly deletes the file without going through the recycle bin.
 
-## Development Information and Developer Guidelines
+## Development Info & Developer Guidelines
 
-- **Language**: Python 3.x
-- **GUI Framework**: PyQt5 / PyQt6
-- **Script Execution**: PowerShell
-- **Syntax Highlighting**: PyQt-based syntax analysis module
-- **ANSI Support**: ANSI highlighting via terminal emulator
+- **Language**: Python 3.12+
+- **GUI Framework**: PyQt5 / PyQt6 / PySide6
 
-### Compilation Method
+### Compilation
 
-First, ensure the environment is configured. Besides `requirements.txt`, you also need to run `pip install pyinstaller`.
+First, ensure the environment is set up. Besides `requirements.txt`, you also need to run `pip install pyinstaller`.
 
 Then, execute the following command:
 
 ```bash
-pyinstaller -w ./PsLauncher.py -i ./logo.ico -y --distpath ./exe  --paths ./
+pyinstaller -w ./PsLauncher.py -i ./logo.ico -y --distpath ./exe --paths ./
 ```
 
-This program only has one icon representing media data, and this data has already been processed and hardcoded into the source code as base64. Therefore, no additional resource configuration is required; simply compile it.
+This program only has one icon as media data, which has been processed into base64 and hardcoded into the source code. Therefore, no additional resource configuration is needed; you can compile directly.
+
+### Release Process
+
+The correct release workflow is as follows:
+
+1. Manually merge the current updates into the codebase of other language versions.
+2. Update `__version__` and `__devdate__` inside `aboutandhelp.py`.
+3. Execute `get_help_page.py` to compile the help page.
+4. If the .ico file has been updated, recompile it using `get_ico.py`.
+5. Compile the executable by running `pyinstaller -w ./PsLauncher.py -i ./logo.ico -y --distpath ./exe --paths ./`.
+6. If there are other language versions, compile them again in their respective repositories.
+7. Since all different language versions share the same dependency libraries, you only need to copy the compiled .exe to the same location. The correct structure is similar to the example below.
+8. If necessary, include the help documentation as well.
+
+Correct release version structure:
+
+```PowerShell
+exe/
+   PsLauncher_EN.exe
+   PsLauncher_CN.exe
+   _internal/*    # Required dynamic link libraries
+```
 
 ### Multi-language Support
 
@@ -425,9 +456,6 @@ The script `code_translator.py` is used to translate the program into multiple l
 
 If you are an AI developer, pay special attention to this! During development, you should:
 
-- **Ctrl+C**: In the terminal tab, if text is selected, copy the selected text to the clipboard; otherwise, send an interrupt signal to the running process.
-- **Ctrl+V**: Always paste clipboard content to the currently focused control, instead of sending it to the running program.
-- All toolbar buttons have corresponding menu items in the menu bar, organized by function:
 - Group toolbar buttons by function, using separators to separate different types of functions:
 - Maintain good coding and commenting style.
 - **Especially Important**: This is a GUI program. Testing must and can only be done by humans. If you are an AI, after modifying it, perform a simple automatic syntax check, then finish and submit it to humans for further testing. As an AI, you do not need to execute the complete program because you may not have GUI operation capabilities. You, as the AI, have an obligation to inform humans which tests or interactive tests are needed.

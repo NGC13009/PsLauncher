@@ -13,8 +13,8 @@ from PyQt5.QtGui import *
 
 from source_help_page import html_content
 
-__version__ = "v1.0.5"
-__devdate__ = "April 18, 2026"
+__version__ = "v1.0.6"
+__devdate__ = "April 26, 2026"
 __githublink__ = "https://github.com/NGC13009/PsLauncher.git"
 
 
@@ -48,17 +48,17 @@ class AboutDialog(PsLauncherDiag):
         self.setWindowTitle("About")
         self.resize(800, 600)
 
-        # 1. 设置布局
+        # 1. Set up the layout
         layout = QVBoxLayout(self)
 
-        # 2. 创建支持 HTML 的文本浏览器
+        # 2. Create a text browser that supports HTML
         self.text_browser = QTextBrowser()
-        self.text_browser.setOpenExternalLinks(False) # 我们手动处理链接点击，或者设为 True 自动打开
+        self.text_browser.setOpenExternalLinks(False) # We manually handle link clicks, or set to True for automatic opening
         self._populate_about_content()
         layout.addWidget(self.text_browser)
 
-        # 3. 创建按钮
-        btn_layout = QVBoxLayout() # 或者用 QHBoxLayout 横向排列
+        # 3. Create buttons
+        btn_layout = QVBoxLayout() # Or use QHBoxLayout for horizontal arrangement
 
         self.btn_copy = QPushButton("Copy info to clipboard")
         self.btn_github = QPushButton("GitHub/PsLauncher")
@@ -70,7 +70,7 @@ class AboutDialog(PsLauncherDiag):
 
         layout.addLayout(btn_layout)
 
-        # 4. 连接信号与槽
+        # 4. Connect signals and slots
         self.btn_close.clicked.connect(self.accept)
         self.btn_github.clicked.connect(self._open_github)
         self.btn_copy.clicked.connect(self._copy_to_clipboard)
