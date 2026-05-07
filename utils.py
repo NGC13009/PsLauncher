@@ -28,7 +28,9 @@ _default_config = {
     'line_wrap_mode': True,              # bool
     'supported_extensions': DEFAULT_EXT, # list[str] List of supported file extensions (displayed in file tree), must include at least the content of DEFAULT_EXT
     'runnable_extensions': DEFAULT_EXT,  # list[str] List of runnable file extensions (can be executed), must include at least the content of DEFAULT_EXT
-    'syntax_highlight_mode': 'auto'      # Syntax highlighting mode: enum 'auto', 'ps1', 'bash', 'command', 'none'
+    'syntax_highlight_mode': 'auto',     # Syntax highlighting mode: enum 'auto', 'ps1', 'bash', 'command', 'none'
+    'auto_run_scripts': [],              # list[str] List of script paths to auto-run on startup
+    'auto_minimize_to_tray': False       # bool Whether to auto-minimize to system tray on startup
 }
 
 

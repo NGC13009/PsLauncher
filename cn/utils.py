@@ -28,7 +28,9 @@ _default_config = {
     'line_wrap_mode': True,              # bool
     'supported_extensions': DEFAULT_EXT, # list[str] 支持的文件后缀列表（在文件树中显示）, 必须至少包含 DEFAULT_EXT 的内容
     'runnable_extensions': DEFAULT_EXT,  # list[str] 可运行的文件后缀列表（可以执行）, 必须至少包含 DEFAULT_EXT 的内容
-    'syntax_highlight_mode': 'auto'      # 语法着色模式：枚举 'auto', 'ps1', 'bash', 'command', 'none'
+    'syntax_highlight_mode': 'auto',     # 语法着色模式：枚举 'auto', 'ps1', 'bash', 'command', 'none'
+    'auto_run_scripts': [],              # list[str] 启动时自动运行的脚本路径列表
+    'auto_minimize_to_tray': False       # bool 启动时是否自动最小化到系统托盘
 }
 
 

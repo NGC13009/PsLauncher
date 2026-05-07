@@ -163,6 +163,13 @@ class MainWindow(QMainWindow):
         hide_action.triggered.connect(self.hide_to_tray)
         sys_menu.addAction(hide_action)
 
+        sys_menu.addSeparator()
+        self.auto_minimize_action = QAction("Auto-minimize to tray on startup", self)
+        self.auto_minimize_action.setCheckable(True)
+        self.auto_minimize_action.setChecked(self.config.get('auto_minimize_to_tray', False))
+        self.auto_minimize_action.triggered.connect(self.toggle_auto_minimize_to_tray)
+        sys_menu.addAction(self.auto_minimize_action)
+
         # File menu
         file_menu = menubar.addMenu("File")
 
@@ -593,6 +600,9 @@ class MainWindow(QMainWindow):
 
     def refresh_tree(self):
         self.tree.clear()
+        auto_run_list = self.config.get('auto_run_scripts', [])
+        # 自动启动脚本高亮颜色（兼容暗色/亮色主题）
+        auto_run_highlight_color = QColor(78, 168, 222) if self.dark_mode else QColor(14, 99, 156) # 蓝色系
         for folder in self.config.get("folders", []):
             if not os.path.exists(folder):
                 continue
@@ -615,6 +625,10 @@ class MainWindow(QMainWindow):
                         script_item = QTreeWidgetItem(folder_item)
                         script_item.setText(0, file)
                         script_item.setData(0, Qt.UserRole, full_path)
+                        # 如果该脚本在自动启动列表中，应用高亮
+                        if full_path in auto_run_list:
+                            script_item.setForeground(0, QBrush(auto_run_highlight_color))
+                            script_item.setToolTip(0, full_path + "\n(Auto-run on startup)")
 
     def on_tree_item_clicked(self, item, column):
         script_path = item.data(0, Qt.UserRole)
@@ -1533,10 +1547,24 @@ class MainWindow(QMainWindow):
                         edit_action.triggered.connect(lambda: (self.open_editor_tab(path), self.toggle_edit_save()))
                         menu.addAction(edit_action)
 
+                        # 启动时自动运行开关 (仅对可运行后缀的脚本显示)
+                        runnable_ext = self.config.get('runnable_extensions', DEFAULT_EXT)
+                        if ext in runnable_ext:
+                            script_path = path # 捕获当前路径供 lambda 使用（闭包捕获）
+                            if self.is_script_auto_run(path):
+                                auto_run_action = QAction("🔄 Stop auto-starting this script on launch", self)
+                            else:
+                                auto_run_action = QAction("🔄 Auto-start this script on launch", self)
+                                               # triggered 信号会传入 checked(bool) 参数，必须显式接收并忽略
+                            auto_run_action.triggered.connect(lambda _checked=False, sp=script_path: self.toggle_auto_run_script(sp))
+                            menu.addAction(auto_run_action)
+
+                            menu.addSeparator()
+
                         # Edit with VSCode
                         vsc_action = QAction("💻 Edit with VSC", self)
                         vsc_action.setToolTip("Try calling VSCode to open the file for editing")
-                        vsc_action.triggered.connect(lambda: self.open_in_vsc(path))
+                        vsc_action.triggered.connect(lambda _checked=False, p=path: self.open_in_vsc(p))
                         menu.addAction(vsc_action)
 
                         menu.addSeparator()
@@ -1723,6 +1751,51 @@ class MainWindow(QMainWindow):
         # Save configuration
         self.save_config()
 
+    def toggle_auto_minimize_to_tray(self):
+        """切换启动时自动最小化到托盘的设置"""
+        self.config['auto_minimize_to_tray'] = not self.config.get('auto_minimize_to_tray', False)
+        self.auto_minimize_action.setChecked(self.config['auto_minimize_to_tray'])
+        self.save_config()
+
+    def toggle_auto_run_script(self, script_path):
+        """切换指定脚本的启动时自动运行状态"""
+        if not script_path:
+            return
+        auto_run_list = self.config.get('auto_run_scripts', [])
+        if script_path in auto_run_list:
+            auto_run_list.remove(script_path)
+        else:
+            auto_run_list.append(script_path)
+        self.config['auto_run_scripts'] = auto_run_list
+        self.save_config()
+        # 立即刷新文件树以更新高亮状态
+        self.refresh_tree()
+
+    def is_script_auto_run(self, script_path):
+        """检查指定脚本是否被设置为启动时自动运行"""
+        if not script_path:
+            return False
+        return script_path in self.config.get('auto_run_scripts', [])
+
+    def run_auto_start_scripts(self):
+        """启动时自动运行配置中标记为自动运行的脚本"""
+        auto_run_list = self.config.get('auto_run_scripts', [])
+        if not auto_run_list:
+            return
+        runnable_ext = self.config.get('runnable_extensions', DEFAULT_EXT)
+        for script_path in auto_run_list:
+            if os.path.isfile(script_path):
+                ext = os.path.splitext(script_path)[1].lower()
+                if ext in runnable_ext:
+                    try:
+                        self.open_terminal_tab(script_path)
+                    except Exception as e:
+                        print(f"Failed to auto-run script '{script_path}': {e}")
+                else:
+                    print(f"Auto-run skipped (unsupported extension): {script_path}")
+            else:
+                print(f"Auto-run skipped (file does not exist): {script_path}")
+
     def set_syntax_highlight_mode(self, mode):
         """Set syntax highlighting mode"""
         self.config['syntax_highlight_mode'] = mode
@@ -1855,4 +1928,15 @@ if __name__ == '__main__':
 
     window = MainWindow(font_family, height, width, dark_mode, line_wrap_mode)
     window.show()
+
+    # 启动时自动运行配置中标记的脚本
+    window.run_auto_start_scripts()
+
+    # 如果配置了启动时自动最小化到托盘，则在显示后立即隐藏
+    if config.get('auto_minimize_to_tray', False):
+        window.show()
+        window.hide_to_tray()
+    else:
+        window.show()
+
     sys.exit(app.exec_())

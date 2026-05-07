@@ -140,6 +140,7 @@ PsLauncher adopts a VSCode-like interface layout, mainly divided into the follow
 
 - **Save Current Configuration** (F2) - Immediately saves the current configuration to a configuration file.
 - **Hide Window to System Tray** (F10) - Hides the program window to the system tray, running it in the background.
+- **Automatically minimize to tray on startup** - When checked, the application will automatically hide to the system tray every time it starts
 
 #### File Menu
 
@@ -293,19 +294,25 @@ The file tree on the left supports right-click menu operations, and the tabs on 
 
 #### New Right-Click Menu Features
 
-- **💻 Edit with VSCode**: Added to the right-click menu of the left-side file tree; attempts to call VSCode (`code` command) to open the selected file for editing. If VSCode is not installed or not added to PATH, a friendly error message will be displayed.
+- **▶️ Run**: Directly execute the selected script.
+- **✏️ Edit/Save**: Open the script source code and enter edit mode.
+- **🔄 Auto-start on Launch / 🔄 Stop Auto-start**: Mark the script to run automatically at launch (only available for executable extensions `.ps1`/`.bat`/`.sh`). When marked, the script will be highlighted in blue within the file tree, and the hover tooltip will indicate "Auto-starting on launch".
+- **💻 Edit with VSC**: Attempt to open the selected file in VSCode using the `code` command. If VSCode is not installed or not in the PATH, a friendly error message will be displayed.
+- **📝 Rename**: Rename the selected script.
+- **📋 Copy**: Copy the selected script.
+- **🚚 Move**: Move the script to another folder.
+- **🗑️ Delete**: Permanently delete the selected script.
 
-### System Tray Functions
+#### Auto-start Configuration
 
-#### Tray Icon Operations
+For scripts that need to run as system services (e.g., local services), configure them using the following steps:
 
-- **Click the tray icon**: Restore the program window
-- **Right-click the tray icon**: Display the tray menu
+1. Right-click the target script in the file tree and select **🔄 Auto-start on Launch**.
+2. The script will be highlighted in blue in the file tree for easy identification.
+3. The next time PsLauncher is started, the script will automatically run in the terminal tab.
+4. To disable it, right-click and select **🔄 Stop Auto-start**.
 
-#### Tray Menu Functions
-
-- **Open Window**: Restore the program from the tray
-- **Exit Program**: Safely exit the program (will first attempt to stop all running scripts)
+When combined with the **Auto-minimize to Tray on Startup** feature, this enables seamless background service management that starts automatically with the system.
 
 #### Tray Notifications
 
