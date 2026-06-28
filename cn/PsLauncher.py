@@ -200,6 +200,13 @@ class MainWindow(QMainWindow):
         copy_all_action.triggered.connect(self.copy_all_text)
         edit_menu.addAction(copy_all_action)
 
+        # 清除终端屏幕菜单项
+        clear_screen_action = QAction("🧹清除终端屏幕", self)
+        clear_screen_action.triggered.connect(self.clear_current_terminal)
+        clear_screen_action.setShortcut("Ctrl+L")
+        clear_screen_action.setToolTip("清除当前终端标签页的所有显示内容")
+        edit_menu.addAction(clear_screen_action)
+
         edit_menu.addSeparator()
         # 编辑/保存菜单项
         self.edit_save_action = QAction("编辑脚本源代码", self)
@@ -389,6 +396,13 @@ class MainWindow(QMainWindow):
         self.send_ctrlc_btn.setToolTip("向当前终端进程发送 Ctrl+C 中断信号（0x03），用于优雅中断正在运行的脚本")
         self.send_ctrlc_btn.triggered.connect(self.send_ctrl_c_to_current_terminal)
         toolbar.addAction(self.send_ctrlc_btn)
+
+        # 清除终端屏幕按钮
+        self.clear_screen_btn = QAction(self)
+        self.clear_screen_btn.setText("🧹清屏")
+        self.clear_screen_btn.setToolTip("清除当前终端标签页的所有显示内容")
+        self.clear_screen_btn.triggered.connect(self.clear_current_terminal)
+        toolbar.addAction(self.clear_screen_btn)
 
         toolbar.addSeparator()
 
@@ -731,6 +745,14 @@ class MainWindow(QMainWindow):
             current_widget.send_ctrl_c()
         else:
             QMessageBox.information(self, "提示", "当前标签页不是终端标签页，无法发送 Ctrl+C 中断。", QMessageBox.Ok)
+
+    def clear_current_terminal(self):
+        """清除当前终端标签页的屏幕内容"""
+        current_widget = self.tabs.currentWidget()
+        if isinstance(current_widget, TerminalTab):
+            current_widget.clear_screen()
+        else:
+            QMessageBox.information(self, "提示", "当前标签页不是终端标签页，无法清除屏幕。", QMessageBox.Ok)
 
     def close_tab(self, index):
         widget = self.tabs.widget(index)

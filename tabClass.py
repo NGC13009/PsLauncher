@@ -398,5 +398,10 @@ class TerminalTab(QWidget):
                     cursor.insertText(part)
         self.terminal.setTextCursor(cursor)
 
+    def clear_screen(self):
+        """清除终端屏幕的所有内容，重置输入起始位置"""
+        self.terminal.clear()
+        self.input_start_pos = 0
+
     def append_output(self, text, color=None):
         self.inject_output(text, default_color=color)

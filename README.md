@@ -152,6 +152,7 @@ PsLauncher adopts a VSCode-like interface layout, mainly divided into the follow
 - **Copy Selected Content** (F11) - Copy the text selected in the currently focused control
 - **Paste** (F12) - Paste the clipboard content into the currently focused control
 - **Copy Tab All to Clipboard** - Copy all text content of the current tab
+- **Clear Terminal Screen** (Ctrl+L) - Clear all displayed content in the current terminal tab, resetting the screen to a blank state
 - **Edit Script Source Code** (F4) - Enter/exit script editing mode, supports saving changes
 
 #### Run Menu
@@ -201,6 +202,7 @@ Toolbar buttons are grouped by function, separated by separators:
    - ▶️ **Run** - Runs the script in the currently focused tab. Hover tooltip: "Runs the script in the currently focused tab."
    - ⏹️ **Stop** - Forcefully terminates the script in the currently focused tab (kills the process tree), Hover tooltip: "Stop the script in the currently focused tab (force kill process tree)"
    - ❌ **Interrupt** - Sends a Ctrl+C interrupt signal (0x03) to the current terminal process for a graceful shutdown, Hover tooltip: "Send a Ctrl+C interrupt signal (0x03) to the current terminal process for a graceful shutdown"
+   - 🧹**Clear** - Clear all displayed content in the current terminal tab, tooltip: "Clear all displayed content in the current terminal tab"
 
 3. **Text Operation Group**
    - 📋 **Copy** - Copies selected text to the clipboard (if no text is selected, copies all content from the focused tab), Hover tooltip: "Copy selected text to the clipboard; if no content is selected, copy all text from the focused tab."
@@ -340,6 +342,7 @@ When combined with the **Auto-minimize to Tray on Startup** feature, this enable
 | Ctrl+X | Cut | Cut the selected text of the currently focused control |
 | Ctrl+Z | Undo | Perform undo operation on the currently focused QTextEdit control |
 | Ctrl+Y | Redo | Perform redo operation on the currently focused QTextEdit control |
+| Ctrl+L | Clear Terminal Screen | Clear all displayed content in the current terminal tab |
 
 ### Configuration File
 

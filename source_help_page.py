@@ -135,6 +135,7 @@ python PsLauncher.py --scale 1.5 --light # Scale 150%
 <li><strong>Copy Selected Content</strong> (F11) - Copy the text selected in the currently focused control</li>
 <li><strong>Paste</strong> (F12) - Paste the clipboard content into the currently focused control</li>
 <li><strong>Copy Tab All to Clipboard</strong> - Copy all text content of the current tab</li>
+<li><strong>Clear Terminal Screen</strong> (Ctrl+L) - Clear all displayed content in the current terminal tab, resetting the screen to a blank state</li>
 <li><strong>Edit Script Source Code</strong> (F4) - Enter/exit script editing mode, supports saving changes</li>
 </ul>
 <h4>Run Menu</h4>
@@ -185,8 +186,9 @@ python PsLauncher.py --scale 1.5 --light # Scale 150%
 </li>
 <li>▶️ <strong>Run</strong> - Runs the script in the currently focused tab. Hover tooltip: "Runs the script in the currently focused tab."</li>
 <li>⏹️ <strong>Stop</strong> - Forcefully terminates the script in the currently focused tab (kills the process tree), Hover tooltip: "Stop the script in the currently focused tab (force kill process tree)"</li>
+<li>❌ <strong>Interrupt</strong> - Sends a Ctrl+C interrupt signal (0x03) to the current terminal process for a graceful shutdown, Hover tooltip: "Send a Ctrl+C interrupt signal (0x03) to the current terminal process for a graceful shutdown"</li>
 <li>
-<p>❌ <strong>Interrupt</strong> - Sends a Ctrl+C interrupt signal (0x03) to the current terminal process for a graceful shutdown, Hover tooltip: "Send a Ctrl+C interrupt signal (0x03) to the current terminal process for a graceful shutdown"</p>
+<p>🧹<strong>Clear</strong> - Clear all displayed content in the current terminal tab, tooltip: "Clear all displayed content in the current terminal tab"</p>
 </li>
 <li>
 <p><strong>Text Operation Group</strong></p>
@@ -407,6 +409,11 @@ python PsLauncher.py --scale 1.5 --light # Scale 150%
 <td style="text-align: left;">Ctrl+Y</td>
 <td style="text-align: left;">Redo</td>
 <td style="text-align: left;">Perform redo operation on the currently focused QTextEdit control</td>
+</tr>
+<tr>
+<td style="text-align: left;">Ctrl+L</td>
+<td style="text-align: left;">Clear Terminal Screen</td>
+<td style="text-align: left;">Clear all displayed content in the current terminal tab</td>
 </tr>
 </tbody>
 </table>

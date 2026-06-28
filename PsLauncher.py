@@ -200,6 +200,13 @@ class MainWindow(QMainWindow):
         copy_all_action.triggered.connect(self.copy_all_text)
         edit_menu.addAction(copy_all_action)
 
+        # Clear terminal screen menu item
+        clear_screen_action = QAction("🧹Clear Terminal Screen", self)
+        clear_screen_action.triggered.connect(self.clear_current_terminal)
+        clear_screen_action.setShortcut("Ctrl+L")
+        clear_screen_action.setToolTip("Clear all displayed content in the current terminal tab")
+        edit_menu.addAction(clear_screen_action)
+
         edit_menu.addSeparator()
         # Edit/Save menu item
         self.edit_save_action = QAction("Edit script source code", self)
@@ -389,6 +396,13 @@ class MainWindow(QMainWindow):
         self.send_ctrlc_btn.setToolTip("Send Ctrl+C interrupt signal (0x03) to the current terminal process, used for graceful interruption of running scripts")
         self.send_ctrlc_btn.triggered.connect(self.send_ctrl_c_to_current_terminal)
         toolbar.addAction(self.send_ctrlc_btn)
+
+        # 清除终端屏幕按钮
+        self.clear_screen_btn = QAction(self)
+        self.clear_screen_btn.setText("🧹Clear")
+        self.clear_screen_btn.setToolTip("Clear all displayed content in the current terminal tab")
+        self.clear_screen_btn.triggered.connect(self.clear_current_terminal)
+        toolbar.addAction(self.clear_screen_btn)
 
         toolbar.addSeparator()
 
@@ -733,6 +747,14 @@ class MainWindow(QMainWindow):
             current_widget.send_ctrl_c()
         else:
             QMessageBox.information(self, "Prompt", "The current tab is not a terminal tab and cannot send Ctrl+C interrupt.", QMessageBox.Ok)
+
+    def clear_current_terminal(self):
+        """Clear all displayed content in the current terminal tab"""
+        current_widget = self.tabs.currentWidget()
+        if isinstance(current_widget, TerminalTab):
+            current_widget.clear_screen()
+        else:
+            QMessageBox.information(self, "Information", "The current tab is not a terminal tab and cannot clear the screen.", QMessageBox.Ok)
 
     def close_tab(self, index):
         widget = self.tabs.widget(index)
