@@ -95,13 +95,13 @@
   "message.current_tab_not_terminal_ctrlc": "当前标签页不是终端标签页，无法发送 Ctrl+C 中断。",
   "message.current_tab_not_terminal_clear": "当前标签页不是终端标签页，无法清屏。",
   "message.current_tab_not_editor": "当前标签页不是源码标签页，无法进入编辑模式。",
-  "message.confirm_exit": "确定要退出 PsLauncher 吗？\\n这会停止所有正在运行的脚本。",
+  "message.confirm_exit": "确定要退出 PsLauncher 吗？\n这会停止所有正在运行的脚本。",
   "message.confirm_exit_inline": "确定要退出 PsLauncher 吗？这会停止所有正在运行的脚本。",
   "message.save_file_failed": "文件保存失败，请检查文件权限或路径。",
   "message.save_file_failed_admin": "文件保存失败，请检查文件权限或路径。如果是系统目录，可能需要以管理员权限运行。",
-  "message.save_changes_overwrite": "是否保存更改？\\n这会覆盖原始文件。",
+  "message.save_changes_overwrite": "是否保存更改？\n这会覆盖原始文件。",
   "message.tab_editing_save": "标签页 \"{filename}\" 正在编辑。是否保存更改？",
   "message.unsupported_runnable_ext": "脚本文件 '{filename}' 的扩展名 {ext} 不在可运行扩展名列表中。",
   "message.unsupported_runnable_file": "脚本文件 '{filename}' 的扩展名不在可运行扩展名列表中。",
-  "message.auto_run_tooltip": "{path}\\n（启动时自动运行）"
+  "message.auto_run_tooltip": "{path}\n（启动时自动运行）"
 }

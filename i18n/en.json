@@ -95,13 +95,13 @@
   "message.current_tab_not_terminal_ctrlc": "The current tab is not a terminal tab and cannot send Ctrl+C interrupt.",
   "message.current_tab_not_terminal_clear": "The current tab is not a terminal tab and cannot clear the screen.",
   "message.current_tab_not_editor": "The current tab is not the Source Code tab, so editing mode cannot be entered.",
-  "message.confirm_exit": "Are you sure you want to exit PsLauncher?\\nThis will stop all running scripts.",
+  "message.confirm_exit": "Are you sure you want to exit PsLauncher?\nThis will stop all running scripts.",
   "message.confirm_exit_inline": "Are you sure you want to exit PsLauncher? This will stop all running scripts.",
   "message.save_file_failed": "File save failed. Please check file permissions or path.",
   "message.save_file_failed_admin": "File save failed, please check file permissions or path. If it's a system directory, you may need to run with administrator privileges.",
-  "message.save_changes_overwrite": "Do you want to save changes?\\nThis will overwrite the original file.",
+  "message.save_changes_overwrite": "Do you want to save changes?\nThis will overwrite the original file.",
   "message.tab_editing_save": "Tab \"{filename}\" is being edited. Do you want to save changes?",
   "message.unsupported_runnable_ext": "Script file '{filename}' extension {ext} is not in the list of runnable extensions.",
   "message.unsupported_runnable_file": "The extension '{filename}' of the script file is not in the list of runnable extensions.",
-  "message.auto_run_tooltip": "{path}\\n(Auto-run on startup)"
+  "message.auto_run_tooltip": "{path}\n(Auto-run on startup)"
 }
