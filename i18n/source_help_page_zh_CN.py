@@ -522,10 +522,11 @@ A: 使用"脚本管理"→"删除脚本"功能，注意此操作直接删除文�
 <p>正确的发布流程如下：</p>
 <ol>
 <li>更改 <code>aboutandhelp.py</code> 里面的<code>__version__</code>和<code>__devdate__</code>.</li>
-<li>执行<code>get_help_page.py</code>编译多语言帮助页面（读取 <code>README.md</code> 生成英文、<code>README_CN.md</code> 生成中文等）</li>
-<li>如果ico更新了,执行<code>get_ico.py</code>编译一遍ico</li>
+<li>执行<code>python get_help_page.py</code>编译多语言帮助页面（读取 <code>README.md</code> 生成英文、<code>README_CN.md</code> 生成中文等）</li>
+<li>如果ico更新了,执行<code>python get_ico.py</code>编译一遍ico</li>
 <li>执行<code>pyinstaller -w ./PsLauncher.py -i ./logo.ico -y --distpath ./exe  --paths ./</code>编译文件</li>
 <li>如果有必要, 将帮助文档也放一份.</li>
+<li>运行<code>get_zip_release.ps1</code>打包.</li>
 </ol>
 <p>正确的发布版本结构:</p>
 <pre><code class="language-PowerShell">exe/

@@ -452,10 +452,11 @@ pyinstaller -w ./PsLauncher.py -i ./logo.ico -y --distpath ./exe  --paths ./
 正确的发布流程如下：
 
 1. 更改 `aboutandhelp.py` 里面的`__version__`和`__devdate__`.
-2. 执行`get_help_page.py`编译多语言帮助页面（读取 `README.md` 生成英文、`README_CN.md` 生成中文等）
-3. 如果ico更新了,执行`get_ico.py`编译一遍ico
+2. 执行`python get_help_page.py`编译多语言帮助页面（读取 `README.md` 生成英文、`README_CN.md` 生成中文等）
+3. 如果ico更新了,执行`python get_ico.py`编译一遍ico
 4. 执行`pyinstaller -w ./PsLauncher.py -i ./logo.ico -y --distpath ./exe  --paths ./`编译文件
 5. 如果有必要, 将帮助文档也放一份.
+6. 运行`get_zip_release.ps1`打包.
 
 正确的发布版本结构:
 
