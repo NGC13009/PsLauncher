@@ -1,6 +1,5 @@
-import json
-import os
-
+from i18n.en import messages as _en_messages
+from i18n.zh_CN import messages as _zh_CN_messages
 
 DEFAULT_LANGUAGE = "en"
 LANGUAGE_LABELS = {
@@ -8,12 +7,13 @@ LANGUAGE_LABELS = {
     "zh_CN": "简体中文",
 }
 
+_LANGUAGE_MESSAGES = {
+    "en": _en_messages,
+    "zh_CN": _zh_CN_messages,
+}
+
 _current_language = DEFAULT_LANGUAGE
 _messages = {}
-
-
-def _language_file(language):
-    return os.path.join(os.path.dirname(__file__), f"{language}.json")
 
 
 def available_languages():
@@ -29,16 +29,13 @@ def set_language(language):
     if language not in LANGUAGE_LABELS:
         language = DEFAULT_LANGUAGE
 
-    path = _language_file(language)
-    fallback_path = _language_file(DEFAULT_LANGUAGE)
-
     messages = {}
-    if os.path.exists(fallback_path):
-        with open(fallback_path, "r", encoding="utf-8") as f:
-            messages.update(json.load(f))
-    if path != fallback_path and os.path.exists(path):
-        with open(path, "r", encoding="utf-8") as f:
-            messages.update(json.load(f))
+    default_msgs = _LANGUAGE_MESSAGES.get(DEFAULT_LANGUAGE, {})
+    messages.update(default_msgs)
+
+    if language != DEFAULT_LANGUAGE:
+        lang_msgs = _LANGUAGE_MESSAGES.get(language, {})
+        messages.update(lang_msgs)
 
     _current_language = language
     _messages = messages
