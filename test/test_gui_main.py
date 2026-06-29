@@ -1,7 +1,7 @@
 # coding = utf-8
 #
 # @File name:       test_gui_main.py
-# @brief:           GUI 层：主窗口构造、菜单 Action 触发、标签页增删
+# @brief:           GUI 层：主窗口构造、菜单 Action 触发、标签页增删、语言切换、主题切换
 # @Author:          NGC13009
 # @History:         2026-06-29		Create
 
@@ -183,3 +183,121 @@ class TestDarkLightTheme:
     def test_light_mode(self, main_window_light):
         """亮色模式"""
         assert main_window_light.dark_mode is False
+
+
+# ============================================================
+# P1 补充：语言切换 UI 刷新测试
+# ============================================================
+
+
+@pytest.mark.gui
+class TestLanguageSwitch:
+    """语言切换 UI 刷新测试"""
+
+    def test_switch_language_updates_config(self, main_window, monkeypatch):
+        """切换语言后配置中的语言字段应更新"""
+        from i18n import set_language, get_language
+        set_language("en")  # 先设为英文
+
+        main_window.switch_language("zh_CN")
+        assert main_window.config["language"] == "zh_CN"
+
+    def test_switch_language_same_language_returns_early(self, main_window, monkeypatch):
+        """切换到当前语言应直接返回（不重复保存）"""
+        from i18n import set_language
+        set_language("en")
+        main_window.config['language'] = 'en'
+
+        # Mock save_config 跟踪调用
+        save_called = False
+
+        def track_save():
+            nonlocal save_called
+            save_called = True
+
+        monkeypatch.setattr(main_window, 'save_config', track_save)
+
+        main_window.switch_language("en")
+        # save_config 不应被调用
+        assert not save_called
+
+    def test_switch_language_triggers_retranslate(self, main_window, monkeypatch):
+        """切换语言应触 retranslate_ui"""
+        from i18n import set_language, get_language
+        # 确保当前不是 zh_CN
+        if get_language() == "zh_CN":
+            set_language("en")
+
+        retranslate_called = False
+
+        def track_retranslate():
+            nonlocal retranslate_called
+            retranslate_called = True
+
+        monkeypatch.setattr(main_window, 'retranslate_ui', track_retranslate)
+
+        # 直接设置 config 为 en 以确保条件成立
+        main_window.config['language'] = 'en'
+
+        main_window.switch_language("zh_CN")
+        assert retranslate_called, "switch_language 应调用 retranslate_ui"
+
+    def test_language_menu_actions_checkable(self, main_window):
+        """语言菜单项应是可勾选的"""
+        for lang, action in main_window.language_actions.items():
+            assert action.isCheckable() is True
+            # 至少有一项被选中
+            if action.isChecked():
+                assert action.text() != ""
+
+    def test_auto_minimize_toggle_updates_config(self, main_window):
+        """自动最小化开关应更新配置"""
+        old_value = main_window.config.get('auto_minimize_to_tray', False)
+        main_window.toggle_auto_minimize_to_tray()
+        assert main_window.config['auto_minimize_to_tray'] == (not old_value)
+
+
+# ============================================================
+# P1 补充：toggle_line_wrap_mode、set_syntax_highlight_mode 测试
+# ============================================================
+
+
+@pytest.mark.gui
+class TestViewSettings:
+    """视图设置切换测试"""
+
+    def test_toggle_line_wrap_mode_flips_config(self, main_window):
+        """换行模式切换应翻转配置"""
+        old_value = main_window.config['line_wrap_mode']
+        main_window.toggle_line_wrap_mode()
+        assert main_window.config['line_wrap_mode'] == (not old_value)
+
+    def test_toggle_line_wrap_updates_action_checked(self, main_window):
+        """换行模式切换后菜单项选中状态应同步"""
+        old_checked = main_window.toggle_wrap_action.isChecked()
+        main_window.toggle_line_wrap_mode()
+        assert main_window.toggle_wrap_action.isChecked() == (not old_checked)
+
+    def test_set_syntax_highlight_mode_updates_config(self, main_window):
+        """设置语法高亮模式应更新配置"""
+        main_window.set_syntax_highlight_mode('bash')
+        assert main_window.config['syntax_highlight_mode'] == 'bash'
+        assert main_window.syntax_bash_action.isChecked() is True
+
+    def test_set_syntax_highlight_mode_multiple_times(self, main_window):
+        """多次切换语法高亮模式应正常工作"""
+        main_window.set_syntax_highlight_mode('ps1')
+        assert main_window.config['syntax_highlight_mode'] == 'ps1'
+        assert main_window.syntax_ps1_action.isChecked() is True
+        assert main_window.syntax_bash_action.isChecked() is False
+
+        main_window.set_syntax_highlight_mode('bash')
+        assert main_window.config['syntax_highlight_mode'] == 'bash'
+        assert main_window.syntax_ps1_action.isChecked() is False
+        assert main_window.syntax_bash_action.isChecked() is True
+
+    def test_set_syntax_highlight_mode_none(self, main_window):
+        """设置语法高亮模式为 none"""
+        main_window.set_syntax_highlight_mode('none')
+        assert main_window.config['syntax_highlight_mode'] == 'none'
+        assert main_window.syntax_none_action.isChecked() is True

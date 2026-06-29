@@ -1,7 +1,7 @@
 # coding = utf-8
 #
 # @File name:       test_config.py
-# @brief:           算法层+功能层：config.json 读写、注释解析、默认值合并、边界值
+# @brief:           算法层+功能层：config.json 读写、注释解析、默认值合并、边界值、保存验证
 # @Author:          NGC13009
 # @History:         2026-06-29		Create
 
@@ -176,3 +176,47 @@ class TestConfigBoundaryValues:
         # 由于 _default_config 合并是浅合并，错误类型的值会被保留
         # 这里只验证不会崩溃
         assert bad_type_field in config
+
+
+# ============================================================
+# P1 补充：save_config 验证测试
+# ============================================================
+
+
+class TestSaveConfigValidation:
+    """配置保存验证逻辑测试"""
+    # 注意：必须 mock 模块级的 QMessageBox，不能 mock PyQt5.QtWidgets.QMessageBox.warning 静态方法
+
+    def test_save_config_all_ext_present(self, main_window, monkeypatch):
+        """所有默认后缀存在时应正常保存（不弹警告）"""
+        import PsLauncher.PsLauncher as main_mod
+        from unittest.mock import MagicMock
+
+        # 在模块命名空间 mock QMessageBox
+        mock_msg = MagicMock()
+        monkeypatch.setattr(main_mod, "QMessageBox", mock_msg)
+
+        main_window.config['supported_extensions'] = ['.ps1', '.bat', '.sh']
+        main_window.config['runnable_extensions'] = ['.ps1', '.bat', '.sh']
+
+        main_window.save_config()
+
+        # 不应触发警告
+        mock_msg.warning.assert_not_called()
+
+    @pytest.mark.gui
+    def test_save_config_missing_default_ext_warns(self, main_window, monkeypatch):
+        """移除默认后缀时保存应弹警告"""
+        import PsLauncher.PsLauncher as main_mod
+        from unittest.mock import MagicMock
+
+        # 在模块命名空间 mock QMessageBox
+        mock_msg = MagicMock()
+        monkeypatch.setattr(main_mod, "QMessageBox", mock_msg)
+
+        main_window.config['supported_extensions'] = ['.ps1', '.bat']  # 移除 .sh
+
+        main_window.save_config()
+
+        # 应触发警告
+        mock_msg.warning.assert_called_once()

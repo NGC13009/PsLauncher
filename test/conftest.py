@@ -12,6 +12,7 @@ import json
 import pytest
 import tempfile
 import shutil
+from unittest.mock import MagicMock
 
 # ============================================================
 # 关键：在 pytest-qt 导入之前设置 headless 环境变量
@@ -218,3 +219,44 @@ def editor_tab(qtbot, tmp_path, sample_scripts_dir):
     )
     qtbot.addWidget(tab)
     return tab
+
+
+@pytest.fixture
+def terminal_tab(qtbot, sample_scripts_dir):
+    """构造一个 TerminalTab 实例（mock 掉 QProcess）"""
+    from tabClass import TerminalTab
+    script_path = str(sample_scripts_dir / "test_script.ps1")
+    tab = TerminalTab(script_path, "Consolas", True, True)
+    # Mock process 以避免实际启动进程
+    tab.process = MagicMock()
+    tab.process.state.return_value = 2  # QProcess.Running
+    tab.process.processId.return_value = 12345
+    qtbot.addWidget(tab)
+    return tab
+
+
+@pytest.fixture
+def main_window_with_tabs(qtbot, tmp_config_file, monkeypatch, sample_scripts_dir):
+    """构造 MainWindow 并打开一个编辑标签和一个终端标签"""
+    import utils
+    monkeypatch.setattr(utils, "CONFIG_FILE", str(tmp_config_file))
+    monkeypatch.setattr(
+        "PyQt5.QtWidgets.QSystemTrayIcon.isSystemTrayAvailable",
+        staticmethod(lambda: False)
+    )
+    from PsLauncher.PsLauncher import MainWindow
+    import tabClass
+    original_start = tabClass.TerminalTab.start_process
+    tabClass.TerminalTab.start_process = lambda self: None
+
+    win = MainWindow("Consolas", 768, 1366, True, True)
+    win.closeEvent = lambda event: event.accept()
+    qtbot.addWidget(win)
+
+    # 打开一个编辑标签
+    win.open_editor_tab(str(sample_scripts_dir / "test_script.ps1"))
+    # 打开一个终端标签
+    win.open_terminal_tab(str(sample_scripts_dir / "test_script.bat"))
+
+    tabClass.TerminalTab.start_process = original_start
+    return win
