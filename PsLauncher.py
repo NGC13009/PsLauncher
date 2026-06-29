@@ -23,6 +23,7 @@ from utils import *
 from tabClass import *
 from aboutandhelp import AboutDialog, HelpDialog
 from source_ico import icon_base64_data
+from i18n import available_languages, set_language, tr
 
 
 # Main window
@@ -30,9 +31,10 @@ class MainWindow(QMainWindow):
 
     def __init__(self, font_family, h, w, dark_mode, line_wrap_mode):
         super().__init__()
-        self.setWindowTitle("PsLauncher")
         self.resize(w, h)
         self.config = load_json_with_comments(CONFIG_FILE)
+        self.config['language'] = set_language(self.config.get('language', 'en'))
+        self.setWindowTitle(tr("app.title"))
 
         # other shit
         self.font_family = font_family
@@ -151,132 +153,132 @@ class MainWindow(QMainWindow):
         # ======================== Menu ======================================
         # System menu
 
-        sys_menu = menubar.addMenu("System")
+        self.sys_menu = menubar.addMenu(tr("menu.system"))
 
-        save_action = QAction("Save current configuration", self)
-        save_action.triggered.connect(self.save_config)
-        sys_menu.addAction(save_action)
+        self.save_action = QAction(tr("action.save_config"), self)
+        self.save_action.triggered.connect(self.save_config)
+        self.sys_menu.addAction(self.save_action)
 
-        sys_menu.addSeparator()
-        hide_action = QAction("Hide window to system tray", self)
-        hide_action.setShortcut("F10")
-        hide_action.triggered.connect(self.hide_to_tray)
-        sys_menu.addAction(hide_action)
+        self.sys_menu.addSeparator()
+        self.hide_action = QAction(tr("action.hide_to_tray"), self)
+        self.hide_action.setShortcut("F10")
+        self.hide_action.triggered.connect(self.hide_to_tray)
+        self.sys_menu.addAction(self.hide_action)
 
-        sys_menu.addSeparator()
-        self.auto_minimize_action = QAction("Auto-minimize to tray on startup", self)
+        self.sys_menu.addSeparator()
+        self.auto_minimize_action = QAction(tr("action.auto_minimize"), self)
         self.auto_minimize_action.setCheckable(True)
         self.auto_minimize_action.setChecked(self.config.get('auto_minimize_to_tray', False))
         self.auto_minimize_action.triggered.connect(self.toggle_auto_minimize_to_tray)
-        sys_menu.addAction(self.auto_minimize_action)
+        self.sys_menu.addAction(self.auto_minimize_action)
 
         # File menu
-        file_menu = menubar.addMenu("File")
+        self.file_menu = menubar.addMenu(tr("menu.file"))
 
-        addpath_action = QAction("Add folder path", self)
-        addpath_action.setShortcut("F2")
-        addpath_action.triggered.connect(self.add_folder)
-        file_menu.addAction(addpath_action)
-        removepath_action = QAction("Remove folder path", self)
-        removepath_action.setShortcut("F3")
-        removepath_action.triggered.connect(self.remove_folder)
-        file_menu.addAction(removepath_action)
+        self.addpath_action = QAction(tr("action.add_folder"), self)
+        self.addpath_action.setShortcut("F2")
+        self.addpath_action.triggered.connect(self.add_folder)
+        self.file_menu.addAction(self.addpath_action)
+        self.removepath_action = QAction(tr("action.remove_folder"), self)
+        self.removepath_action.setShortcut("F3")
+        self.removepath_action.triggered.connect(self.remove_folder)
+        self.file_menu.addAction(self.removepath_action)
 
         # Edit menu
-        edit_menu = menubar.addMenu("Edit")
+        self.edit_menu = menubar.addMenu(tr("menu.edit"))
 
-        copy_action = QAction("Copy selected content", self)
-        copy_action.triggered.connect(self.copy_selected_text)
-        copy_action.setShortcut("F11")
-        edit_menu.addAction(copy_action)
+        self.copy_action = QAction(tr("action.copy_selected"), self)
+        self.copy_action.triggered.connect(self.copy_selected_text)
+        self.copy_action.setShortcut("F11")
+        self.edit_menu.addAction(self.copy_action)
 
-        paste_action = QAction("Paste", self)
-        paste_action.triggered.connect(self.paste_text)
-        paste_action.setShortcut("F12")
-        edit_menu.addAction(paste_action)
+        self.paste_action = QAction(tr("action.paste"), self)
+        self.paste_action.triggered.connect(self.paste_text)
+        self.paste_action.setShortcut("F12")
+        self.edit_menu.addAction(self.paste_action)
 
-        edit_menu.addSeparator()
-        copy_all_action = QAction("Copy all tabs to clipboard", self)
-        copy_all_action.triggered.connect(self.copy_all_text)
-        edit_menu.addAction(copy_all_action)
+        self.edit_menu.addSeparator()
+        self.copy_all_action = QAction(tr("action.copy_all_tabs"), self)
+        self.copy_all_action.triggered.connect(self.copy_all_text)
+        self.edit_menu.addAction(self.copy_all_action)
 
         # Clear terminal screen menu item
-        clear_screen_action = QAction("🧹Clear Terminal Screen", self)
-        clear_screen_action.triggered.connect(self.clear_current_terminal)
-        clear_screen_action.setShortcut("Ctrl+L")
-        clear_screen_action.setToolTip("Clear all displayed content in the current terminal tab")
-        edit_menu.addAction(clear_screen_action)
+        self.clear_screen_action = QAction(tr("action.clear_terminal"), self)
+        self.clear_screen_action.triggered.connect(self.clear_current_terminal)
+        self.clear_screen_action.setShortcut("Ctrl+L")
+        self.clear_screen_action.setToolTip(tr("tooltip.clear_terminal"))
+        self.edit_menu.addAction(self.clear_screen_action)
 
-        edit_menu.addSeparator()
+        self.edit_menu.addSeparator()
         # Edit/Save menu item
-        self.edit_save_action = QAction("Edit script source code", self)
+        self.edit_save_action = QAction(tr("action.edit_script_source"), self)
         self.edit_save_action.setShortcut("F4")
-        self.edit_save_action.setToolTip("Enter/Exit edit mode, save script changes")
+        self.edit_save_action.setToolTip(tr("tooltip.edit_save"))
         self.edit_save_action.triggered.connect(self.toggle_edit_save)
-        edit_menu.addAction(self.edit_save_action)
+        self.edit_menu.addAction(self.edit_save_action)
 
         # Run menu
-        tools_menu = menubar.addMenu("Run")
+        self.tools_menu = menubar.addMenu(tr("menu.run"))
 
-        run_action = QAction("Start script", self)
-        run_action.triggered.connect(self.run_selected_script)
-        run_action.setShortcut("F5")
-        tools_menu.addAction(run_action)
+        self.run_action = QAction(tr("action.start_script"), self)
+        self.run_action.triggered.connect(self.run_selected_script)
+        self.run_action.setShortcut("F5")
+        self.tools_menu.addAction(self.run_action)
 
-        stop_action = QAction("Stop script (force terminate)", self)
-        stop_action.triggered.connect(self.stop_current_script)
-        stop_action.setShortcut("F6")
-        tools_menu.addAction(stop_action)
+        self.stop_action = QAction(tr("action.stop_script"), self)
+        self.stop_action.triggered.connect(self.stop_current_script)
+        self.stop_action.setShortcut("F6")
+        self.tools_menu.addAction(self.stop_action)
 
         # Send Ctrl+C interrupt
-        send_ctrlc_action = QAction("Send Ctrl+C interrupt", self)
-        send_ctrlc_action.triggered.connect(self.send_ctrl_c_to_current_terminal)
-        send_ctrlc_action.setShortcut("F7")
-        send_ctrlc_action.setToolTip("Send Ctrl+C interrupt signal (0x03) to the current terminal process")
-        tools_menu.addAction(send_ctrlc_action)
+        self.send_ctrlc_action = QAction(tr("action.send_ctrl_c"), self)
+        self.send_ctrlc_action.triggered.connect(self.send_ctrl_c_to_current_terminal)
+        self.send_ctrlc_action.setShortcut("F7")
+        self.send_ctrlc_action.setToolTip(tr("tooltip.send_ctrl_c"))
+        self.tools_menu.addAction(self.send_ctrlc_action)
 
         # View menu
-        view_menu = menubar.addMenu("View")
+        self.view_menu = menubar.addMenu(tr("menu.view"))
 
         # Auto wrap toggle menu item
-        self.toggle_wrap_action = QAction("Toggle auto wrap mode", self)
+        self.toggle_wrap_action = QAction(tr("action.toggle_wrap"), self)
         self.toggle_wrap_action.setCheckable(True)
         self.toggle_wrap_action.setChecked(self.config['line_wrap_mode'])
         self.toggle_wrap_action.triggered.connect(self.toggle_line_wrap_mode)
-        view_menu.addAction(self.toggle_wrap_action)
+        self.view_menu.addAction(self.toggle_wrap_action)
 
         # Syntax highlighting method submenu
-        syntax_menu = view_menu.addMenu("Syntax highlighting method")
+        self.syntax_menu = self.view_menu.addMenu(tr("menu.syntax"))
 
         # Auto mode
-        self.syntax_auto_action = QAction("Auto (select by extension)", self)
+        self.syntax_auto_action = QAction(tr("action.syntax_auto"), self)
         self.syntax_auto_action.setCheckable(True)
         self.syntax_auto_action.triggered.connect(lambda: self.set_syntax_highlight_mode('auto'))
-        syntax_menu.addAction(self.syntax_auto_action)
+        self.syntax_menu.addAction(self.syntax_auto_action)
 
         # PowerShell mode
-        self.syntax_ps1_action = QAction("PowerShell (ps1)", self)
+        self.syntax_ps1_action = QAction(tr("action.syntax_ps1"), self)
         self.syntax_ps1_action.setCheckable(True)
         self.syntax_ps1_action.triggered.connect(lambda: self.set_syntax_highlight_mode('ps1'))
-        syntax_menu.addAction(self.syntax_ps1_action)
+        self.syntax_menu.addAction(self.syntax_ps1_action)
 
         # Bash mode
-        self.syntax_bash_action = QAction("Bash (sh)", self)
+        self.syntax_bash_action = QAction(tr("action.syntax_bash"), self)
         self.syntax_bash_action.setCheckable(True)
         self.syntax_bash_action.triggered.connect(lambda: self.set_syntax_highlight_mode('bash'))
-        syntax_menu.addAction(self.syntax_bash_action)
+        self.syntax_menu.addAction(self.syntax_bash_action)
 
         # Command mode
-        self.syntax_command_action = QAction("Command (batch)", self)
+        self.syntax_command_action = QAction(tr("action.syntax_command"), self)
         self.syntax_command_action.setCheckable(True)
         self.syntax_command_action.triggered.connect(lambda: self.set_syntax_highlight_mode('command'))
-        syntax_menu.addAction(self.syntax_command_action)
+        self.syntax_menu.addAction(self.syntax_command_action)
 
         # No coloring mode
-        self.syntax_none_action = QAction("No coloring", self)
+        self.syntax_none_action = QAction(tr("action.syntax_none"), self)
         self.syntax_none_action.setCheckable(True)
         self.syntax_none_action.triggered.connect(lambda: self.set_syntax_highlight_mode('none'))
-        syntax_menu.addAction(self.syntax_none_action)
+        self.syntax_menu.addAction(self.syntax_none_action)
 
         # Create an exclusive action group to ensure only one option is selected
         self.syntax_action_group = QActionGroup(self)
@@ -302,162 +304,174 @@ class MainWindow(QMainWindow):
         else:
             raise ValueError("How is this possible?? This should not be reached here.")
 
+        self.language_menu = self.view_menu.addMenu(tr("menu.language"))
+        self.language_action_group = QActionGroup(self)
+        self.language_action_group.setExclusive(True)
+        self.language_actions = {}
+        current_language = self.config.get('language', 'en')
+        for language, label in available_languages().items():
+            action = QAction(label, self)
+            action.setCheckable(True)
+            action.setChecked(language == current_language)
+            action.triggered.connect(lambda _checked=False, lang=language: self.switch_language(lang))
+            self.language_action_group.addAction(action)
+            self.language_menu.addAction(action)
+            self.language_actions[language] = action
+
         # Script management menu
-        script_menu = menubar.addMenu("Script Management")
+        self.script_menu = menubar.addMenu(tr("menu.script"))
 
-        new_folder_action = QAction("New Path", self)
-        new_folder_action.triggered.connect(self.new_folder_at_location)
-        script_menu.addAction(new_folder_action)
+        self.new_folder_action = QAction(tr("action.new_path"), self)
+        self.new_folder_action.triggered.connect(self.new_folder_at_location)
+        self.script_menu.addAction(self.new_folder_action)
 
-        new_script_action = QAction("New Script", self)
-        new_script_action.triggered.connect(self.new_script_in_folder)
-        script_menu.addAction(new_script_action)
+        self.new_script_action = QAction(tr("action.new_script"), self)
+        self.new_script_action.triggered.connect(self.new_script_in_folder)
+        self.script_menu.addAction(self.new_script_action)
 
-        rename_script_action = QAction("Rename Script", self)
-        rename_script_action.triggered.connect(self.rename_selected_script)
-        script_menu.addAction(rename_script_action)
+        self.rename_script_action = QAction(tr("action.rename_script"), self)
+        self.rename_script_action.triggered.connect(self.rename_selected_script)
+        self.script_menu.addAction(self.rename_script_action)
 
-        copy_script_action = QAction("Copy Script", self)
-        copy_script_action.triggered.connect(self.copy_selected_script)
-        script_menu.addAction(copy_script_action)
+        self.copy_script_action = QAction(tr("action.copy_script"), self)
+        self.copy_script_action.triggered.connect(self.copy_selected_script)
+        self.script_menu.addAction(self.copy_script_action)
 
-        move_script_action = QAction("Move Script", self)
-        move_script_action.triggered.connect(self.move_selected_script)
-        script_menu.addAction(move_script_action)
+        self.move_script_action = QAction(tr("action.move_script"), self)
+        self.move_script_action.triggered.connect(self.move_selected_script)
+        self.script_menu.addAction(self.move_script_action)
 
-        delete_script_action = QAction("Delete Script", self)
-        delete_script_action.triggered.connect(self.delete_selected_script)
-        script_menu.addAction(delete_script_action)
+        self.delete_script_action = QAction(tr("action.delete_script"), self)
+        self.delete_script_action.triggered.connect(self.delete_selected_script)
+        self.script_menu.addAction(self.delete_script_action)
 
         # Tab management functionality
-        tab_menu = menubar.addMenu("Tab")
-        close_editor_tabs_action = QAction("Close all source code tabs", self)
-        close_editor_tabs_action.triggered.connect(self.close_all_editor_tabs)
-        close_editor_tabs_action.setShortcut("F8")
-        tab_menu.addAction(close_editor_tabs_action)
+        self.tab_menu = menubar.addMenu(tr("menu.tab"))
+        self.close_editor_tabs_action = QAction(tr("action.close_source_tabs"), self)
+        self.close_editor_tabs_action.triggered.connect(self.close_all_editor_tabs)
+        self.close_editor_tabs_action.setShortcut("F8")
+        self.tab_menu.addAction(self.close_editor_tabs_action)
 
-        close_terminal_tabs_action = QAction("Close all terminal tabs", self)
-        close_terminal_tabs_action.triggered.connect(self.close_all_terminal_tabs)
-        close_terminal_tabs_action.setShortcut("F9")
-        tab_menu.addAction(close_terminal_tabs_action)
+        self.close_terminal_tabs_action = QAction(tr("action.close_terminal_tabs"), self)
+        self.close_terminal_tabs_action.triggered.connect(self.close_all_terminal_tabs)
+        self.close_terminal_tabs_action.setShortcut("F9")
+        self.tab_menu.addAction(self.close_terminal_tabs_action)
 
-        close_all_tabs_action = QAction("Close all tabs", self)
-        close_all_tabs_action.triggered.connect(self.close_all_tabs)
-        tab_menu.addAction(close_all_tabs_action)
+        self.close_all_tabs_action = QAction(tr("action.close_all_tabs"), self)
+        self.close_all_tabs_action.triggered.connect(self.close_all_tabs)
+        self.tab_menu.addAction(self.close_all_tabs_action)
 
         # Help menu
-        help_menu = menubar.addMenu("Help")
+        self.help_menu = menubar.addMenu(tr("menu.help"))
 
-        help_action = QAction("Help", self)
-        help_action.triggered.connect(self.open_help)
-        help_menu.addAction(help_action)
-        help_action.setShortcut("F1")
+        self.help_action = QAction(tr("action.help"), self)
+        self.help_action.triggered.connect(self.open_help)
+        self.help_menu.addAction(self.help_action)
+        self.help_action.setShortcut("F1")
 
-        about_action = QAction("About", self)
-        about_action.triggered.connect(self.open_about)
-        help_menu.addAction(about_action)
+        self.about_action = QAction(tr("action.about"), self)
+        self.about_action.triggered.connect(self.open_about)
+        self.help_menu.addAction(self.about_action)
 
         # ======================== Toolbar ======================================
 
-        toolbar = QToolBar("Main Toolbar")
+        self.toolbar = QToolBar(tr("toolbar.name"))
         # Set toolbar to be movable and allow wrapping
-        toolbar.setMovable(True)
-        toolbar.setFloatable(False)
+        self.toolbar.setMovable(True)
+        self.toolbar.setFloatable(False)
         # Set toolbar button style, using icons and text
-        toolbar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        self.toolbar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
         # Enable toolbar overflow menu functionality
-        toolbar.setContextMenuPolicy(Qt.DefaultContextMenu)
+        self.toolbar.setContextMenuPolicy(Qt.DefaultContextMenu)
 
-        self.addToolBar(toolbar)
+        self.addToolBar(self.toolbar)
 
         # System tray button
         self.tray_btn = QAction(self)
-        self.tray_btn.setText("📌Hide")
-        self.tray_btn.setToolTip("Hide window to system tray, restore window by clicking the tray icon")
+        self.tray_btn.setText(tr("toolbar.hide"))
+        self.tray_btn.setToolTip(tr("tooltip.hide_to_tray"))
         self.tray_btn.triggered.connect(self.hide_to_tray)
-        toolbar.addAction(self.tray_btn)
+        self.toolbar.addAction(self.tray_btn)
 
-        toolbar.addSeparator()
+        self.toolbar.addSeparator()
         self.run_btn = QAction(self)
-        self.run_btn.setText("▶️Run")
-        self.run_btn.setToolTip("Run the script of the currently focused tab")
+        self.run_btn.setText(tr("toolbar.run"))
+        self.run_btn.setToolTip(tr("tooltip.run"))
         self.run_btn.triggered.connect(self.run_selected_script)
-        toolbar.addAction(self.run_btn)
+        self.toolbar.addAction(self.run_btn)
 
         self.stop_btn = QAction(self)
-        self.stop_btn.setText("⏹️Stop")
-        self.stop_btn.setToolTip("Stop the script of the currently focused tab (force terminate process tree)")
+        self.stop_btn.setText(tr("toolbar.stop"))
+        self.stop_btn.setToolTip(tr("tooltip.stop"))
         self.stop_btn.triggered.connect(self.stop_current_script)
-        toolbar.addAction(self.stop_btn)
+        self.toolbar.addAction(self.stop_btn)
 
         # Send Ctrl+C interrupt button
         self.send_ctrlc_btn = QAction(self)
-        self.send_ctrlc_btn.setText("❌Interrupt")
-        self.send_ctrlc_btn.setToolTip("Send Ctrl+C interrupt signal (0x03) to the current terminal process, used for graceful interruption of running scripts")
+        self.send_ctrlc_btn.setText(tr("toolbar.interrupt"))
+        self.send_ctrlc_btn.setToolTip(tr("tooltip.interrupt"))
         self.send_ctrlc_btn.triggered.connect(self.send_ctrl_c_to_current_terminal)
-        toolbar.addAction(self.send_ctrlc_btn)
+        self.toolbar.addAction(self.send_ctrlc_btn)
 
         # 清除终端屏幕按钮
         self.clear_screen_btn = QAction(self)
-        self.clear_screen_btn.setText("🧹Clear")
-        self.clear_screen_btn.setToolTip("Clear all displayed content in the current terminal tab")
+        self.clear_screen_btn.setText(tr("toolbar.clear"))
+        self.clear_screen_btn.setToolTip(tr("tooltip.clear_terminal"))
         self.clear_screen_btn.triggered.connect(self.clear_current_terminal)
-        toolbar.addAction(self.clear_screen_btn)
+        self.toolbar.addAction(self.clear_screen_btn)
 
-        toolbar.addSeparator()
+        self.toolbar.addSeparator()
 
         # Copy/Paste function buttons
         self.copy_btn = QAction(self)
-        self.copy_btn.setText("📋Copy")
-        self.copy_btn.setToolTip("Copy the selected text to the clipboard. If no text is selected, copy all text from the current focused tab.")
+        self.copy_btn.setText(tr("toolbar.copy"))
+        self.copy_btn.setToolTip(tr("tooltip.copy"))
 
         self.copy_btn.triggered.connect(self.copy_selected_text)
-        toolbar.addAction(self.copy_btn)
+        self.toolbar.addAction(self.copy_btn)
 
         self.paste_btn = QAction(self)
-        self.paste_btn.setText("📤Paste")
-        self.paste_btn.setToolTip("Paste the clipboard content to the cursor position")
+        self.paste_btn.setText(tr("toolbar.paste"))
+        self.paste_btn.setToolTip(tr("tooltip.paste"))
         self.paste_btn.triggered.connect(self.paste_text)
-        toolbar.addAction(self.paste_btn)
+        self.toolbar.addAction(self.paste_btn)
 
-        toolbar.addSeparator()
+        self.toolbar.addSeparator()
         self.close_editor_tabs_btn = QAction(self)
-        self.close_editor_tabs_btn.setText("🗑️Close All Source Code")
-        self.close_editor_tabs_btn.setToolTip("Close all read-only source code view tabs")
+        self.close_editor_tabs_btn.setText(tr("toolbar.close_source"))
+        self.close_editor_tabs_btn.setToolTip(tr("tooltip.close_source"))
         self.close_editor_tabs_btn.triggered.connect(self.close_all_editor_tabs)
-        toolbar.addAction(self.close_editor_tabs_btn)
+        self.toolbar.addAction(self.close_editor_tabs_btn)
 
         # Edit/Save Button
         self.edit_save_btn = QAction(self)
-        self.edit_save_btn.setText("✏️Quick Edit")
-        self.edit_save_btn.setToolTip("Enter/Exit edit mode, save script changes")
+        self.edit_save_btn.setText(tr("toolbar.quick_edit"))
+        self.edit_save_btn.setToolTip(tr("tooltip.edit_save"))
         self.edit_save_btn.triggered.connect(self.toggle_edit_save)
-        toolbar.addAction(self.edit_save_btn)
+        self.toolbar.addAction(self.edit_save_btn)
 
-        toolbar.addSeparator()
+        self.toolbar.addSeparator()
 
         # Quick Close Button
 
         self.close_terminal_tabs_btn = QAction(self)
-        self.close_terminal_tabs_btn.setText("🚫Terminate All Terminals")
-        self.close_terminal_tabs_btn.setToolTip("Close all terminal tabs, including running and finished ones")
+        self.close_terminal_tabs_btn.setText(tr("toolbar.terminate_all"))
+        self.close_terminal_tabs_btn.setToolTip(tr("tooltip.close_terminal"))
         self.close_terminal_tabs_btn.triggered.connect(self.close_all_terminal_tabs)
-        toolbar.addAction(self.close_terminal_tabs_btn)
+        self.toolbar.addAction(self.close_terminal_tabs_btn)
 
         self.close_all_tabs_btn = QAction(self)
-        self.close_all_tabs_btn.setText("💥Close All Tabs")
-        self.close_all_tabs_btn.setToolTip(
-            "Close all tabs. This will close all source code tabs and all terminal tabs. If a terminal is currently executing, it will be forcibly terminated. This may cause running programs or scripts to exit abnormally."
-        )
+        self.close_all_tabs_btn.setText(tr("toolbar.close_all"))
+        self.close_all_tabs_btn.setToolTip(tr("tooltip.close_all"))
         self.close_all_tabs_btn.triggered.connect(self.close_all_tabs)
-        toolbar.addAction(self.close_all_tabs_btn)
+        self.toolbar.addAction(self.close_all_tabs_btn)
 
         # ======================== Resource Explorer ======================================
 
         splitter = QSplitter(Qt.Horizontal)
         self.setCentralWidget(splitter)
         self.tree = QTreeWidget()
-        self.tree.setHeaderLabel("Resource Explorer")
+        self.tree.setHeaderLabel(tr("tree.header"))
         font = QFont(self.font_family, 14) # Font family, font size
                                            # font.setBold(True) # Bold
         self.tree.setFont(font)            # Apply to entire tree widget
@@ -539,8 +553,111 @@ class MainWindow(QMainWindow):
         splitter.addWidget(self.tabs)
         splitter.setSizes([300, 750])
 
+    def switch_language(self, language):
+        """Switch UI language and persist it in config."""
+        selected_language = set_language(language)
+        if self.config.get('language') == selected_language:
+            return
+        self.config['language'] = selected_language
+        if hasattr(self, 'language_actions'):
+            for lang, action in self.language_actions.items():
+                action.setChecked(lang == selected_language)
+        self.retranslate_ui()
+        self.save_config()
+
+    def _set_edit_save_texts(self, saving=False):
+        if saving:
+            self.edit_save_action.setText(tr("toolbar.save"))
+            self.edit_save_btn.setText(tr("toolbar.save"))
+            self.edit_save_action.setToolTip(tr("tooltip.save_script"))
+            self.edit_save_btn.setToolTip(tr("tooltip.save_script"))
+        else:
+            self.edit_save_action.setText(tr("toolbar.edit_mode"))
+            self.edit_save_btn.setText(tr("toolbar.edit"))
+            self.edit_save_action.setToolTip(tr("tooltip.edit_save"))
+            self.edit_save_btn.setToolTip(tr("tooltip.edit_save"))
+
+    def retranslate_ui(self):
+        """Refresh currently visible static UI text after changing language."""
+        self.setWindowTitle(tr("app.title"))
+        self.sys_menu.setTitle(tr("menu.system"))
+        self.file_menu.setTitle(tr("menu.file"))
+        self.edit_menu.setTitle(tr("menu.edit"))
+        self.tools_menu.setTitle(tr("menu.run"))
+        self.view_menu.setTitle(tr("menu.view"))
+        self.syntax_menu.setTitle(tr("menu.syntax"))
+        self.language_menu.setTitle(tr("menu.language"))
+        self.script_menu.setTitle(tr("menu.script"))
+        self.tab_menu.setTitle(tr("menu.tab"))
+        self.help_menu.setTitle(tr("menu.help"))
+
+        self.save_action.setText(tr("action.save_config"))
+        self.hide_action.setText(tr("action.hide_to_tray"))
+        self.auto_minimize_action.setText(tr("action.auto_minimize"))
+        self.addpath_action.setText(tr("action.add_folder"))
+        self.removepath_action.setText(tr("action.remove_folder"))
+        self.copy_action.setText(tr("action.copy_selected"))
+        self.paste_action.setText(tr("action.paste"))
+        self.copy_all_action.setText(tr("action.copy_all_tabs"))
+        self.clear_screen_action.setText(tr("action.clear_terminal"))
+        self.clear_screen_action.setToolTip(tr("tooltip.clear_terminal"))
+        self.run_action.setText(tr("action.start_script"))
+        self.stop_action.setText(tr("action.stop_script"))
+        self.send_ctrlc_action.setText(tr("action.send_ctrl_c"))
+        self.send_ctrlc_action.setToolTip(tr("tooltip.send_ctrl_c"))
+        self.toggle_wrap_action.setText(tr("action.toggle_wrap"))
+        self.syntax_auto_action.setText(tr("action.syntax_auto"))
+        self.syntax_ps1_action.setText(tr("action.syntax_ps1"))
+        self.syntax_bash_action.setText(tr("action.syntax_bash"))
+        self.syntax_command_action.setText(tr("action.syntax_command"))
+        self.syntax_none_action.setText(tr("action.syntax_none"))
+        self.new_folder_action.setText(tr("action.new_path"))
+        self.new_script_action.setText(tr("action.new_script"))
+        self.rename_script_action.setText(tr("action.rename_script"))
+        self.copy_script_action.setText(tr("action.copy_script"))
+        self.move_script_action.setText(tr("action.move_script"))
+        self.delete_script_action.setText(tr("action.delete_script"))
+        self.close_editor_tabs_action.setText(tr("action.close_source_tabs"))
+        self.close_terminal_tabs_action.setText(tr("action.close_terminal_tabs"))
+        self.close_all_tabs_action.setText(tr("action.close_all_tabs"))
+        self.help_action.setText(tr("action.help"))
+        self.about_action.setText(tr("action.about"))
+
+        self.toolbar.setWindowTitle(tr("toolbar.name"))
+        self.tray_btn.setText(tr("toolbar.hide"))
+        self.tray_btn.setToolTip(tr("tooltip.hide_to_tray"))
+        self.run_btn.setText(tr("toolbar.run"))
+        self.run_btn.setToolTip(tr("tooltip.run"))
+        self.stop_btn.setText(tr("toolbar.stop"))
+        self.stop_btn.setToolTip(tr("tooltip.stop"))
+        self.send_ctrlc_btn.setText(tr("toolbar.interrupt"))
+        self.send_ctrlc_btn.setToolTip(tr("tooltip.interrupt"))
+        self.clear_screen_btn.setText(tr("toolbar.clear"))
+        self.clear_screen_btn.setToolTip(tr("tooltip.clear_terminal"))
+        self.copy_btn.setText(tr("toolbar.copy"))
+        self.copy_btn.setToolTip(tr("tooltip.copy"))
+        self.paste_btn.setText(tr("toolbar.paste"))
+        self.paste_btn.setToolTip(tr("tooltip.paste"))
+        self.close_editor_tabs_btn.setText(tr("toolbar.close_source"))
+        self.close_editor_tabs_btn.setToolTip(tr("tooltip.close_source"))
+        self.close_terminal_tabs_btn.setText(tr("toolbar.terminate_all"))
+        self.close_terminal_tabs_btn.setToolTip(tr("tooltip.close_terminal"))
+        self.close_all_tabs_btn.setText(tr("toolbar.close_all"))
+        self.close_all_tabs_btn.setToolTip(tr("tooltip.close_all"))
+        self.tree.setHeaderLabel(tr("tree.header"))
+
+        current_widget = self.tabs.currentWidget()
+        self._set_edit_save_texts(isinstance(current_widget, EditorTab) and current_widget.is_editing)
+
+        if self.tray_icon:
+            self.tray_icon.setToolTip(tr("tray.tooltip"))
+        if hasattr(self, 'tray_show_action'):
+            self.tray_show_action.setText(tr("tray.open_window"))
+        if hasattr(self, 'tray_exit_action'):
+            self.tray_exit_action.setText(tr("tray.exit"))
+
     def add_folder(self):
-        folder = QFileDialog.getExistingDirectory(self, "Select folder to scan")
+        folder = QFileDialog.getExistingDirectory(self, tr("dialog.select_folder_scan"))
         if folder and folder not in self.config["folders"]:
             self.config["folders"].append(folder)
             self.refresh_tree()
@@ -549,7 +666,7 @@ class MainWindow(QMainWindow):
     def remove_folder(self):
         """Remove the selected folder or let the user choose which folder to remove"""
         if not self.config.get("folders"):
-            QMessageBox.information(self, "Info", "No removable folders are available.")
+            QMessageBox.information(self, tr("dialog.info"), tr("message.no_removable_folders"))
             return
 
         # Get the currently selected folder item
@@ -571,7 +688,7 @@ class MainWindow(QMainWindow):
         # If a folder is selected, provide a confirmation dialog
         if selected_folder and selected_folder in self.config["folders"]:
             folder_name = os.path.basename(selected_folder.rstrip(os.sep))
-            reply = QMessageBox.question(self, 'Confirm', f'Are you sure you want to remove folder "{folder_name}"?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            reply = QMessageBox.question(self, tr("dialog.confirm"), tr("message.confirm_remove_folder", folder_name=folder_name), QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             if reply == QMessageBox.Yes:
                 self.config["folders"].remove(selected_folder)
                 self.refresh_tree()
@@ -579,10 +696,10 @@ class MainWindow(QMainWindow):
                 return
 
         # If no folder is selected or the selected is not a folder, display a folder selection dialog
-        folder, ok = QInputDialog.getItem(self, "Remove Folder", "Select folder to remove:", self.config["folders"], 0, False)
+        folder, ok = QInputDialog.getItem(self, tr("dialog.remove_folder"), tr("dialog.select_folder_remove"), self.config["folders"], 0, False)
         if ok and folder:
             folder_name = os.path.basename(folder.rstrip(os.sep))
-            reply = QMessageBox.question(self, 'Confirm', f'Are you sure you want to remove folder "{folder_name}"?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            reply = QMessageBox.question(self, tr("dialog.confirm"), tr("message.confirm_remove_folder", folder_name=folder_name), QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             if reply == QMessageBox.Yes:
                 self.config["folders"].remove(folder)
                 self.refresh_tree()
@@ -642,7 +759,7 @@ class MainWindow(QMainWindow):
                         # 如果该脚本在自动启动列表中，应用高亮
                         if full_path in auto_run_list:
                             script_item.setForeground(0, QBrush(auto_run_highlight_color))
-                            script_item.setToolTip(0, full_path + "\n(Auto-run on startup)")
+                            script_item.setToolTip(0, tr("message.auto_run_tooltip", path=full_path))
 
     def on_tree_item_clicked(self, item, column):
         script_path = item.data(0, Qt.UserRole)
@@ -657,7 +774,7 @@ class MainWindow(QMainWindow):
 
     def open_editor_tab(self, script_path):
         filename = os.path.basename(script_path)
-        tab_name = f"📝 {filename}"
+        tab_name = tr("tab.editor_prefix") + filename
 
         # Avoid opening the same source code tab repeatedly
         for i in range(self.tabs.count()):
@@ -677,9 +794,9 @@ class MainWindow(QMainWindow):
                 if ext in self.config.get('runnable_extensions', DEFAULT_EXT):
                     self.open_terminal_tab(script_path)
                 else:
-                    QMessageBox.information(self, "Failed", f"Script file '{os.path.basename(script_path)}' extension {ext} is not in the list of runnable extensions.", QMessageBox.Ok)
+                    QMessageBox.information(self, tr("dialog.failed"), tr("message.unsupported_runnable_ext", filename=os.path.basename(script_path), ext=ext), QMessageBox.Ok)
             else:
-                QMessageBox.information(self, "Failed", "The selected path is not a valid file.", QMessageBox.Ok)
+                QMessageBox.information(self, tr("dialog.failed"), tr("message.invalid_file"), QMessageBox.Ok)
             return
 
         # No script path provided, get script path based on current focused tab
@@ -688,7 +805,7 @@ class MainWindow(QMainWindow):
             # If no tabs are open, fallback to using the current item in the file tree
             item = self.tree.currentItem()
             if not item:
-                QMessageBox.information(self, "Failed", "No focused tab. You must select a program first before clicking the Run button", QMessageBox.Ok)
+                QMessageBox.information(self, tr("dialog.failed"), tr("message.no_focused_tab"), QMessageBox.Ok)
                 return
             script_path = item.data(0, Qt.UserRole)
             if script_path:
@@ -697,11 +814,11 @@ class MainWindow(QMainWindow):
                     if ext in self.config.get('runnable_extensions', DEFAULT_EXT):
                         self.open_terminal_tab(script_path)
                     else:
-                        QMessageBox.information(self, "Failed", f"Script file '{os.path.basename(script_path)}' extension {ext} is not in the list of runnable extensions.", QMessageBox.Ok)
+                        QMessageBox.information(self, tr("dialog.failed"), tr("message.unsupported_runnable_ext", filename=os.path.basename(script_path), ext=ext), QMessageBox.Ok)
                 else:
-                    QMessageBox.information(self, "Failed", "The selected path is not a valid file.", QMessageBox.Ok)
+                    QMessageBox.information(self, tr("dialog.failed"), tr("message.invalid_file"), QMessageBox.Ok)
             else:
-                QMessageBox.information(self, "Failed", "No focused tab. You must select a program first before clicking the Run button", QMessageBox.Ok)
+                QMessageBox.information(self, tr("dialog.failed"), tr("message.no_focused_tab"), QMessageBox.Ok)
             return
 
         # Get script path based on current tab type
@@ -713,7 +830,7 @@ class MainWindow(QMainWindow):
             # Terminal tab: always start a new terminal tab and run the same script
             script_path = current_widget.script_path
         else:
-            QMessageBox.information(self, "Failed", "The current tab is not a script tab, so it cannot be run.", QMessageBox.Ok)
+            QMessageBox.information(self, tr("dialog.failed"), tr("message.current_tab_not_script"), QMessageBox.Ok)
             return
 
         # Run script
@@ -722,14 +839,14 @@ class MainWindow(QMainWindow):
             if ext in self.config.get('runnable_extensions', DEFAULT_EXT):
                 self.open_terminal_tab(script_path)
             else:
-                QMessageBox.information(self, "Failed", f"The extension '{os.path.basename(script_path)}' of the script file is not in the list of runnable extensions.", QMessageBox.Ok)
+                QMessageBox.information(self, tr("dialog.failed"), tr("message.unsupported_runnable_file", filename=os.path.basename(script_path)), QMessageBox.Ok)
         else:
-            QMessageBox.information(self, "Failed", "Unable to retrieve a valid script path.", QMessageBox.Ok)
+            QMessageBox.information(self, tr("dialog.failed"), tr("message.invalid_script_path"), QMessageBox.Ok)
 
     def open_terminal_tab(self, script_path):
         filename = os.path.basename(script_path)
         # Create a separate tab for the running program, using different emojis for visual distinction
-        tab_name = f"🖥️ {filename}"
+        tab_name = tr("tab.terminal_prefix") + filename
         terminal = TerminalTab(script_path, self.font_family, self.dark_mode, self.config['line_wrap_mode'])
         idx = self.tabs.addTab(terminal, tab_name)
         self.tabs.setCurrentIndex(idx)
@@ -746,7 +863,7 @@ class MainWindow(QMainWindow):
         if isinstance(current_widget, TerminalTab):
             current_widget.send_ctrl_c()
         else:
-            QMessageBox.information(self, "Prompt", "The current tab is not a terminal tab and cannot send Ctrl+C interrupt.", QMessageBox.Ok)
+            QMessageBox.information(self, tr("dialog.prompt"), tr("message.current_tab_not_terminal_ctrlc"), QMessageBox.Ok)
 
     def clear_current_terminal(self):
         """Clear all displayed content in the current terminal tab"""
@@ -754,7 +871,7 @@ class MainWindow(QMainWindow):
         if isinstance(current_widget, TerminalTab):
             current_widget.clear_screen()
         else:
-            QMessageBox.information(self, "Information", "The current tab is not a terminal tab and cannot clear the screen.", QMessageBox.Ok)
+            QMessageBox.information(self, tr("dialog.info"), tr("message.current_tab_not_terminal_clear"), QMessageBox.Ok)
 
     def close_tab(self, index):
         widget = self.tabs.widget(index)
@@ -762,8 +879,7 @@ class MainWindow(QMainWindow):
         # First check if it is a source code tab and is in editing mode
         if isinstance(widget, EditorTab) and widget.is_editing:
             filename = os.path.basename(widget.script_path)
-            reply = QMessageBox.question(self, 'Close Tab', f'Tab "{filename}" is being edited. Do you want to save changes?', QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel,
-                                         QMessageBox.Save)
+            reply = QMessageBox.question(self, tr("dialog.close_tab"), tr("message.tab_editing_save", filename=filename), QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel, QMessageBox.Save)
 
             if reply == QMessageBox.Cancel:
                 return
@@ -996,7 +1112,7 @@ class MainWindow(QMainWindow):
         """Toggle Edit/Save Mode"""
         current_widget = self.tabs.currentWidget()
         if not isinstance(current_widget, EditorTab):
-            QMessageBox.information(self, "Notice", "The current tab is not the Source Code tab, so editing mode cannot be entered.", QMessageBox.Ok)
+            QMessageBox.information(self, tr("dialog.notice"), tr("message.current_tab_not_editor"), QMessageBox.Ok)
             return
 
         editor_tab = current_widget
@@ -1005,57 +1121,35 @@ class MainWindow(QMainWindow):
             # Not currently in edit mode, attempt to enter edit mode
             editor_tab.set_editing(True)
             # Update button and menu text
-            self.edit_save_action.setText("💾Save")
-            self.edit_save_btn.setText("💾Save")
-            self.edit_save_action.setToolTip("Save script changes")
-            self.edit_save_btn.setToolTip("Save script changes")
+            self._set_edit_save_texts(saving=True)
         else:
             # Currently in edit mode, attempt to save
-            reply = QMessageBox.question(self, 'Confirm', 'Do you want to save changes?\nThis will overwrite the original file.', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            reply = QMessageBox.question(self, tr("dialog.confirm"), tr("message.save_changes_overwrite"), QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             if reply == QMessageBox.Yes:
                 success = editor_tab.save_file()
                 if success:
                     editor_tab.set_editing(False)
                     # Update buttons and menu text
-                    self.edit_save_action.setText("✏️Edit Mode")
-                    self.edit_save_btn.setText("✏️Edit")
-                    self.edit_save_action.setToolTip("Enter/Exit Edit Mode, Save Script Changes")
-                    self.edit_save_btn.setToolTip("Enter/Exit Edit Mode, Save Script Changes")
+                    self._set_edit_save_texts(saving=False)
                 else:
-                    QMessageBox.warning(self, "Failed", "File save failed, please check file permissions or path. If it's a system directory, you may need to run with administrator privileges.",
-                                        QMessageBox.Ok)
+                    QMessageBox.warning(self, tr("dialog.failed"), tr("message.save_file_failed_admin"), QMessageBox.Ok)
             else:
                 # User cancelled save, need to reload file content to restore original state
                 editor_tab.set_editing(False)
                 # Reload file content to discard user's modifications
                 editor_tab.load_file(editor_tab.script_path)
                 # Update buttons and menu text
-                self.edit_save_action.setText("✏️Edit Mode")
-                self.edit_save_btn.setText("✏️Edit")
-                self.edit_save_action.setToolTip("Enter/Exit Edit Mode, Save Script Changes")
-                self.edit_save_btn.setToolTip("Enter/Exit Edit Mode, Save Script Changes")
+                self._set_edit_save_texts(saving=False)
 
     def update_edit_save_state(self):
         """Update Edit/Save Button State Based on Current Tab Type"""
         current_widget = self.tabs.currentWidget()
         if isinstance(current_widget, EditorTab):
             editor_tab = current_widget
-            if editor_tab.is_editing:
-                self.edit_save_action.setText("💾Save")
-                self.edit_save_btn.setText("💾Save")
-                self.edit_save_action.setToolTip("Save script changes")
-                self.edit_save_btn.setToolTip("Save script changes")
-            else:
-                self.edit_save_action.setText("✏️Edit Mode")
-                self.edit_save_btn.setText("✏️Edit")
-                self.edit_save_action.setToolTip("Enter/Exit edit mode, save script changes")
-                self.edit_save_btn.setToolTip("Enter/Exit edit mode, save script changes")
+            self._set_edit_save_texts(saving=editor_tab.is_editing)
         else:
             # Not a source code tab, restore default text
-            self.edit_save_action.setText("✏️Edit Mode")
-            self.edit_save_btn.setText("✏️Edit")
-            self.edit_save_action.setToolTip("Enter/Exit edit mode, save script changes")
-            self.edit_save_btn.setToolTip("Enter/Exit edit mode, save script changes")
+            self._set_edit_save_texts(saving=False)
 
     def create_tray_icon(self):
         """Create system tray icon and menu"""
@@ -1087,23 +1181,23 @@ class MainWindow(QMainWindow):
 
         self.tray_icon = QSystemTrayIcon(self)
         self.tray_icon.setIcon(icon)
-        self.tray_icon.setToolTip("PsLauncher - Script Manager")
+        self.tray_icon.setToolTip(tr("tray.tooltip"))
 
         # Create tray menu
         self.tray_menu = QMenu(self)
 
         # Open window menu item
-        show_action = QAction("Open Window", self)
-        show_action.triggered.connect(self.show_from_tray)
-        self.tray_menu.addAction(show_action)
+        self.tray_show_action = QAction(tr("tray.open_window"), self)
+        self.tray_show_action.triggered.connect(self.show_from_tray)
+        self.tray_menu.addAction(self.tray_show_action)
 
         # Separator
         self.tray_menu.addSeparator()
 
         # Exit menu item
-        exit_action = QAction("Exit", self)
-        exit_action.triggered.connect(self.quit_from_tray)
-        self.tray_menu.addAction(exit_action)
+        self.tray_exit_action = QAction(tr("tray.exit"), self)
+        self.tray_exit_action.triggered.connect(self.quit_from_tray)
+        self.tray_menu.addAction(self.tray_exit_action)
 
         # Set tray menu
         self.tray_icon.setContextMenu(self.tray_menu)
@@ -1124,7 +1218,7 @@ class MainWindow(QMainWindow):
         if self.tray_icon:
             self.hide()
             self.hidden_to_tray = True
-            self.tray_icon.showMessage("PsLauncher", "Program minimized to system tray", QSystemTrayIcon.Information, 2000)
+            self.tray_icon.showMessage(tr("app.title"), tr("tray.minimized"), QSystemTrayIcon.Information, 2000)
 
     def show_from_tray(self):
         """Restore window from system tray"""
@@ -1137,7 +1231,7 @@ class MainWindow(QMainWindow):
     def quit_from_tray(self):
         """Exit program from tray menu"""
         # Show confirmation dialog
-        reply = QMessageBox.question(self, 'Prompt', 'Are you sure you want to exit PsLauncher?\nThis will stop all running scripts.', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        reply = QMessageBox.question(self, tr("dialog.prompt"), tr("message.confirm_exit"), QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
 
         if reply == QMessageBox.Yes:
             # Save configuration and stop all processes
@@ -1163,12 +1257,11 @@ class MainWindow(QMainWindow):
 
         if self.tabs.count() != 0:
             # Display confirmation dialog
-            reply = QMessageBox.Yes                                                                                                                                                       # Went through a round of all source code tabs, what's the point of confirming?
+            reply = QMessageBox.Yes # Went through a round of all source code tabs, what's the point of confirming?
             for i in range(self.tabs.count()):
                 widget = self.tabs.widget(i)
                 if isinstance(widget, TerminalTab):
-                    reply = QMessageBox.question(self, 'Confirm Exit', 'Are you sure you want to exit PsLauncher? This will stop all running scripts.', QMessageBox.Yes | QMessageBox.No,
-                                                 QMessageBox.No)
+                    reply = QMessageBox.question(self, tr("dialog.confirm_exit"), tr("message.confirm_exit_inline"), QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
                     break
         else:
             reply = QMessageBox.Yes
@@ -1551,7 +1644,7 @@ class MainWindow(QMainWindow):
                 # Determine if it's a folder or a script file
                 if os.path.isdir(path):
                     # Folder item: show folder-related menu
-                    open_folder_action = QAction("📂 Open in Explorer", self)
+                    open_folder_action = QAction(tr("context.open_in_explorer"), self)
                     open_folder_action.triggered.connect(lambda: os.startfile(path))
                     menu.addAction(open_folder_action)
 
@@ -1559,13 +1652,13 @@ class MainWindow(QMainWindow):
                     ext = os.path.splitext(path)[1].lower()
                     if ext in self.config.get('supported_extensions', DEFAULT_EXT):
                         # Script item: show script management menu
-                        run_action = QAction("▶️ Run", self)
+                        run_action = QAction(tr("context.run"), self)
                         run_action.triggered.connect(lambda: self.run_selected_script(path))
                         menu.addAction(run_action)
 
                         menu.addSeparator()
 
-                        edit_action = QAction("✏️ Edit/Save", self)
+                        edit_action = QAction(tr("context.edit_save"), self)
                         edit_action.triggered.connect(lambda: (self.open_editor_tab(path), self.toggle_edit_save()))
                         menu.addAction(edit_action)
 
@@ -1574,9 +1667,9 @@ class MainWindow(QMainWindow):
                         if ext in runnable_ext:
                             script_path = path # 捕获当前路径供 lambda 使用（闭包捕获）
                             if self.is_script_auto_run(path):
-                                auto_run_action = QAction("🔄 Stop auto-starting this script on launch", self)
+                                auto_run_action = QAction(tr("context.stop_auto_start"), self)
                             else:
-                                auto_run_action = QAction("🔄 Auto-start this script on launch", self)
+                                auto_run_action = QAction(tr("context.auto_start"), self)
                                                # triggered 信号会传入 checked(bool) 参数，必须显式接收并忽略
                             auto_run_action.triggered.connect(lambda _checked=False, sp=script_path: self.toggle_auto_run_script(sp))
                             menu.addAction(auto_run_action)
@@ -1584,31 +1677,31 @@ class MainWindow(QMainWindow):
                             menu.addSeparator()
 
                         # Edit with VSCode
-                        vsc_action = QAction("💻 Edit with VSC", self)
-                        vsc_action.setToolTip("Try calling VSCode to open the file for editing")
+                        vsc_action = QAction(tr("context.edit_with_vsc"), self)
+                        vsc_action.setToolTip(tr("context.edit_with_vsc"))
                         vsc_action.triggered.connect(lambda _checked=False, p=path: self.open_in_vsc(p))
                         menu.addAction(vsc_action)
 
                         menu.addSeparator()
 
-                        rename_action = QAction("📝 Rename", self)
+                        rename_action = QAction(tr("action.rename_script"), self)
                         rename_action.triggered.connect(self.rename_selected_script)
                         menu.addAction(rename_action)
 
-                        copy_action = QAction("📋 Copy", self)
+                        copy_action = QAction(tr("action.copy_script"), self)
                         copy_action.triggered.connect(self.copy_selected_script)
                         menu.addAction(copy_action)
 
-                        move_action = QAction("🚚 Move", self)
+                        move_action = QAction(tr("action.move_script"), self)
                         move_action.triggered.connect(self.move_selected_script)
                         menu.addAction(move_action)
 
-                        delete_action = QAction("🗑️ Delete", self)
+                        delete_action = QAction(tr("action.delete_script"), self)
                         delete_action.triggered.connect(self.delete_selected_script)
                         menu.addAction(delete_action)
                     else:
                         # Other file types, only show View menu
-                        view_action = QAction("📄 View", self)
+                        view_action = QAction(tr("context.view"), self)
                         view_action.triggered.connect(lambda: self.open_editor_tab(path))
                         menu.addAction(view_action)
                 else:
@@ -1619,7 +1712,7 @@ class MainWindow(QMainWindow):
                 pass
         else:
             # Blank area: show Add Folder
-            add_action = QAction("📂 Add Folder Path", self)
+            add_action = QAction(tr("action.add_folder"), self)
             add_action.triggered.connect(self.add_folder)
             menu.addAction(add_action)
 
@@ -1707,15 +1800,15 @@ class MainWindow(QMainWindow):
         menu = QMenu(self)
 
         # Cut, copy, paste functions
-        cut_action = QAction("✂️ Cut", self)
+        cut_action = QAction(tr("context.cut"), self)
         cut_action.triggered.connect(self.cut_selected_text)
         menu.addAction(cut_action)
 
-        copy_action = QAction("📋 Copy", self)
+        copy_action = QAction(tr("action.copy_selected"), self)
         copy_action.triggered.connect(self.copy_selected_text)
         menu.addAction(copy_action)
 
-        paste_action = QAction("📤 Paste", self)
+        paste_action = QAction(tr("action.paste"), self)
         paste_action.triggered.connect(self.paste_text)
         menu.addAction(paste_action)
 
@@ -1725,18 +1818,18 @@ class MainWindow(QMainWindow):
         current_widget = self.tabs.widget(tab_idx)
         if isinstance(current_widget, EditorTab):
             if current_widget.is_editing:
-                save_action = QAction("💾 Save", self)
+                save_action = QAction(tr("toolbar.save"), self)
                 save_action.triggered.connect(self.toggle_edit_save)
                 menu.addAction(save_action)
             else:
-                edit_action = QAction("✏️ Edit", self)
+                edit_action = QAction(tr("toolbar.edit"), self)
                 edit_action.triggered.connect(self.toggle_edit_save)
                 menu.addAction(edit_action)
 
         menu.addSeparator()
 
         # Close tab
-        close_action = QAction("🗑️ Close Tab", self)
+        close_action = QAction(tr("context.close_tab"), self)
         close_action.triggered.connect(lambda: self.close_tab(tab_idx))
         menu.addAction(close_action)
 

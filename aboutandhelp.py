@@ -11,10 +11,10 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 
-from source_help_page import html_content
+from i18n import tr
 
-__version__ = "v1.0.8"
-__devdate__ = "JUNE 28, 2026"
+__version__ = "v1.0.9"
+__devdate__ = "JUNE 29, 2026"
 __githublink__ = "https://github.com/NGC13009/PsLauncher.git"
 
 
@@ -45,7 +45,7 @@ class AboutDialog(PsLauncherDiag):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("About")
+        self.setWindowTitle(tr("about.title"))
         self.resize(800, 600)
 
         # 1. Set up the layout
@@ -60,9 +60,9 @@ class AboutDialog(PsLauncherDiag):
         # 3. Create buttons
         btn_layout = QVBoxLayout() # Or use QHBoxLayout for horizontal arrangement
 
-        self.btn_copy = QPushButton("Copy info to clipboard")
-        self.btn_github = QPushButton("GitHub/PsLauncher")
-        self.btn_close = QPushButton("❎")
+        self.btn_copy = QPushButton(tr("about.copy_info"))
+        self.btn_github = QPushButton(tr("about.github"))
+        self.btn_close = QPushButton(tr("about.close_btn"))
 
         btn_layout.addWidget(self.btn_copy)
         btn_layout.addWidget(self.btn_github)
@@ -80,8 +80,8 @@ class AboutDialog(PsLauncherDiag):
         <h2 align="center">PsLauncher</h2>
         <p align="center">{__version__}</p>
         <hr>
-        <p>In a lightweight interface, manage scripts under multiple paths, view them anytime, and execute them quickly within a unified window.</p>
-        <p>NGC13009</p>
+        <p>{tr("about.description")}</p>
+        <p>{tr("about.author")}</p>
         <p>{__devdate__}</p>
         """
         self.text_browser.setHtml(html_content)
@@ -97,7 +97,7 @@ class HelpDialog(PsLauncherDiag):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Help")
+        self.setWindowTitle(tr("help.title"))
         self.resize(1366, 768)
 
         # 1. Set up the layout
@@ -112,8 +112,8 @@ class HelpDialog(PsLauncherDiag):
         # 3. Create buttons
         btn_layout = QVBoxLayout() # Or use QHBoxLayout for horizontal arrangement
 
-        self.btn_copy = QPushButton("Copy information to clipboard")
-        self.btn_close = QPushButton("Close")
+        self.btn_copy = QPushButton(tr("help.copy_info"))
+        self.btn_close = QPushButton(tr("help.close_btn"))
 
         btn_layout.addWidget(self.btn_copy)
         btn_layout.addWidget(self.btn_close)
@@ -125,4 +125,9 @@ class HelpDialog(PsLauncherDiag):
         self.btn_copy.clicked.connect(self._copy_to_clipboard)
 
     def _populate_about_content(self):
-        self.text_browser.setHtml(html_content)
+        from i18n import get_language
+        if get_language() == "zh_CN":
+            from i18n.source_help_page_zh_CN import html_content as hc
+        else:
+            from i18n.source_help_page import html_content as hc
+        self.text_browser.setHtml(hc)

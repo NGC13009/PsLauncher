@@ -504,13 +504,10 @@ A: Use the "Script Management" → "Delete Script" function. Note that this oper
 <h3>Release Process</h3>
 <p>The correct release workflow is as follows:</p>
 <ol>
-<li>Manually merge the current updates into the codebase of other language versions.</li>
 <li>Update <code>__version__</code> and <code>__devdate__</code> inside <code>aboutandhelp.py</code>.</li>
-<li>Execute <code>get_help_page.py</code> to compile the help page.</li>
+<li>Execute <code>get_help_page.py</code> to compile help pages for all languages (reads <code>README.md</code> for English, <code>README_CN.md</code> for Chinese, etc.).</li>
 <li>If the .ico file has been updated, recompile it using <code>get_ico.py</code>.</li>
 <li>Compile the executable by running <code>pyinstaller -w ./PsLauncher.py -i ./logo.ico -y --distpath ./exe --paths ./</code>.</li>
-<li>If there are other language versions, compile them again in their respective repositories.</li>
-<li>Since all different language versions share the same dependency libraries, you only need to copy the compiled .exe to the same location. The correct structure is similar to the example below.</li>
 <li>If necessary, include the help documentation as well.</li>
 </ol>
 <p>Correct release version structure:</p>
