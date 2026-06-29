@@ -6,7 +6,7 @@
 #                   提取每个测试类和测试方法的 docstring，
 #                   生成 TEST_COVERAGE.md 文档
 # @attention:       可在任意位置执行，默认输出到同目录的 TEST_COVERAGE.md
-# @Authors:         wyb
+# @Authors:         NGC13009
 # @History:         2026-06-10   Create
 
 from __future__ import annotations

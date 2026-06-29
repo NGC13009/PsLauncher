@@ -12,7 +12,7 @@ import markdown
 
 # 配置文件：(readme文件, 输出的py文件)
 LANGUAGES = [
-    ("README.md",    "i18n/source_help_page.py"),
+    ("README.md", "i18n/source_help_page.py"),
     ("README_CN.md", "i18n/source_help_page_zh_CN.py"),
 ]
 
@@ -29,9 +29,19 @@ for md_file, out_file in LANGUAGES:
 
     # 4. 构造 Python 代码字符串
     python_code = f"html_content = '''\\\n{safe_html_text}'''\n"
+    comments = f'''# coding = utf-8
+# Arch   = manyArch
+#
+# @File name:       {out_file}
+# @brief:           帮助页面文本
+# @attention:       None
+# @Author:          get_help_page.py 脚本自动生成, 请勿直接编辑该文件
+# @History:         2026-06-29		Create
+
+'''
 
     # 5. 写入目标文件
     with open(out_file, 'w', encoding='utf-8') as f:
-        f.write(python_code)
+        f.write(comments + python_code)
 
     print(f"✅ 转换完成！已成功生成 {out_file} 文件。")

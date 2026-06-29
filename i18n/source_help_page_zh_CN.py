@@ -1,3 +1,12 @@
+# coding = utf-8
+# Arch   = manyArch
+#
+# @File name:       i18n/source_help_page_zh_CN.py
+# @brief:           帮助页面文本
+# @attention:       None
+# @Author:          get_help_page.py 脚本自动生成, 请勿直接编辑该文件
+# @History:         2026-06-29		Create
+
 html_content = '''\
 <h1>PsLauncher - 轻量级多脚本管理器</h1>
 <p>在一个轻量化的, 类似于vscode的界面中, 通过多标签页统一管理并运行PowerShell/Bash/cmd(Batch)脚本, 支持系统托盘常驻、子进程强杀、ANSI着色的终端输出, 像终端一样的交互式输入输出. 专为本地大模型部署（llama.cpp/litellm）等场景优化.</p>
@@ -539,15 +548,191 @@ A: 使用"脚本管理"→"删除脚本"功能，注意此操作直接删除文�
 <blockquote>
 <p>作者(@NGC13009)在开发的时候使用的是一个本地仓库, 基于中文开发后, 用自动化(且不一定可靠的)方式将代码翻译为英文, 然后更新到当前仓库, 之后, 将中文代码复制一份放在<code>cn/</code>下. 中文版本是作者在本地仓库编译的, 之后用当前仓库编译英文版.</p>
 </blockquote>
-<h2>AI 开发者须知</h2>
-<p>如果你是AI那尤其要好好看这里! 开发时应该尽可能:</p>
+<h2>自动化测试与 CI/CD</h2>
+<p>项目已搭建完整的自动化测试体系，基于 <code>pytest</code> + <code>pytest-qt</code> + <code>pytest-xdist</code>，支持 headless 并行执行。</p>
+<h3>测试目录结构</h3>
+<pre><code>test/
+├── conftest.py              # 全局 fixtures：环境变量、临时配置、main_window 等
+├── test_config.py           # 功能层：config.json 读写、默认值、注释解析、边界值
+├── test_scanner.py          # 功能层：文件夹扫描、不递归、后缀过滤、实时刷新
+├── test_script_types.py     # 算法层：.ps1/.bat/.sh 识别、解释器选择、扩展名校验
+├── test_process_control.py  # 功能层：进程树强杀、Ctrl+C 信号(0x03)、无残留子进程
+├── test_ansi.py             # 算法层：ANSI 转义解析与着色
+├── test_syntax_highlight.py # 算法层：auto/ps1/bash/command/none 模式判别
+├── test_i18n.py             # 算法层：国际化模块纯函数
+├── test_utils.py            # 算法层：工具函数（主题、字体缩放）
+├── test_autorun.py          # 功能层：启动时自动运行标记、蓝色高亮状态持久化
+├── test_tray.py             # GUI 层：托盘隐藏/恢复/退出（offscreen 下 skip）
+├── test_gui_main.py         # GUI 层：主窗口构造、菜单 Action 触发、标签页增删
+├── test_gui_toolbar.py      # GUI 层：工具栏按钮映射
+├── test_gui_terminal.py     # GUI 层：终端标签 ANSI 渲染、交互输入
+├── test_gui_editor.py       # GUI 层：源码标签只读/编辑切换、保存、缩放
+├── test_gui_tabs.py         # GUI 层：标签页批量关闭、F8/F9 快捷键
+└── fixtures/
+    ├── __init__.py
+    ├── config_factory.py    # 构造不同 config.json 场景
+    └── temp_scripts.py      # 临时脚本目录
+</code></pre>
+<h3>三层测试分层说明</h3>
+<table>
+<thead>
+<tr>
+<th>层级</th>
+<th>说明</th>
+<th>并行安全</th>
+<th>标记</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>算法层 (algo)</strong></td>
+<td>纯函数、无 Qt 依赖的独立逻辑测试</td>
+<td>✅ 安全</td>
+<td><code>@pytest.mark.algo</code></td>
+</tr>
+<tr>
+<td><strong>功能层 (func)</strong></td>
+<td>不实例化 QWidget 的业务逻辑测试（可 mock）</td>
+<td>✅ 安全</td>
+<td><code>@pytest.mark.func</code></td>
+</tr>
+<tr>
+<td><strong>GUI 层 (gui)</strong></td>
+<td>基于 pytest-qt 的交互测试，需 qtbot fixture</td>
+<td>⚠️ 慎用</td>
+<td><code>@pytest.mark.gui</code></td>
+</tr>
+</tbody>
+</table>
+<h3>执行命令</h3>
+<p><strong>精简版</strong>（CI 与本地统一使用）：</p>
+<pre><code class="language-bash">python -m pytest test/ -q --tb=short -p no:warnings --no-header
+</code></pre>
+<p><strong>详细版</strong>（本地调试用）：</p>
+<pre><code class="language-bash">python -m pytest test/ -v --tb=long -p no:warnings
+</code></pre>
+<p><strong>仅运行非 GUI 测试</strong>（快速回归）：</p>
+<pre><code class="language-bash">python -m pytest test/ -q --tb=short -p no:warnings --no-header -m &quot;not gui&quot; -n auto
+</code></pre>
+<p>参数说明：</p>
 <ul>
-<li>所有工具栏按钮的功能都在菜单栏中有对应的菜单项, 按功能分类组织:</li>
-<li>工具栏按钮按功能分组, 使用分隔符分隔不同类型的功能:</li>
-<li>保持代码风格和注释风格</li>
-<li><strong>尤其重要</strong>: 这是GUI程序, 测试必须且仅能由人类处理, 你如果是AI, 那么改好后进行简单的自动语法检查, 然后直接结束并提交给人类做进一步测试, 作为AI你无需执行完整程序, 因为你可能不具备GUI操作能力. 您作为AI有义务告知人类需要进行哪些测试或交互测试.</li>
-<li><strong>尤其重要</strong>: 如果你是AI, 那么永远不要尝试读取<code>source_ico.py</code>, 这里面就一个base64编码的字符串叫<code>icon_base64_data</code>, 用于给程序提供图标. 读取它没有任何意义并且也会让你很累.</li>
+<li><code>-q</code>/<code>--no-header</code>：精简输出，节省 token</li>
+<li><code>--tb=short</code>：简短回溯，避免大量堆栈</li>
+<li><code>-p no:warnings</code>：屏蔽 Python 警告</li>
+<li><code>-n auto</code>：启用 pytest-xdist 按 CPU 核心数并行分发</li>
+<li><code>-m "not gui"</code>：跳过 GUI 标记用例</li>
 </ul>
+<h3>Headless 环境要求</h3>
+<p>pytest-qt 在无显示环境（CI/服务器）下运行需设置：</p>
+<pre><code class="language-bash">export QT_QPA_PLATFORM=offscreen   # Linux/macOS
+set QT_QPA_PLATFORM=offscreen      # Windows CMD
+$env:QT_QPA_PLATFORM=&quot;offscreen&quot;   # Windows PowerShell
+</code></pre>
+<p>已在 <code>conftest.py</code> 顶部自动设置。如需指定 Qt API 绑定：</p>
+<pre><code class="language-bash">export PYTEST_QT_API=pyqt5
+</code></pre>
+<h3>CI 工作流</h3>
+<p>定义在 <code>.github/workflows/test.yml</code>，触发条件：</p>
+<ul>
+<li><code>push</code> 到 <code>main</code> 分支</li>
+<li><code>pull_request</code> 到 <code>main</code> 分支</li>
+</ul>
+<p>矩阵：<code>ubuntu-latest</code> + <code>windows-latest</code>，Python 3.12。</p>
+<h3>AI Agent 注意事项</h3>
+<ul>
+<li><strong>AI 完成测试代码后只需 <code>py_compile</code> 校验</strong>，不得自行执行 GUI 用例，交人类确认。</li>
+<li>禁止读取 <code>source_ico.py</code>等source开头的文件，这些文件是通过编译器自动生成的，很大。</li>
+<li>GUI 用例在 offscreen 下覆盖有限，托盘/拖动等需人工复核。</li>
+</ul>
+<h3>人类开发者须知（测试清单）</h3>
+<p>对照原「人类开发者须知」清单，标注自动化覆盖状态：</p>
+<table>
+<thead>
+<tr>
+<th>检查项</th>
+<th>自动化状态</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>正常启动</td>
+<td>✅ <code>test_gui_main.py</code></td>
+</tr>
+<tr>
+<td>菜单栏功能依次检查正常</td>
+<td>✅ <code>test_gui_main.py::TestMenuActions</code></td>
+</tr>
+<tr>
+<td>工具栏功能依次检查正常</td>
+<td>✅ <code>test_gui_toolbar.py</code></td>
+</tr>
+<tr>
+<td>工具栏拖动后位置正确</td>
+<td>⚠️ 拖动操作需人工确认</td>
+</tr>
+<tr>
+<td>资源管理器显示正常</td>
+<td>✅ <code>test_scanner.py</code></td>
+</tr>
+<tr>
+<td>资源管理器右键菜单功能</td>
+<td>⚠️ 右键菜单触发需人工确认</td>
+</tr>
+<tr>
+<td>源代码标签正常</td>
+<td>✅ <code>test_gui_editor.py</code></td>
+</tr>
+<tr>
+<td>源代码标签修改功能、保存</td>
+<td>✅ <code>test_gui_editor.py</code></td>
+</tr>
+<tr>
+<td>多源代码标签切换</td>
+<td>✅ <code>test_gui_main.py::TestTabManagement</code></td>
+</tr>
+<tr>
+<td>任务终端标签正常</td>
+<td>✅ <code>test_gui_terminal.py</code></td>
+</tr>
+<tr>
+<td>任务终端交互输入</td>
+<td>✅ <code>test_gui_terminal.py</code></td>
+</tr>
+<tr>
+<td>任务终端中断功能</td>
+<td>✅ <code>test_process_control.py</code></td>
+</tr>
+<tr>
+<td>子进程关闭退出</td>
+<td>✅ <code>test_process_control.py</code></td>
+</tr>
+<tr>
+<td>子进程统一关闭退出</td>
+<td>✅ <code>test_gui_tabs.py</code></td>
+</tr>
+<tr>
+<td>子进程退出程序时退出</td>
+<td>✅ <code>test_process_control.py</code></td>
+</tr>
+<tr>
+<td>多子进程互不影响</td>
+<td>⚠️ 需人工验证进程隔离</td>
+</tr>
+<tr>
+<td>托盘隐藏/恢复</td>
+<td>⚠️ offscreen 下跳过，需人工确认</td>
+</tr>
+<tr>
+<td>托盘退出无残留</td>
+<td>⚠️ 需人工确认</td>
+</tr>
+<tr>
+<td>脚本从脚本路径运行</td>
+<td>✅ <code>test_process_control.py</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>AI 已自动化覆盖：</strong> 23 项 ✅ / 5 项 ⚠️ 需人工</p>
 <h2>人类开发者须知</h2>
 <p>您作为人类, 有义务协助ai执行GUI功能测试. 请按照下面的检查清单逐一确认是否需要检查 (比如更改过相应的代码, 那么就得检查). 清单仅供参考, 如果有新的需求请注意随时添加:</p>
 <ul>

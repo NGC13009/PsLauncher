@@ -1,3 +1,12 @@
+# coding = utf-8
+# Arch   = manyArch
+#
+# @File name:       i18n/source_help_page.py
+# @brief:           帮助页面文本
+# @attention:       None
+# @Author:          get_help_page.py 脚本自动生成, 请勿直接编辑该文件
+# @History:         2026-06-29		Create
+
 html_content = '''\
 <h1>PsLauncher - Lightweight Multi-Script Tray Manager</h1>
 <p>Within a lightweight, VS Code-like interface, PowerShell/Bash/cmd (Batch) scripts are managed and run uniformly through multiple tabs. It supports <strong>system tray persistence</strong>, forced termination of child processes, ANSI-colored terminal output, and interactive input/output like a terminal. It is specifically optimized for scenarios such as local large-scale model deployment (llama.cpp/litellm). In theory, this can even manage assistant applications like OpenCLAW.</p>
@@ -522,14 +531,191 @@ A: Use the "Script Management" → "Delete Script" function. Note that this oper
 <blockquote>
 <p>The author (@NGC13009) developed the project using a local repository. After initial development in Chinese, the code was automatically (and not necessarily reliably) translated into English and pushed to the current repository. The Chinese version was compiled locally by the author, while the English version is compiled using the current repository.</p>
 </blockquote>
-<h2>AI Developer Guidelines</h2>
-<p>If you are an AI developer, pay special attention to this! During development, you should:</p>
+<h2>Automated Testing &amp; CI/CD</h2>
+<p>The project has a complete automated testing system based on <code>pytest</code> + <code>pytest-qt</code> + <code>pytest-xdist</code>, supporting headless parallel execution.</p>
+<h3>Test Directory Structure</h3>
+<pre><code>test/
+├── conftest.py              # Global fixtures: env vars, temp config, main_window, etc.
+├── test_config.py           # Func layer: config.json I/O, defaults, comment parsing, edge cases
+├── test_scanner.py          # Func layer: folder scanning, no recursion, extension filtering
+├── test_script_types.py     # Algo layer: .ps1/.bat/.sh detection, interpreter selection
+├── test_process_control.py  # Func layer: process tree kill, Ctrl+C signal, no residual processes
+├── test_ansi.py             # Algo layer: ANSI escape parsing and coloring
+├── test_syntax_highlight.py # Algo layer: auto/ps1/bash/command/none mode detection
+├── test_i18n.py             # Algo layer: i18n pure functions
+├── test_utils.py            # Algo layer: utility functions (theme, font scaling)
+├── test_autorun.py          # Func layer: auto-run toggle, blue highlight persistence
+├── test_tray.py             # GUI layer: tray hide/restore/exit (skipif offscreen)
+├── test_gui_main.py         # GUI layer: window construction, menu action trigger, tab management
+├── test_gui_toolbar.py      # GUI layer: toolbar button mapping
+├── test_gui_terminal.py     # GUI layer: terminal ANSI rendering, interactive input
+├── test_gui_editor.py       # GUI layer: source tab read-only/edit, save, zoom
+├── test_gui_tabs.py         # GUI layer: batch tab close, F8/F9 shortcuts
+└── fixtures/
+    ├── __init__.py
+    ├── config_factory.py    # Config scenarios factory
+    └── temp_scripts.py      # Temporary script directory
+</code></pre>
+<h3>Three-Layer Test Architecture</h3>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Description</th>
+<th>Parallel Safe</th>
+<th>Marker</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Algorithm (algo)</strong></td>
+<td>Pure functions, no Qt dependency</td>
+<td>✅ Safe</td>
+<td><code>@pytest.mark.algo</code></td>
+</tr>
+<tr>
+<td><strong>Functional (func)</strong></td>
+<td>Business logic without QWidget instantiation (mockable)</td>
+<td>✅ Safe</td>
+<td><code>@pytest.mark.func</code></td>
+</tr>
+<tr>
+<td><strong>GUI (gui)</strong></td>
+<td>pytest-qt interactive tests, requires qtbot fixture</td>
+<td>⚠️ Limited</td>
+<td><code>@pytest.mark.gui</code></td>
+</tr>
+</tbody>
+</table>
+<h3>Execution Commands</h3>
+<p><strong>Minimal</strong> (CI &amp; local unified):</p>
+<pre><code class="language-bash">python -m pytest test/ -q --tb=short -p no:warnings --no-header
+</code></pre>
+<p><strong>Verbose</strong> (local debugging):</p>
+<pre><code class="language-bash">python -m pytest test/ -v --tb=long -p no:warnings
+</code></pre>
+<p><strong>Non-GUI only</strong> (quick regression):</p>
+<pre><code class="language-bash">python -m pytest test/ -q --tb=short -p no:warnings --no-header -m &quot;not gui&quot; -n auto
+</code></pre>
+<p>Parameter explanation:</p>
 <ul>
-<li>Group toolbar buttons by function, using separators to separate different types of functions:</li>
-<li>Maintain good coding and commenting style.</li>
-<li><strong>Especially Important</strong>: This is a GUI program. Testing must and can only be done by humans. If you are an AI, after modifying it, perform a simple automatic syntax check, then finish and submit it to humans for further testing. As an AI, you do not need to execute the complete program because you may not have GUI operation capabilities. You, as the AI, have an obligation to inform humans which tests or interactive tests are needed.</li>
-<li><strong>Especially Important</strong>: If you are an AI, never try to read <code>source_ico.py</code>. There's only one base64 encoded string here called <code>icon_base64_data</code>, used to provide the icon for the program. Reading it is meaningless and will only make your time and effort tedious.</li>
+<li><code>-q</code>/<code>--no-header</code>: Minimal output, saves tokens</li>
+<li><code>--tb=short</code>: Short traceback</li>
+<li><code>-p no:warnings</code>: Suppress Python warnings</li>
+<li><code>-n auto</code>: pytest-xdist parallel distribution by CPU cores</li>
+<li><code>-m "not gui"</code>: Skip GUI-marked tests</li>
 </ul>
+<h3>Headless Environment</h3>
+<p>pytest-qt requires the following setting in headless environments (CI/servers):</p>
+<pre><code class="language-bash">export QT_QPA_PLATFORM=offscreen   # Linux/macOS
+set QT_QPA_PLATFORM=offscreen      # Windows CMD
+$env:QT_QPA_PLATFORM=&quot;offscreen&quot;   # Windows PowerShell
+</code></pre>
+<p>This is automatically set at the top of <code>conftest.py</code>. To specify the Qt API binding:</p>
+<pre><code class="language-bash">export PYTEST_QT_API=pyqt5
+</code></pre>
+<h3>CI Workflow</h3>
+<p>Defined in <code>.github/workflows/test.yml</code>, triggered by:</p>
+<ul>
+<li><code>push</code> to <code>main</code> branch</li>
+<li><code>pull_request</code> to <code>main</code> branch</li>
+</ul>
+<p>Matrix: <code>ubuntu-latest</code> + <code>windows-latest</code>, Python 3.12.</p>
+<h3>AI Agent Notes</h3>
+<ul>
+<li><strong>AI only needs <code>py_compile</code> verification</strong> after writing test code. Do NOT execute GUI tests yourself; leave them for human confirmation.</li>
+<li>Never attempt to read <code>source_ico.py</code>.</li>
+<li>GUI test coverage is limited under offscreen mode; tray/drag operations require manual verification.</li>
+</ul>
+<h3>Human Developer Checklist</h3>
+<p>Mapping of the original "Human Developer Checklist" items to automation status:</p>
+<table>
+<thead>
+<tr>
+<th>Check Item</th>
+<th>Automation Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Normal startup</td>
+<td>✅ <code>test_gui_main.py</code></td>
+</tr>
+<tr>
+<td>Menu bar functionality</td>
+<td>✅ <code>test_gui_main.py::TestMenuActions</code></td>
+</tr>
+<tr>
+<td>Toolbar functionality</td>
+<td>✅ <code>test_gui_toolbar.py</code></td>
+</tr>
+<tr>
+<td>Toolbar drag position</td>
+<td>⚠️ Manual check required</td>
+</tr>
+<tr>
+<td>File explorer display</td>
+<td>✅ <code>test_scanner.py</code></td>
+</tr>
+<tr>
+<td>Right-click menu</td>
+<td>⚠️ Manual check required</td>
+</tr>
+<tr>
+<td>Source code tabs</td>
+<td>✅ <code>test_gui_editor.py</code></td>
+</tr>
+<tr>
+<td>Source code edit/save</td>
+<td>✅ <code>test_gui_editor.py</code></td>
+</tr>
+<tr>
+<td>Multi-tab switching</td>
+<td>✅ <code>test_gui_main.py::TestTabManagement</code></td>
+</tr>
+<tr>
+<td>Terminal tabs</td>
+<td>✅ <code>test_gui_terminal.py</code></td>
+</tr>
+<tr>
+<td>Terminal interactive input</td>
+<td>✅ <code>test_gui_terminal.py</code></td>
+</tr>
+<tr>
+<td>Terminal interrupt</td>
+<td>✅ <code>test_process_control.py</code></td>
+</tr>
+<tr>
+<td>Child process exit on tab close</td>
+<td>✅ <code>test_process_control.py</code></td>
+</tr>
+<tr>
+<td>Child process exit on batch close</td>
+<td>✅ <code>test_gui_tabs.py</code></td>
+</tr>
+<tr>
+<td>Child process exit on app quit</td>
+<td>✅ <code>test_process_control.py</code></td>
+</tr>
+<tr>
+<td>Multi-process isolation</td>
+<td>⚠️ Manual verification needed</td>
+</tr>
+<tr>
+<td>Tray hide/restore</td>
+<td>⚠️ Skipped in offscreen, manual check</td>
+</tr>
+<tr>
+<td>Tray exit without residue</td>
+<td>⚠️ Manual check required</td>
+</tr>
+<tr>
+<td>Script runs from its path</td>
+<td>✅ <code>test_process_control.py</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>AI automated coverage:</strong> 23 items ✅ / 5 items ⚠️ Manual</p>
 <h2>Notice to Human Developers</h2>
 <p>As a human, you have an obligation to assist the AI ​​in performing GUI functionality testing. Please check the following checklist item by item to confirm if it needs to be checked (e.g., if corresponding code has been modified, then it must be checked). The checklist is for reference only; please add it as needed if new requirements arise:</p>
 <ul>

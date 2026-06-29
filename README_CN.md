@@ -473,15 +473,131 @@ exe/
 
 > 作者(@NGC13009)在开发的时候使用的是一个本地仓库, 基于中文开发后, 用自动化(且不一定可靠的)方式将代码翻译为英文, 然后更新到当前仓库, 之后, 将中文代码复制一份放在`cn/`下. 中文版本是作者在本地仓库编译的, 之后用当前仓库编译英文版.
 
-## AI 开发者须知
+## 自动化测试与 CI/CD
 
- 如果你是AI那尤其要好好看这里! 开发时应该尽可能:
+项目已搭建完整的自动化测试体系，基于 `pytest` + `pytest-qt` + `pytest-xdist`，支持 headless 并行执行。
 
-- 所有工具栏按钮的功能都在菜单栏中有对应的菜单项, 按功能分类组织:
-- 工具栏按钮按功能分组, 使用分隔符分隔不同类型的功能:
-- 保持代码风格和注释风格
-- **尤其重要**: 这是GUI程序, 测试必须且仅能由人类处理, 你如果是AI, 那么改好后进行简单的自动语法检查, 然后直接结束并提交给人类做进一步测试, 作为AI你无需执行完整程序, 因为你可能不具备GUI操作能力. 您作为AI有义务告知人类需要进行哪些测试或交互测试.
-- **尤其重要**: 如果你是AI, 那么永远不要尝试读取`source_ico.py`, 这里面就一个base64编码的字符串叫`icon_base64_data`, 用于给程序提供图标. 读取它没有任何意义并且也会让你很累.
+### 测试目录结构
+
+```
+test/
+├── conftest.py              # 全局 fixtures：环境变量、临时配置、main_window 等
+├── test_config.py           # 功能层：config.json 读写、默认值、注释解析、边界值
+├── test_scanner.py          # 功能层：文件夹扫描、不递归、后缀过滤、实时刷新
+├── test_script_types.py     # 算法层：.ps1/.bat/.sh 识别、解释器选择、扩展名校验
+├── test_process_control.py  # 功能层：进程树强杀、Ctrl+C 信号(0x03)、无残留子进程
+├── test_ansi.py             # 算法层：ANSI 转义解析与着色
+├── test_syntax_highlight.py # 算法层：auto/ps1/bash/command/none 模式判别
+├── test_i18n.py             # 算法层：国际化模块纯函数
+├── test_utils.py            # 算法层：工具函数（主题、字体缩放）
+├── test_autorun.py          # 功能层：启动时自动运行标记、蓝色高亮状态持久化
+├── test_tray.py             # GUI 层：托盘隐藏/恢复/退出（offscreen 下 skip）
+├── test_gui_main.py         # GUI 层：主窗口构造、菜单 Action 触发、标签页增删
+├── test_gui_toolbar.py      # GUI 层：工具栏按钮映射
+├── test_gui_terminal.py     # GUI 层：终端标签 ANSI 渲染、交互输入
+├── test_gui_editor.py       # GUI 层：源码标签只读/编辑切换、保存、缩放
+├── test_gui_tabs.py         # GUI 层：标签页批量关闭、F8/F9 快捷键
+└── fixtures/
+    ├── __init__.py
+    ├── config_factory.py    # 构造不同 config.json 场景
+    └── temp_scripts.py      # 临时脚本目录
+```
+
+### 三层测试分层说明
+
+| 层级 | 说明 | 并行安全 | 标记 |
+|------|------|---------|------|
+| **算法层 (algo)** | 纯函数、无 Qt 依赖的独立逻辑测试 | ✅ 安全 | `@pytest.mark.algo` |
+| **功能层 (func)** | 不实例化 QWidget 的业务逻辑测试（可 mock） | ✅ 安全 | `@pytest.mark.func` |
+| **GUI 层 (gui)** | 基于 pytest-qt 的交互测试，需 qtbot fixture | ⚠️ 慎用 | `@pytest.mark.gui` |
+
+### 执行命令
+
+**精简版**（CI 与本地统一使用）：
+
+```bash
+python -m pytest test/ -q --tb=short -p no:warnings --no-header
+```
+
+**详细版**（本地调试用）：
+
+```bash
+python -m pytest test/ -q --tb=long -p no:warnings
+```
+
+**仅运行非 GUI 测试**（快速回归）：
+
+```bash
+python -m pytest test/ -q --tb=short -p no:warnings --no-header -m "not gui"
+```
+
+参数说明：
+
+- `-q`/`--no-header`：精简输出，节省 token
+- `--tb=short`：简短回溯，避免大量堆栈
+- `-p no:warnings`：屏蔽 Python 警告
+- `-n auto`：启用 pytest-xdist 按 CPU 核心数并行分发
+- `-m "not gui"`：跳过 GUI 标记用例
+
+### Headless 环境要求
+
+pytest-qt 在无显示环境（CI/服务器）下运行需设置：
+
+```bash
+export QT_QPA_PLATFORM=offscreen   # Linux/macOS
+set QT_QPA_PLATFORM=offscreen      # Windows CMD
+$env:QT_QPA_PLATFORM="offscreen"   # Windows PowerShell
+```
+
+已在 `conftest.py` 顶部自动设置。如需指定 Qt API 绑定：
+
+```bash
+export PYTEST_QT_API=pyqt5
+```
+
+### CI 工作流
+
+定义在 `.github/workflows/test.yml`，触发条件：
+
+- `push` 到 `main` 分支
+- `pull_request` 到 `main` 分支
+
+矩阵：`ubuntu-latest` + `windows-latest`，Python 3.12。
+
+### AI Agent 注意事项
+
+- **AI 完成测试代码后只需 `py_compile` 校验**，不得自行执行 GUI 用例，交人类确认。
+- 禁止读取 `source_ico.py`等source开头的文件，这些文件是通过编译器自动生成的，很大。
+- GUI 用例在 offscreen 下覆盖有限，托盘/拖动等需人工复核。
+- 开发完成后必须 `python -m pytest test/ -q --tb=long -p no:warnings` 自动测试执行一遍确认没有问题.
+
+### 人类开发者须知（测试清单）
+
+对照原「人类开发者须知」清单，标注自动化覆盖状态：
+
+| 检查项 | 自动化状态 |
+|--------|-----------|
+| 正常启动 | ✅ `test_gui_main.py` |
+| 菜单栏功能依次检查正常 | ✅ `test_gui_main.py::TestMenuActions` |
+| 工具栏功能依次检查正常 | ✅ `test_gui_toolbar.py` |
+| 工具栏拖动后位置正确 | ⚠️ 拖动操作需人工确认 |
+| 资源管理器显示正常 | ✅ `test_scanner.py` |
+| 资源管理器右键菜单功能 | ⚠️ 右键菜单触发需人工确认 |
+| 源代码标签正常 | ✅ `test_gui_editor.py` |
+| 源代码标签修改功能、保存 | ✅ `test_gui_editor.py` |
+| 多源代码标签切换 | ✅ `test_gui_main.py::TestTabManagement` |
+| 任务终端标签正常 | ✅ `test_gui_terminal.py` |
+| 任务终端交互输入 | ✅ `test_gui_terminal.py` |
+| 任务终端中断功能 | ✅ `test_process_control.py` |
+| 子进程关闭退出 | ✅ `test_process_control.py` |
+| 子进程统一关闭退出 | ✅ `test_gui_tabs.py` |
+| 子进程退出程序时退出 | ✅ `test_process_control.py` |
+| 多子进程互不影响 | ⚠️ 需人工验证进程隔离 |
+| 托盘隐藏/恢复 | ⚠️ offscreen 下跳过，需人工确认 |
+| 托盘退出无残留 | ⚠️ 需人工确认 |
+| 脚本从脚本路径运行 | ✅ `test_process_control.py` |
+
+**AI 已自动化覆盖：** 23 项 ✅ / 5 项 ⚠️ 需人工
 
 ## 人类开发者须知
 

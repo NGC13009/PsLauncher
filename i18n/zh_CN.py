@@ -1,3 +1,12 @@
+# coding = utf-8
+# Arch   = manyArch
+#
+# @File name:       zh_CN.py
+# @brief:           中文 i18n 字符串匹配关系
+# @attention:       None
+# @Author:          NGC13009
+# @History:         2026-06-29		Create
+
 messages = {
     "app.title": "PsLauncher",
     "menu.system": "系统",

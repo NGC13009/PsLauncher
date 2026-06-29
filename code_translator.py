@@ -9,7 +9,7 @@
 #                       1. 修改下方【配置区】中的 API 地址、密钥、模型名、文件列表等
 #                       2. 运行: python code_translator.py
 # @attention:       None
-# @Author:          wyb
+# @Author:          NGC13009
 # @History:         2026-04-18		Create
 
 import os

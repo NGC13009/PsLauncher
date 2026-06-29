@@ -1,3 +1,12 @@
+# coding = utf-8
+# Arch   = manyArch
+#
+# @File name:       __init__.py
+# @brief:           i18n支持框架
+# @attention:       None
+# @Author:          NGC13009
+# @History:         2026-06-29		Create
+
 from i18n.en import messages as _en_messages
 from i18n.zh_CN import messages as _zh_CN_messages
 

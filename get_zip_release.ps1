@@ -1,3 +1,12 @@
+# coding = utf-8
+# Arch   = manyArch
+#
+# @File name:       get_zip_release.ps1
+# @brief:           将pyinstaller编译好的可执行文件打包为zip等
+# @attention:       None
+# @Author:          NGC13009
+# @History:         2026-06-29		Create
+
 # 定义 7-Zip 的路径
 $7zPath = "${env:ProgramFiles}\7-Zip\7z.exe"
 
