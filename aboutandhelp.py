@@ -13,7 +13,7 @@ from PyQt5.QtGui import *
 
 from i18n import tr
 
-__version__ = "v1.0.9"
+__version__ = "v1.0.10"
 __devdate__ = "JUNE 29, 2026"
 __githublink__ = "https://github.com/NGC13009/PsLauncher.git"
 
