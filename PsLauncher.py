@@ -1650,6 +1650,18 @@ class MainWindow(QMainWindow):
                     open_folder_action.triggered.connect(lambda: os.startfile(path))
                     menu.addAction(open_folder_action)
 
+                    menu.addSeparator()
+
+                    # Remove current folder path
+                    remove_folder_action = QAction(tr("action.remove_folder"), self)
+                    remove_folder_action.triggered.connect(self.remove_folder)
+                    menu.addAction(remove_folder_action)
+
+                    # Add folder path
+                    add_folder_action = QAction(tr("action.add_folder"), self)
+                    add_folder_action.triggered.connect(self.add_folder)
+                    menu.addAction(add_folder_action)
+
                 elif os.path.isfile(path):
                     ext = os.path.splitext(path)[1].lower()
                     if ext in self.config.get('supported_extensions', DEFAULT_EXT):

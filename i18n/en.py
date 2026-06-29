@@ -22,7 +22,7 @@ messages = {
     "action.save_config": "Save current configuration",
     "action.hide_to_tray": "Hide window to system tray",
     "action.auto_minimize": "Auto-minimize to tray on startup",
-    "action.add_folder": "📂 Add folder path",
+    "action.add_folder": "⛏️ Add folder path",
     "action.remove_folder": "Remove folder path",
     "action.copy_selected": "Copy selected content",
     "action.paste": "Paste",

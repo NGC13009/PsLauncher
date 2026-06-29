@@ -22,7 +22,7 @@ messages = {
     "action.save_config": "保存当前配置",
     "action.hide_to_tray": "隐藏窗口到系统托盘",
     "action.auto_minimize": "启动时自动最小化到托盘",
-    "action.add_folder": "📂 添加文件夹路径",
+    "action.add_folder": "⛏️ 添加文件夹路径",
     "action.remove_folder": "移除文件夹路径",
     "action.copy_selected": "复制选定内容",
     "action.paste": "粘贴",
