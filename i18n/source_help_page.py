@@ -75,6 +75,156 @@ options:
   --font FONT      set font family
   --height HEIGHT  window height
   --width WIDTH    window width
+  --headless       headless mode, no GUI window, only HTTP API server
+</code></pre>
+<h3>HTTP API Server</h3>
+<p>PsLauncher exposes an HTTP API server on <code>127.0.0.1:13025</code> by default after startup. Any LLM or human can send POST/GET requests to operate PsLauncher's functions, equivalent to performing operations in the GUI.</p>
+<h4>Headless Mode</h4>
+<p>Use the <code>--headless</code> parameter to start PsLauncher without the GUI window, serving only through the HTTP API:</p>
+<pre><code class="language-bash">python PsLauncher.py --headless
+</code></pre>
+<h4>API Configuration</h4>
+<p>Configure API-related parameters in <code>launcher_config.json</code>:</p>
+<pre><code class="language-json">{
+    // ... other config ...
+    &quot;api&quot;: {
+        &quot;enabled&quot;: true,           // Enable/disable API server (false to turn off next startup)
+        &quot;bind_ip&quot;: &quot;127.0.0.1&quot;,    // IP to bind (127.0.0.1 prevents public network access)
+        &quot;bind_port&quot;: 13025,        // Port to bind
+        &quot;auth_token&quot;: &quot;&quot;           // Bearer token (empty string = no authentication)
+    }
+}
+</code></pre>
+<h4>Authentication</h4>
+<p>If <code>auth_token</code> is configured, all requests must carry the Authorization header:</p>
+<pre><code>Authorization: Bearer &lt;your-token&gt;
+</code></pre>
+<p>Returns <code>401 Unauthorized</code> for incorrect tokens.</p>
+<h4>API Endpoints</h4>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>Description</th>
+<th>Request Body/Params</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GET/POST /status</code></td>
+<td>Check server status</td>
+<td>None</td>
+</tr>
+<tr>
+<td><code>GET/POST /help</code></td>
+<td>Get help page HTML</td>
+<td>None</td>
+</tr>
+<tr>
+<td><code>GET/POST /folders</code></td>
+<td>List folder paths</td>
+<td>None</td>
+</tr>
+<tr>
+<td><code>GET/POST /scripts</code></td>
+<td>List scripts</td>
+<td><code>?folder=&lt;path&gt;</code> (optional)</td>
+</tr>
+<tr>
+<td><code>POST /folder/add</code></td>
+<td>Add folder</td>
+<td><code>{"path":"C:/scripts"}</code></td>
+</tr>
+<tr>
+<td><code>POST /folder/remove</code></td>
+<td>Remove folder</td>
+<td><code>{"path":"C:/scripts"}</code></td>
+</tr>
+<tr>
+<td><code>POST /script/run</code></td>
+<td>Run a script</td>
+<td><code>{"folder":"C:/scripts","script":"test0.ps1"}</code></td>
+</tr>
+<tr>
+<td><code>GET/POST /terminals</code></td>
+<td>List terminals (with IDs)</td>
+<td>None</td>
+</tr>
+<tr>
+<td><code>POST /terminal/stop</code></td>
+<td>Stop terminal</td>
+<td><code>{"id":0}</code> or <code>{"name":"test0.ps1"}</code></td>
+</tr>
+<tr>
+<td><code>GET/POST /terminal/output</code></td>
+<td>View terminal output</td>
+<td><code>?id=0</code> or <code>?name=test0.ps1</code></td>
+</tr>
+<tr>
+<td><code>POST /terminal/clear</code></td>
+<td>Clear terminal output</td>
+<td><code>{"id":0}</code></td>
+</tr>
+<tr>
+<td><code>POST /terminal/input</code></td>
+<td>Send input to terminal</td>
+<td><code>{"id":0,"text":"hello\n"}</code></td>
+</tr>
+<tr>
+<td><code>GET/POST /shutdown</code></td>
+<td>Shutdown PsLauncher</td>
+<td>None</td>
+</tr>
+</tbody>
+</table>
+<h4>Usage Examples (full demo flow)</h4>
+<blockquote>
+<p><strong>PowerShell note</strong>: PowerShell parses arguments differently than CMD. Use <code>--%</code> (stop-parsing symbol). Replace <code>&lt;SCRIPT_DIR&gt;</code> with your <code>test_script</code> absolute path.</p>
+</blockquote>
+<pre><code class="language-powershell"># ===== 0. Check server status =====
+curl.exe http://127.0.0.1:13025/status
+
+# ===== 1. Add test_script folder =====
+curl.exe --% -X POST http://127.0.0.1:13025/folder/add -H &quot;Content-Type: application/json&quot; -d &quot;{\&quot;path\&quot;:\&quot;&lt;SCRIPT_DIR&gt;\&quot;}&quot;
+
+# ===== 2. List all runnable scripts =====
+curl.exe http://127.0.0.1:13025/scripts
+
+# ===== 3. Run test0.ps1 (basic output + PWD) =====
+curl.exe --% -X POST http://127.0.0.1:13025/script/run -H &quot;Content-Type: application/json&quot; -d &quot;{\&quot;folder\&quot;:\&quot;&lt;SCRIPT_DIR&gt;\&quot;,\&quot;script\&quot;:\&quot;test0.ps1\&quot;}&quot;
+
+# ===== 4. List terminals (note the ID) =====
+curl.exe http://127.0.0.1:13025/terminals
+
+# ===== 5. View output of id=0 (test0.ps1) =====
+curl.exe &quot;http://127.0.0.1:13025/terminal/output?id=0&quot;
+
+# ===== 6. Run test2.ps1 (interactive input demo) =====
+curl.exe --% -X POST http://127.0.0.1:13025/script/run -H &quot;Content-Type: application/json&quot; -d &quot;{\&quot;folder\&quot;:\&quot;&lt;SCRIPT_DIR&gt;\&quot;,\&quot;script\&quot;:\&quot;test2.ps1\&quot;}&quot;
+
+# ===== 7. List terminals (now should have id=0 and id=1) =====
+curl.exe http://127.0.0.1:13025/terminals
+
+# ===== 8. Send input to id=1 (test2.ps1) =====
+curl.exe --% -X POST http://127.0.0.1:13025/terminal/input -H &quot;Content-Type: application/json&quot; -d &quot;{\&quot;id\&quot;:1,\&quot;text\&quot;:\&quot;Hello PsLauncher\&quot;}&quot;
+
+# ===== 9. View test2.ps1 output =====
+curl.exe &quot;http://127.0.0.1:13025/terminal/output?id=1&quot;
+
+# ===== 10. Run test3.bat (batch script demo) =====
+curl.exe --% -X POST http://127.0.0.1:13025/script/run -H &quot;Content-Type: application/json&quot; -d &quot;{\&quot;folder\&quot;:\&quot;&lt;SCRIPT_DIR&gt;\&quot;,\&quot;script\&quot;:\&quot;test3.bat\&quot;}&quot;
+
+# ===== 11. View test3.bat output =====
+curl.exe &quot;http://127.0.0.1:13025/terminal/output?id=2&quot;
+
+# ===== 12. Clear test3.bat terminal screen =====
+curl.exe --% -X POST http://127.0.0.1:13025/terminal/clear -H &quot;Content-Type: application/json&quot; -d &quot;{\&quot;id\&quot;:2}&quot;
+
+# ===== 13. Stop id=1 (test2.ps1) terminal =====
+curl.exe --% -X POST http://127.0.0.1:13025/terminal/stop -H &quot;Content-Type: application/json&quot; -d &quot;{\&quot;id\&quot;:1}&quot;
+
+# ===== 14. Shutdown PsLauncher =====
+curl.exe --% -X POST http://127.0.0.1:13025/shutdown
 </code></pre>
 <p>Example:</p>
 <pre><code class="language-bash"># Start the compiled exe
@@ -595,7 +745,7 @@ A: Use the "Script Management" → "Delete Script" function. Note that this oper
 <pre><code class="language-bash">python -m pytest test/ -v --tb=long -p no:warnings
 </code></pre>
 <p><strong>Non-GUI only</strong> (quick regression):</p>
-<pre><code class="language-bash">python -m pytest test/ -q --tb=short -p no:warnings --no-header -m &quot;not gui&quot; -n auto
+<pre><code class="language-bash">python -m pytest test/ -q --tb=short -p no:warnings --no-header -m &quot;not gui&quot;
 </code></pre>
 <p>Parameter explanation:</p>
 <ul>
@@ -626,6 +776,7 @@ $env:QT_QPA_PLATFORM=&quot;offscreen&quot;   # Windows PowerShell
 <li><strong>AI only needs <code>py_compile</code> verification</strong> after writing test code. Do NOT execute GUI tests yourself; leave them for human confirmation.</li>
 <li>Never attempt to read <code>source_ico.py</code>.</li>
 <li>GUI test coverage is limited under offscreen mode; tray/drag operations require manual verification.</li>
+<li>After development is complete, you must run <code>python -m pytest test/ -q --tb=long -p no:warnings</code> to execute the automated tests and confirm that everything passes.</li>
 </ul>
 <h3>Human Developer Checklist</h3>
 <p>Mapping of the original "Human Developer Checklist" items to automation status:</p>

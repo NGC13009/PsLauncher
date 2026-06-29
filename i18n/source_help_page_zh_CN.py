@@ -67,6 +67,160 @@ options:
   --font FONT      设定字体            例如 'Consolas'
   --height HEIGHT  窗口高度            例如 768
   --width WIDTH    窗口宽度            例如 1366
+  --headless       无头模式，不显示GUI窗口，仅通过HTTP API操作
+</code></pre>
+<h3>HTTP API 服务器</h3>
+<p>PsLauncher 启动后默认在 <code>127.0.0.1:13025</code> 暴露 HTTP API 服务器，任何 LLM 或人类的 POST/GET 请求都可以操作 PsLauncher 的功能。相当于在 GUI 上进行操作。</p>
+<h4>无头模式</h4>
+<p>通过 <code>--headless</code> 参数启动 PsLauncher，将不显示 GUI 窗口，仅通过 HTTP API 提供服务：</p>
+<pre><code class="language-bash">python PsLauncher.py --headless
+</code></pre>
+<h4>API 配置</h4>
+<p>在 <code>launcher_config.json</code> 中配置 API 相关参数：</p>
+<pre><code class="language-json">{
+    // ...其他配置...
+    &quot;api&quot;: {
+        &quot;enabled&quot;: true,           // 是否启用API服务器（false可在下次启动关闭）
+        &quot;bind_ip&quot;: &quot;127.0.0.1&quot;,    // 绑定IP（127.0.0.1不响应公网请求）
+        &quot;bind_port&quot;: 13025,        // 绑定端口
+        &quot;auth_token&quot;: &quot;&quot;           // Bearer Token（空字符串=不验权）
+    }
+}
+</code></pre>
+<h4>验权方式</h4>
+<p>若配置了 <code>auth_token</code>，所有请求需携带 Authorization 头：</p>
+<pre><code>Authorization: Bearer &lt;your-token&gt;
+</code></pre>
+<p>token 不正确时返回 <code>401 Unauthorized</code>。</p>
+<h4>API 端点列表</h4>
+<p>所有端点支持 POST 请求，大部分查询类端点同时支持 GET。</p>
+<table>
+<thead>
+<tr>
+<th>端点</th>
+<th>说明</th>
+<th>请求体/参数</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GET/POST /status</code></td>
+<td>查看状态</td>
+<td>无参数</td>
+</tr>
+<tr>
+<td><code>GET/POST /help</code></td>
+<td>查看帮助信息</td>
+<td>无参数</td>
+</tr>
+<tr>
+<td><code>GET/POST /folders</code></td>
+<td>枚举文件夹路径列表</td>
+<td>无参数</td>
+</tr>
+<tr>
+<td><code>GET/POST /scripts</code></td>
+<td>枚举脚本列表</td>
+<td><code>?folder=&lt;路径&gt;</code>（可选）</td>
+</tr>
+<tr>
+<td><code>POST /folder/add</code></td>
+<td>增加路径</td>
+<td><code>{"path":"C:/scripts"}</code></td>
+</tr>
+<tr>
+<td><code>POST /folder/remove</code></td>
+<td>移除路径</td>
+<td><code>{"path":"C:/scripts"}</code></td>
+</tr>
+<tr>
+<td><code>POST /script/run</code></td>
+<td>运行脚本</td>
+<td><code>{"folder":"C:/scripts","script":"test0.ps1"}</code></td>
+</tr>
+<tr>
+<td><code>GET/POST /terminals</code></td>
+<td>枚举终端界面（含ID）</td>
+<td>无参数</td>
+</tr>
+<tr>
+<td><code>POST /terminal/stop</code></td>
+<td>终止终端</td>
+<td><code>{"id":0}</code> 或 <code>{"name":"test0.ps1"}</code></td>
+</tr>
+<tr>
+<td><code>GET/POST /terminal/output</code></td>
+<td>查看终端输出</td>
+<td><code>?id=0</code> 或 <code>?name=test0.ps1</code></td>
+</tr>
+<tr>
+<td><code>POST /terminal/clear</code></td>
+<td>清空终端输出</td>
+<td><code>{"id":0}</code></td>
+</tr>
+<tr>
+<td><code>POST /terminal/input</code></td>
+<td>向终端发送字符串</td>
+<td><code>{"id":0,"text":"hello\n"}</code></td>
+</tr>
+<tr>
+<td><code>GET/POST /shutdown</code></td>
+<td>关闭 PsLauncher</td>
+<td>无参数</td>
+</tr>
+</tbody>
+</table>
+<h4>使用示例（完整演示流程）</h4>
+<blockquote>
+<p><strong>PowerShell 注意</strong>：PowerShell 解析参数的方式与 CMD 不同，推荐使用 <code>--%</code>（停止解析符号）。以下示例均采用 <code>--%</code> 写法，并用 <code>\</code> 表示路径分隔符和转义。</p>
+</blockquote>
+<p>所有示例假设您已启动 PsLauncher，并将以下 <code>&lt;脚本目录&gt;</code> 替换为您的 <code>test_script</code> 文件夹的<strong>绝对路径</strong>（例如 <code>E:\project_file\limitless\PsLauncher\test_script</code>）。当前仓库自带几个测试用的脚本, 可以直接使用. (可能需要下载源代码, 而非release版本, 因为release不包含任何测试脚本)</p>
+<pre><code class="language-powershell"># ===== 0. 检查服务状态 =====
+curl.exe http://127.0.0.1:13025/status
+
+# ===== 1. 添加 test_script 文件夹到扫描列表 =====
+curl.exe --% -X POST http://127.0.0.1:13025/folder/add -H &quot;Content-Type: application/json&quot; -d &quot;{\&quot;path\&quot;:\&quot;E:\\project_file\\limitless\\PsLauncher\\test_script\&quot;}&quot;
+
+# ===== 2. 列出所有可运行脚本 =====
+curl.exe http://127.0.0.1:13025/scripts
+
+# ===== 3. 运行 test0.ps1（基础输出 + 显示工作目录）=====
+#     test0.ps1 内容：输出三行文本，然后显示当前工作路径
+curl.exe --% -X POST http://127.0.0.1:13025/script/run -H &quot;Content-Type: application/json&quot; -d &quot;{\&quot;folder\&quot;:\&quot;E:\\project_file\\limitless\\PsLauncher\\test_script\&quot;,\&quot;script\&quot;:\&quot;test0.ps1\&quot;}&quot;
+
+# ===== 4. 查看终端列表（记录终端 ID）=====
+curl.exe http://127.0.0.1:13025/terminals
+
+# ===== 5. 查看终端输出（id=0 是上一步运行的 test0.ps1）=====
+curl.exe &quot;http://127.0.0.1:13025/terminal/output?id=0&quot;
+
+# ===== 6. 运行 test2.ps1（交互式输入演示）=====
+#     test2.ps1 内容：输出三行后通过 Read-Host 等待键盘输入
+curl.exe --% -X POST http://127.0.0.1:13025/script/run -H &quot;Content-Type: application/json&quot; -d &quot;{\&quot;folder\&quot;:\&quot;E:\\project_file\\limitless\\PsLauncher\\test_script\&quot;,\&quot;script\&quot;:\&quot;test2.ps1\&quot;}&quot;
+
+# ===== 7. 查看新终端列表（此时应有 id=0 和 id=1 两个终端）=====
+curl.exe http://127.0.0.1:13025/terminals
+
+# ===== 8. 向 id=1（test2.ps1）发送输入 =====
+curl.exe --% -X POST http://127.0.0.1:13025/terminal/input -H &quot;Content-Type: application/json&quot; -d &quot;{\&quot;id\&quot;:1,\&quot;text\&quot;:\&quot;Hello PsLauncher\&quot;}&quot;
+
+# ===== 9. 查看 test2.ps1 的输出（应包含刚输入的内容）=====
+curl.exe &quot;http://127.0.0.1:13025/terminal/output?id=1&quot;
+
+# ===== 10. 运行 test3.bat（批处理脚本演示）=====
+curl.exe --% -X POST http://127.0.0.1:13025/script/run -H &quot;Content-Type: application/json&quot; -d &quot;{\&quot;folder\&quot;:\&quot;E:\\project_file\\limitless\\PsLauncher\\test_script\&quot;,\&quot;script\&quot;:\&quot;test3.bat\&quot;}&quot;
+
+# ===== 11. 查看 test3.bat 的输出 =====
+curl.exe &quot;http://127.0.0.1:13025/terminal/output?id=2&quot;
+
+# ===== 12. 清空 test3.bat 的终端输出 =====
+curl.exe --% -X POST http://127.0.0.1:13025/terminal/clear -H &quot;Content-Type: application/json&quot; -d &quot;{\&quot;id\&quot;:2}&quot;
+
+# ===== 13. 终止 id=1（test2.ps1）的终端进程 =====
+curl.exe --% -X POST http://127.0.0.1:13025/terminal/stop -H &quot;Content-Type: application/json&quot; -d &quot;{\&quot;id\&quot;:1}&quot;
+
+# ===== 14. 关闭 PsLauncher =====
+curl.exe --% -X POST http://127.0.0.1:13025/shutdown
 </code></pre>
 <p>例子:</p>
 <pre><code class="language-bash"># 编译后exe启动
@@ -609,10 +763,10 @@ A: 使用"脚本管理"→"删除脚本"功能，注意此操作直接删除文�
 <pre><code class="language-bash">python -m pytest test/ -q --tb=short -p no:warnings --no-header
 </code></pre>
 <p><strong>详细版</strong>（本地调试用）：</p>
-<pre><code class="language-bash">python -m pytest test/ -v --tb=long -p no:warnings
+<pre><code class="language-bash">python -m pytest test/ -q --tb=long -p no:warnings
 </code></pre>
 <p><strong>仅运行非 GUI 测试</strong>（快速回归）：</p>
-<pre><code class="language-bash">python -m pytest test/ -q --tb=short -p no:warnings --no-header -m &quot;not gui&quot; -n auto
+<pre><code class="language-bash">python -m pytest test/ -q --tb=short -p no:warnings --no-header -m &quot;not gui&quot;
 </code></pre>
 <p>参数说明：</p>
 <ul>
@@ -643,6 +797,7 @@ $env:QT_QPA_PLATFORM=&quot;offscreen&quot;   # Windows PowerShell
 <li><strong>AI 完成测试代码后只需 <code>py_compile</code> 校验</strong>，不得自行执行 GUI 用例，交人类确认。</li>
 <li>禁止读取 <code>source_ico.py</code>等source开头的文件，这些文件是通过编译器自动生成的，很大。</li>
 <li>GUI 用例在 offscreen 下覆盖有限，托盘/拖动等需人工复核。</li>
+<li>开发完成后必须 <code>python -m pytest test/ -q --tb=long -p no:warnings</code> 自动测试执行一遍确认没有问题.</li>
 </ul>
 <h3>人类开发者须知（测试清单）</h3>
 <p>对照原「人类开发者须知」清单，标注自动化覆盖状态：</p>
