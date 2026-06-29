@@ -451,14 +451,11 @@ pyinstaller -w ./PsLauncher.py -i ./logo.ico -y --distpath ./exe  --paths ./
 
 正确的发布流程如下：
 
-1. 手工将当前的更新合并到其他语言版本的代码中。
-2. 更改 `aboutandhelp.py` 里面的`__version__`和`__devdate__`.
-3. 执行`get_help_page.py`编译页面
-4. 如果ico更新了,执行`get_ico.py`编译一遍ico
-5. 执行`pyinstaller -w ./PsLauncher.py -i ./logo.ico -y --distpath ./exe  --paths ./`编译文件
-6. 如果有其他语言, 在其他语言仓库下再编译一遍
-7. 所有不同语言的软件共用一个依赖库, 因此只需要将编译好的exe复制到同一处, 即可. 正确的做法类似于下面的结果.
-8. 如果有必要, 将帮助文档也放一份.
+1. 更改 `aboutandhelp.py` 里面的`__version__`和`__devdate__`.
+2. 执行`get_help_page.py`编译多语言帮助页面（读取 `README.md` 生成英文、`README_CN.md` 生成中文等）
+3. 如果ico更新了,执行`get_ico.py`编译一遍ico
+4. 执行`pyinstaller -w ./PsLauncher.py -i ./logo.ico -y --distpath ./exe  --paths ./`编译文件
+5. 如果有必要, 将帮助文档也放一份.
 
 正确的发布版本结构:
 

@@ -438,14 +438,11 @@ This program only has one icon as media data, which has been processed into base
 
 The correct release workflow is as follows:
 
-1. Manually merge the current updates into the codebase of other language versions.
-2. Update `__version__` and `__devdate__` inside `aboutandhelp.py`.
-3. Execute `get_help_page.py` to compile the help page.
-4. If the .ico file has been updated, recompile it using `get_ico.py`.
-5. Compile the executable by running `pyinstaller -w ./PsLauncher.py -i ./logo.ico -y --distpath ./exe --paths ./`.
-6. If there are other language versions, compile them again in their respective repositories.
-7. Since all different language versions share the same dependency libraries, you only need to copy the compiled .exe to the same location. The correct structure is similar to the example below.
-8. If necessary, include the help documentation as well.
+1. Update `__version__` and `__devdate__` inside `aboutandhelp.py`.
+2. Execute `get_help_page.py` to compile help pages for all languages (reads `README.md` for English, `README_CN.md` for Chinese, etc.).
+3. If the .ico file has been updated, recompile it using `get_ico.py`.
+4. Compile the executable by running `pyinstaller -w ./PsLauncher.py -i ./logo.ico -y --distpath ./exe --paths ./`.
+5. If necessary, include the help documentation as well.
 
 Correct release version structure:
 

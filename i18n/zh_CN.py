@@ -114,6 +114,8 @@ messages = {
     "context.cut": "✂️ 剪切",
     "context.close_tab": "🗑️ 关闭标签页",
     "about.title": "关于",
+    "about.description": "在轻量级界面中，管理多个路径下的脚本，随时查看，统一窗口内快速执行。",
+    "about.author": "NGC13009",
     "about.copy_info": "复制信息到剪贴板",
     "about.github": "GitHub/PsLauncher",
     "about.close_btn": "❎",

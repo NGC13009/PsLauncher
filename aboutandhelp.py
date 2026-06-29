@@ -11,11 +11,10 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 
-from source_help_page import html_content
 from i18n import tr
 
-__version__ = "v1.0.8"
-__devdate__ = "JUNE 28, 2026"
+__version__ = "v1.0.9"
+__devdate__ = "JUNE 29, 2026"
 __githublink__ = "https://github.com/NGC13009/PsLauncher.git"
 
 
@@ -81,8 +80,8 @@ class AboutDialog(PsLauncherDiag):
         <h2 align="center">PsLauncher</h2>
         <p align="center">{__version__}</p>
         <hr>
-        <p>In a lightweight interface, manage scripts under multiple paths, view them anytime, and execute them quickly within a unified window.</p>
-        <p>NGC13009</p>
+        <p>{tr("about.description")}</p>
+        <p>{tr("about.author")}</p>
         <p>{__devdate__}</p>
         """
         self.text_browser.setHtml(html_content)
@@ -126,4 +125,9 @@ class HelpDialog(PsLauncherDiag):
         self.btn_copy.clicked.connect(self._copy_to_clipboard)
 
     def _populate_about_content(self):
-        self.text_browser.setHtml(html_content)
+        from i18n import get_language
+        if get_language() == "zh_CN":
+            from i18n.source_help_page_zh_CN import html_content as hc
+        else:
+            from i18n.source_help_page import html_content as hc
+        self.text_browser.setHtml(hc)

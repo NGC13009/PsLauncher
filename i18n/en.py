@@ -115,6 +115,8 @@ messages = {
     "context.cut": "✂️ Cut",
     "context.close_tab": "🗑️ Close Tab",
     "about.title": "About",
+    "about.description": "In a lightweight interface, manage scripts under multiple paths, view them anytime, and execute them quickly within a unified window.",
+    "about.author": "NGC13009",
     "about.copy_info": "Copy info to clipboard",
     "about.github": "GitHub/PsLauncher",
     "about.close_btn": "❎",
