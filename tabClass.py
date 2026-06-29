@@ -134,9 +134,12 @@ class EditorTab(QWidget):
 
 # Interactive terminal tab
 class TerminalTab(QWidget):
+    _next_id = 0  # 类级别计数器，用于给每个终端标签页分配唯一持久ID
 
     def __init__(self, script_path, font_family, isdark, line_wrap_mode=True):
         super().__init__()
+        self.terminal_id = TerminalTab._next_id  # 唯一持久ID
+        TerminalTab._next_id += 1
         self.script_path = script_path
         self.layout = QVBoxLayout(self)
         self.layout.setContentsMargins(0, 0, 0, 0)

@@ -31,7 +31,13 @@ _default_config = {
     'syntax_highlight_mode': 'auto',     # Syntax highlighting mode: enum 'auto', 'ps1', 'bash', 'command', 'none'
     'auto_run_scripts': [],              # list[str] List of script paths to auto-run on startup
     'auto_minimize_to_tray': False,      # bool Whether to auto-minimize to system tray on startup
-    'language': 'en'                     # str UI language code
+    'language': 'en',                    # str UI language code
+    'api': {                             # dict API server configuration
+        'enabled': True,                 # bool Whether to enable the HTTP API server on startup
+        'bind_ip': '127.0.0.1',          # str IP address to bind the API server
+        'bind_port': 13025,              # int Port to bind the API server
+        'auth_token': ''                 # str Bearer token for authentication (empty = no auth)
+    }
 }
 
 

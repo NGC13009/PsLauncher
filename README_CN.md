@@ -67,6 +67,120 @@ options:
   --font FONT      设定字体            例如 'Consolas'
   --height HEIGHT  窗口高度            例如 768
   --width WIDTH    窗口宽度            例如 1366
+  --headless       无头模式，不显示GUI窗口，仅通过HTTP API操作
+```
+
+### HTTP API 服务器
+
+PsLauncher 启动后默认在 `127.0.0.1:13025` 暴露 HTTP API 服务器，任何 LLM 或人类的 POST/GET 请求都可以操作 PsLauncher 的功能。相当于在 GUI 上进行操作。
+
+#### 无头模式
+
+通过 `--headless` 参数启动 PsLauncher，将不显示 GUI 窗口，仅通过 HTTP API 提供服务：
+
+```bash
+python PsLauncher.py --headless
+```
+
+#### API 配置
+
+在 `launcher_config.json` 中配置 API 相关参数：
+
+```json
+{
+    // ...其他配置...
+    "api": {
+        "enabled": true,           // 是否启用API服务器（false可在下次启动关闭）
+        "bind_ip": "127.0.0.1",    // 绑定IP（127.0.0.1不响应公网请求）
+        "bind_port": 13025,        // 绑定端口
+        "auth_token": ""           // Bearer Token（空字符串=不验权）
+    }
+}
+```
+
+#### 验权方式
+
+若配置了 `auth_token`，所有请求需携带 Authorization 头：
+
+```
+Authorization: Bearer <your-token>
+```
+
+token 不正确时返回 `401 Unauthorized`。
+
+#### API 端点列表
+
+所有端点支持 POST 请求，大部分查询类端点同时支持 GET。
+
+| 端点 | 说明 | 请求体/参数 |
+|---|---|---|
+| `GET/POST /status` | 查看状态 | 无参数 |
+| `GET/POST /help` | 查看帮助信息 | 无参数 |
+| `GET/POST /folders` | 枚举文件夹路径列表 | 无参数 |
+| `GET/POST /scripts` | 枚举脚本列表 | `?folder=<路径>`（可选） |
+| `POST /folder/add` | 增加路径 | `{"path":"C:/scripts"}` |
+| `POST /folder/remove` | 移除路径 | `{"path":"C:/scripts"}` |
+| `POST /script/run` | 运行脚本 | `{"folder":"C:/scripts","script":"test0.ps1"}` |
+| `GET/POST /terminals` | 枚举终端界面（含ID） | 无参数 |
+| `POST /terminal/stop` | 终止终端 | `{"id":0}` 或 `{"name":"test0.ps1"}` |
+| `GET/POST /terminal/output` | 查看终端输出 | `?id=0` 或 `?name=test0.ps1` |
+| `POST /terminal/clear` | 清空终端输出 | `{"id":0}` |
+| `POST /terminal/input` | 向终端发送字符串 | `{"id":0,"text":"hello\n"}` |
+| `GET/POST /shutdown` | 关闭 PsLauncher | 无参数 |
+
+#### 使用示例（完整演示流程）
+
+> **PowerShell 注意**：PowerShell 解析参数的方式与 CMD 不同，推荐使用 `--%`（停止解析符号）。以下示例均采用 `--%` 写法，并用 `\` 表示路径分隔符和转义。
+
+所有示例假设您已启动 PsLauncher，并将以下 `<脚本目录>` 替换为您的 `test_script` 文件夹的**绝对路径**（例如 `E:\project_file\limitless\PsLauncher\test_script`）。当前仓库自带几个测试用的脚本, 可以直接使用. (可能需要下载源代码, 而非release版本, 因为release不包含任何测试脚本)
+
+```powershell
+# ===== 0. 检查服务状态 =====
+curl.exe http://127.0.0.1:13025/status
+
+# ===== 1. 添加 test_script 文件夹到扫描列表 =====
+curl.exe --% -X POST http://127.0.0.1:13025/folder/add -H "Content-Type: application/json" -d "{\"path\":\"E:\\project_file\\limitless\\PsLauncher\\test_script\"}"
+
+# ===== 2. 列出所有可运行脚本 =====
+curl.exe http://127.0.0.1:13025/scripts
+
+# ===== 3. 运行 test0.ps1（基础输出 + 显示工作目录）=====
+#     test0.ps1 内容：输出三行文本，然后显示当前工作路径
+curl.exe --% -X POST http://127.0.0.1:13025/script/run -H "Content-Type: application/json" -d "{\"folder\":\"E:\\project_file\\limitless\\PsLauncher\\test_script\",\"script\":\"test0.ps1\"}"
+
+# ===== 4. 查看终端列表（记录终端 ID）=====
+curl.exe http://127.0.0.1:13025/terminals
+
+# ===== 5. 查看终端输出（id=0 是上一步运行的 test0.ps1）=====
+curl.exe "http://127.0.0.1:13025/terminal/output?id=0"
+
+# ===== 6. 运行 test2.ps1（交互式输入演示）=====
+#     test2.ps1 内容：输出三行后通过 Read-Host 等待键盘输入
+curl.exe --% -X POST http://127.0.0.1:13025/script/run -H "Content-Type: application/json" -d "{\"folder\":\"E:\\project_file\\limitless\\PsLauncher\\test_script\",\"script\":\"test2.ps1\"}"
+
+# ===== 7. 查看新终端列表（此时应有 id=0 和 id=1 两个终端）=====
+curl.exe http://127.0.0.1:13025/terminals
+
+# ===== 8. 向 id=1（test2.ps1）发送输入 =====
+curl.exe --% -X POST http://127.0.0.1:13025/terminal/input -H "Content-Type: application/json" -d "{\"id\":1,\"text\":\"Hello PsLauncher\"}"
+
+# ===== 9. 查看 test2.ps1 的输出（应包含刚输入的内容）=====
+curl.exe "http://127.0.0.1:13025/terminal/output?id=1"
+
+# ===== 10. 运行 test3.bat（批处理脚本演示）=====
+curl.exe --% -X POST http://127.0.0.1:13025/script/run -H "Content-Type: application/json" -d "{\"folder\":\"E:\\project_file\\limitless\\PsLauncher\\test_script\",\"script\":\"test3.bat\"}"
+
+# ===== 11. 查看 test3.bat 的输出 =====
+curl.exe "http://127.0.0.1:13025/terminal/output?id=2"
+
+# ===== 12. 清空 test3.bat 的终端输出 =====
+curl.exe --% -X POST http://127.0.0.1:13025/terminal/clear -H "Content-Type: application/json" -d "{\"id\":2}"
+
+# ===== 13. 终止 id=1（test2.ps1）的终端进程 =====
+curl.exe --% -X POST http://127.0.0.1:13025/terminal/stop -H "Content-Type: application/json" -d "{\"id\":1}"
+
+# ===== 14. 关闭 PsLauncher =====
+curl.exe --% -X POST http://127.0.0.1:13025/shutdown
 ```
 
 例子:

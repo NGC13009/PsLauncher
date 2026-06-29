@@ -9,6 +9,7 @@
 
 import sys
 import os
+import signal
 import argparse
 import base64
 import subprocess
@@ -24,6 +25,7 @@ from tabClass import *
 from aboutandhelp import AboutDialog, HelpDialog
 from source_ico import icon_base64_data
 from i18n import available_languages, set_language, tr
+from api_server import ApiServerThread
 
 
 # Main window
@@ -1911,6 +1913,231 @@ class MainWindow(QMainWindow):
             else:
                 print(f"Auto-run skipped (file does not exist): {script_path}")
 
+    # ======================== HTTP API 辅助方法 ======================================
+
+    def _get_terminal_by_id(self, terminal_id):
+        """通过 ID 查找终端标签页"""
+        for i in range(self.tabs.count()):
+            widget = self.tabs.widget(i)
+            if isinstance(widget, TerminalTab) and widget.terminal_id == terminal_id:
+                return widget
+        return None
+
+    def _get_terminal_by_name(self, name):
+        """通过脚本名称查找终端标签页（若有多个同名则返回第一个）"""
+        matches = []
+        for i in range(self.tabs.count()):
+            widget = self.tabs.widget(i)
+            if isinstance(widget, TerminalTab):
+                script_name = os.path.basename(widget.script_path)
+                if script_name == name:
+                    matches.append(widget)
+        return matches[0] if len(matches) == 1 else None
+
+    def _find_script_by_folder_and_name(self, folder, script_name):
+        """根据文件夹路径和脚本名查找完整脚本路径"""
+        if not os.path.isdir(folder):
+            return None
+        full_path = os.path.join(folder, script_name)
+        if os.path.isfile(full_path):
+            ext = os.path.splitext(script_name)[1].lower()
+            if ext in self.config.get('supported_extensions', DEFAULT_EXT):
+                return full_path
+        return None
+
+    def start_api_server(self):
+        """启动 HTTP API 服务器"""
+        api_config = self.config.get('api', {})
+        enabled = api_config.get('enabled', True)
+        if not enabled:
+            print("[MainWindow] API 服务器已在配置中禁用，跳过启动")
+            return
+
+        bind_ip = api_config.get('bind_ip', '127.0.0.1')
+        bind_port = api_config.get('bind_port', 13025)
+        auth_token = api_config.get('auth_token', '')
+
+        self.api_thread = ApiServerThread(bind_ip, bind_port, auth_token, self)
+        # 连接信号处理
+        self.api_thread.execute_signal.connect(self._handle_api_call)
+        self.api_thread.start()
+
+    def stop_api_server(self):
+        """停止 HTTP API 服务器"""
+        if hasattr(self, 'api_thread') and self.api_thread:
+            self.api_thread.stop()
+            self.api_thread.wait(3000)
+
+    def _handle_api_call(self, method_name, args, result_holder):
+        """在主线程中处理 API 调用（由信号触发）"""
+        try:
+            method = getattr(self, method_name, None)
+            if method is None:
+                result_holder["error"] = f"Unknown method: {method_name}"
+            else:
+                result = method(*args)
+                result_holder["result"] = result
+        except Exception as e:
+            result_holder["error"] = str(e)
+        finally:
+            result_holder["done"].set()
+
+    # ---------- 以下方法在 HTTP 线程被 _invoke_main 调用，实际在主线程执行 ----------
+
+    def api_get_folders(self):
+        """返回文件夹路径列表"""
+        return {"folders": list(self.config.get("folders", []))}
+
+    def api_get_scripts(self, folder=None):
+        """返回脚本列表（可选按文件夹筛选）"""
+        scripts = []
+        runnable_ext = self.config.get('runnable_extensions', DEFAULT_EXT)
+        for f in self.config.get("folders", []):
+            if folder and f != folder:
+                continue
+            if not os.path.isdir(f):
+                continue
+            for file in sorted(os.listdir(f)):
+                full_path = os.path.join(f, file)
+                if os.path.isfile(full_path):
+                    ext = os.path.splitext(file)[1].lower()
+                    if ext in runnable_ext:
+                        scripts.append({
+                            "folder": f,
+                            "name": file,
+                            "path": full_path
+                        })
+        return {"scripts": scripts}
+
+    def api_add_folder(self, path):
+        """添加文件夹路径"""
+        if not path:
+            return {"success": False, "error": "路径不能为空"}
+        if not os.path.isdir(path):
+            return {"success": False, "error": f"路径不存在或不是文件夹: {path}"}
+        if path in self.config["folders"]:
+            return {"success": True, "message": "文件夹已存在"}
+        self.config["folders"].append(path)
+        self.refresh_tree()
+        self.save_config()
+        return {"success": True, "message": f"已添加文件夹: {path}"}
+
+    def api_remove_folder(self, path):
+        """移除文件夹路径"""
+        if path not in self.config["folders"]:
+            return {"success": False, "error": f"文件夹不在列表中: {path}"}
+        self.config["folders"].remove(path)
+        self.refresh_tree()
+        self.save_config()
+        return {"success": True, "message": f"已移除文件夹: {path}"}
+
+    def api_run_script(self, folder, script):
+        """运行指定脚本"""
+        script_path = self._find_script_by_folder_and_name(folder, script)
+        if not script_path:
+            return {"success": False, "error": f"脚本未找到: {folder}/{script}"}
+        ext = os.path.splitext(script_path)[1].lower()
+        if ext not in self.config.get('runnable_extensions', DEFAULT_EXT):
+            return {"success": False, "error": f"不支持运行该类型脚本: {ext}"}
+        self.open_terminal_tab(script_path)
+        # 找到刚创建的终端标签页
+        for i in range(self.tabs.count()):
+            widget = self.tabs.widget(i)
+            if isinstance(widget, TerminalTab) and widget.script_path == script_path:
+                return {"success": True, "terminal_id": widget.terminal_id, "message": f"已启动脚本: {script}"}
+        return {"success": True, "terminal_id": None, "message": f"已启动脚本: {script}"}
+
+    def api_get_terminals(self):
+        """返回所有打开的终端信息"""
+        terminals = []
+        for i in range(self.tabs.count()):
+            widget = self.tabs.widget(i)
+            if isinstance(widget, TerminalTab):
+                script_name = os.path.basename(widget.script_path)
+                running = widget.process is not None and widget.process.state() == QProcess.Running
+                terminals.append({
+                    "id": widget.terminal_id,
+                    "name": script_name,
+                    "script": widget.script_path,
+                    "running": running
+                })
+        return {"terminals": terminals}
+
+    def api_stop_terminal(self, terminal_id=None, terminal_name=None):
+        """终止终端"""
+        widget = None
+        if terminal_id is not None:
+            widget = self._get_terminal_by_id(terminal_id)
+            if not widget:
+                return {"success": False, "error": f"未找到 ID 为 {terminal_id} 的终端"}
+        elif terminal_name:
+            widget = self._get_terminal_by_name(terminal_name)
+            if not widget:
+                return {"success": False, "error": f"未找到唯一名称为 '{terminal_name}' 的终端（可能有多个同名或不存在）"}
+        else:
+            return {"success": False, "error": "必须提供 id 或 name 参数"}
+
+        widget.stop_process()
+        # 找到对应的标签页索引并关闭
+        for i in range(self.tabs.count()):
+            if self.tabs.widget(i) is widget:
+                self.tabs.removeTab(i)
+                break
+        return {"success": True, "message": f"已终止终端 ID={widget.terminal_id}"}
+
+    def api_get_terminal_output(self, terminal_id=None, terminal_name=None):
+        """查看终端输出记录"""
+        widget = None
+        if terminal_id is not None:
+            widget = self._get_terminal_by_id(terminal_id)
+            if not widget:
+                return {"success": False, "error": f"未找到 ID 为 {terminal_id} 的终端"}
+        elif terminal_name:
+            widget = self._get_terminal_by_name(terminal_name)
+            if not widget:
+                return {"success": False, "error": f"未找到唯一名称为 '{terminal_name}' 的终端（可能有多个同名或不存在）"}
+        else:
+            return {"success": False, "error": "必须提供 id 或 name 参数"}
+
+        return {
+            "success": True,
+            "id": widget.terminal_id,
+            "name": os.path.basename(widget.script_path),
+            "output": widget.terminal.toPlainText()
+        }
+
+    def api_clear_terminal(self, terminal_id):
+        """清空终端输出"""
+        widget = self._get_terminal_by_id(terminal_id)
+        if not widget:
+            return {"success": False, "error": f"未找到 ID 为 {terminal_id} 的终端"}
+        widget.clear_screen()
+        return {"success": True, "message": f"已清空终端 ID={terminal_id} 的输出"}
+
+    def api_send_terminal_input(self, terminal_id, text):
+        """向终端发送字符串"""
+        widget = self._get_terminal_by_id(terminal_id)
+        if not widget:
+            return {"success": False, "error": f"未找到 ID 为 {terminal_id} 的终端"}
+        if widget.process is None or widget.process.state() != QProcess.Running:
+            return {"success": False, "error": "终端进程未在运行"}
+        # 如果文本不以换行结尾，自动追加换行
+        if not text.endswith('\n'):
+            text += '\n'
+        widget.process.write(text.encode('mbcs', errors='replace'))
+        return {"success": True, "message": f"已向终端 ID={terminal_id} 发送输入"}
+
+    def api_shutdown(self):
+        """关闭 PsLauncher"""
+        self.save_config()
+        for i in range(self.tabs.count()):
+            widget = self.tabs.widget(i)
+            if isinstance(widget, TerminalTab):
+                widget.stop_process()
+        # 延迟退出，让响应先发送
+        QTimer.singleShot(500, QApplication.quit)
+        return {"success": True, "message": "PsLauncher 正在关闭..."}
+
     def set_syntax_highlight_mode(self, mode):
         """Set syntax highlighting mode"""
         self.config['syntax_highlight_mode'] = mode
@@ -1983,6 +2210,7 @@ if __name__ == '__main__':
     parser.add_argument('--height', type=int, help='window height')
     parser.add_argument('--width', type=int, help='window width')
     parser.add_argument('--line_wrap_mode', action='store_true', help='set auto line wrap')
+    parser.add_argument('--headless', action='store_true', help='headless mode: no GUI window, only API server')
     args = parser.parse_args()
 
     app = QApplication(sys.argv)
@@ -2042,16 +2270,36 @@ if __name__ == '__main__':
             line_wrap_mode = False
 
     window = MainWindow(font_family, height, width, dark_mode, line_wrap_mode)
-    window.show()
+
+    # 启动 HTTP API 服务器
+    window.start_api_server()
 
     # 启动时自动运行配置中标记的脚本
     window.run_auto_start_scripts()
 
-    # 如果配置了启动时自动最小化到托盘，则在显示后立即隐藏
-    if config.get('auto_minimize_to_tray', False):
-        window.show()
-        window.hide_to_tray()
+    if args.headless:
+        # 无头模式：不显示 GUI 窗口，仅通过 API 服务
+        print("[PsLauncher] 无头模式启动，GUI 窗口已隐藏")
+        print("[PsLauncher] 请通过 HTTP API 操作: http://127.0.0.1:13025")
+        # 不调用 show()
     else:
         window.show()
+        # 如果配置了启动时自动最小化到托盘，则在显示后立即隐藏
+        if config.get('auto_minimize_to_tray', False):
+            window.hide_to_tray()
 
-    sys.exit(app.exec_())
+    # 注册 SIGINT（Ctrl+C）处理器，使终端可以正常终止程序
+    def sigint_handler(signum, frame):
+        """在终端中按下 Ctrl+C 时优雅退出 Qt 事件循环"""
+        QApplication.quit()
+    signal.signal(signal.SIGINT, sigint_handler)
+
+    # 创建一个 200ms 定时器周期触发回调，确保 Python 信号处理器能被 Qt 事件循环处理
+    signal_timer = QTimer()
+    signal_timer.start(200)
+    signal_timer.timeout.connect(lambda: None)
+
+    exit_code = app.exec_()
+    # 程序退出前停止 API 服务器
+    window.stop_api_server()
+    sys.exit(exit_code)

@@ -73,6 +73,114 @@ options:
   --font FONT      set font family
   --height HEIGHT  window height
   --width WIDTH    window width
+  --headless       headless mode, no GUI window, only HTTP API server
+```
+
+### HTTP API Server
+
+PsLauncher exposes an HTTP API server on `127.0.0.1:13025` by default after startup. Any LLM or human can send POST/GET requests to operate PsLauncher's functions, equivalent to performing operations in the GUI.
+
+#### Headless Mode
+
+Use the `--headless` parameter to start PsLauncher without the GUI window, serving only through the HTTP API:
+
+```bash
+python PsLauncher.py --headless
+```
+
+#### API Configuration
+
+Configure API-related parameters in `launcher_config.json`:
+
+```json
+{
+    // ... other config ...
+    "api": {
+        "enabled": true,           // Enable/disable API server (false to turn off next startup)
+        "bind_ip": "127.0.0.1",    // IP to bind (127.0.0.1 prevents public network access)
+        "bind_port": 13025,        // Port to bind
+        "auth_token": ""           // Bearer token (empty string = no authentication)
+    }
+}
+```
+
+#### Authentication
+
+If `auth_token` is configured, all requests must carry the Authorization header:
+
+```
+Authorization: Bearer <your-token>
+```
+
+Returns `401 Unauthorized` for incorrect tokens.
+
+#### API Endpoints
+
+| Endpoint | Description | Request Body/Params |
+|---|---|---|
+| `GET/POST /status` | Check server status | None |
+| `GET/POST /help` | Get help page HTML | None |
+| `GET/POST /folders` | List folder paths | None |
+| `GET/POST /scripts` | List scripts | `?folder=<path>` (optional) |
+| `POST /folder/add` | Add folder | `{"path":"C:/scripts"}` |
+| `POST /folder/remove` | Remove folder | `{"path":"C:/scripts"}` |
+| `POST /script/run` | Run a script | `{"folder":"C:/scripts","script":"test0.ps1"}` |
+| `GET/POST /terminals` | List terminals (with IDs) | None |
+| `POST /terminal/stop` | Stop terminal | `{"id":0}` or `{"name":"test0.ps1"}` |
+| `GET/POST /terminal/output` | View terminal output | `?id=0` or `?name=test0.ps1` |
+| `POST /terminal/clear` | Clear terminal output | `{"id":0}` |
+| `POST /terminal/input` | Send input to terminal | `{"id":0,"text":"hello\n"}` |
+| `GET/POST /shutdown` | Shutdown PsLauncher | None |
+
+#### Usage Examples (full demo flow)
+
+> **PowerShell note**: PowerShell parses arguments differently than CMD. Use `--%` (stop-parsing symbol). Replace `<SCRIPT_DIR>` with your `test_script` absolute path.
+
+```powershell
+# ===== 0. Check server status =====
+curl.exe http://127.0.0.1:13025/status
+
+# ===== 1. Add test_script folder =====
+curl.exe --% -X POST http://127.0.0.1:13025/folder/add -H "Content-Type: application/json" -d "{\"path\":\"<SCRIPT_DIR>\"}"
+
+# ===== 2. List all runnable scripts =====
+curl.exe http://127.0.0.1:13025/scripts
+
+# ===== 3. Run test0.ps1 (basic output + PWD) =====
+curl.exe --% -X POST http://127.0.0.1:13025/script/run -H "Content-Type: application/json" -d "{\"folder\":\"<SCRIPT_DIR>\",\"script\":\"test0.ps1\"}"
+
+# ===== 4. List terminals (note the ID) =====
+curl.exe http://127.0.0.1:13025/terminals
+
+# ===== 5. View output of id=0 (test0.ps1) =====
+curl.exe "http://127.0.0.1:13025/terminal/output?id=0"
+
+# ===== 6. Run test2.ps1 (interactive input demo) =====
+curl.exe --% -X POST http://127.0.0.1:13025/script/run -H "Content-Type: application/json" -d "{\"folder\":\"<SCRIPT_DIR>\",\"script\":\"test2.ps1\"}"
+
+# ===== 7. List terminals (now should have id=0 and id=1) =====
+curl.exe http://127.0.0.1:13025/terminals
+
+# ===== 8. Send input to id=1 (test2.ps1) =====
+curl.exe --% -X POST http://127.0.0.1:13025/terminal/input -H "Content-Type: application/json" -d "{\"id\":1,\"text\":\"Hello PsLauncher\"}"
+
+# ===== 9. View test2.ps1 output =====
+curl.exe "http://127.0.0.1:13025/terminal/output?id=1"
+
+# ===== 10. Run test3.bat (batch script demo) =====
+curl.exe --% -X POST http://127.0.0.1:13025/script/run -H "Content-Type: application/json" -d "{\"folder\":\"<SCRIPT_DIR>\",\"script\":\"test3.bat\"}"
+
+# ===== 11. View test3.bat output =====
+curl.exe "http://127.0.0.1:13025/terminal/output?id=2"
+
+# ===== 12. Clear test3.bat terminal screen =====
+curl.exe --% -X POST http://127.0.0.1:13025/terminal/clear -H "Content-Type: application/json" -d "{\"id\":2}"
+
+# ===== 13. Stop id=1 (test2.ps1) terminal =====
+curl.exe --% -X POST http://127.0.0.1:13025/terminal/stop -H "Content-Type: application/json" -d "{\"id\":1}"
+
+# ===== 14. Shutdown PsLauncher =====
+curl.exe --% -X POST http://127.0.0.1:13025/shutdown
 ```
 
 Example:
