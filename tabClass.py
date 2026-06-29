@@ -20,6 +20,7 @@ import datetime
 import psutil
 
 from utils import *
+from i18n import tr
 
 
 # Source code editor base class
@@ -209,7 +210,8 @@ class TerminalTab(QWidget):
 
     def start_process(self):
         ext = os.path.splitext(self.script_path)[1].lower()
-        self.append_output(f"[PsLauncher {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] start: {self.script_path}\n", color="#00FF00")
+        time_str = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        self.append_output(tr("terminal.start_header", time=time_str, path=self.script_path), color="#00FF00")
 
         # Set the working directory to the directory where the script is located to ensure relative paths work correctly
         script_dir = os.path.dirname(self.script_path)
@@ -229,7 +231,8 @@ class TerminalTab(QWidget):
         if self.process.state() != QProcess.Running:
             # Process not running, clean up state
             self.process = None
-            self.append_output(f"\n^C\n[PsLauncher {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Process already stopped.\n", color="#F14C4C")
+            time_str = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            self.append_output(tr("terminal.process_stopped", time=time_str), color="#F14C4C")
             return
 
         pid = self.process.processId()
@@ -250,16 +253,18 @@ class TerminalTab(QWidget):
         self.process = None
 
         # Output stop message
-        self.append_output(f"\n^C\n[PsLauncher {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Process terminated.\n", color="#F14C4C")
+        time_str = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        self.append_output(tr("terminal.process_terminated", time=time_str), color="#F14C4C")
 
     def send_ctrl_c(self):
         """send Ctrl+C (0x03) to current progress"""
+        time_str = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         if self.process is not None and self.process.state() == QProcess.Running:
-            self.append_output(f"\n^C\n[PsLauncher {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Sending Ctrl+C interruption...\n", color="#F14C4C")
+            self.append_output(tr("terminal.sending_ctrlc", time=time_str), color="#F14C4C")
             # 向标准输入写入 Ctrl+C 字节 (0x03)
             self.process.write(b'\x03')
         else:
-            self.append_output(f"\n[PsLauncher {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] No running process to interrupt.\n", color="#FFFF00")
+            self.append_output(tr("terminal.no_process_interrupt", time=time_str), color="#FFFF00")
 
     # 键盘事件拦截
     def terminal_keyPressEvent(self, event):
@@ -332,7 +337,8 @@ class TerminalTab(QWidget):
         self.inject_output(text, default_color="#F14C4C")
 
     def handle_finished(self):
-        self.append_output(f"\n[PsLauncher {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Process terminal.", color="#FFFF00")
+        time_str = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        self.append_output(tr("terminal.process_finished", time=time_str), color="#FFFF00")
 
     def inject_output(self, text, default_color=None):
         """ Smart output injection: if the user is typing when output occurs, first store the typed text, then append it after the output is complete """

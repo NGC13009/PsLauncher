@@ -9,6 +9,7 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from copy import deepcopy
 from utils import _default_config, _COMMENT_MAP
+from i18n import tr
 
 
 class ConfigEditorDialog(QDialog):
@@ -18,7 +19,7 @@ class ConfigEditorDialog(QDialog):
         super().__init__(parent)
         # config 是 MainWindow 中 self.config 的引用，以便直接修改
         self.config = config
-        self.setWindowTitle(self.tr("编辑配置文件"))
+        self.setWindowTitle(tr("config_editor.title"))
         self.setMinimumWidth(650)
         self.setMinimumHeight(500)
         self.resize(700, 600)
@@ -26,6 +27,11 @@ class ConfigEditorDialog(QDialog):
 
     def _build_ui(self):
         layout = QVBoxLayout(self)
+
+        # 顶部说明文本
+        desc_label = QLabel(tr("config_editor.desc"))
+        desc_label.setWordWrap(True)
+        layout.addWidget(desc_label)
 
         # 可滚动的表单区域
         scroll = QScrollArea()
@@ -41,12 +47,12 @@ class ConfigEditorDialog(QDialog):
         btn_layout = QHBoxLayout()
         btn_layout.addStretch()
 
-        self.save_btn = QPushButton(self.tr("保存"))
+        self.save_btn = QPushButton(tr("config_editor.save"))
         self.save_btn.clicked.connect(self._on_save)
         self.save_btn.setMinimumWidth(80)
         btn_layout.addWidget(self.save_btn)
 
-        self.cancel_btn = QPushButton(self.tr("取消"))
+        self.cancel_btn = QPushButton(tr("config_editor.cancel"))
         self.cancel_btn.clicked.connect(self.reject)
         self.cancel_btn.setMinimumWidth(80)
         btn_layout.addWidget(self.cancel_btn)
@@ -132,12 +138,12 @@ class ConfigEditorDialog(QDialog):
         btn_layout.setSpacing(4)
         add_btn = QPushButton("+")
         add_btn.setFixedWidth(30)
-        add_btn.setToolTip(self.tr("添加"))
+        add_btn.setToolTip(tr("config_editor.add"))
         remove_btn = QPushButton("-")
         remove_btn.setFixedWidth(30)
-        remove_btn.setToolTip(self.tr("删除选中项"))
-        edit_btn = QPushButton(self.tr("编辑"))
-        edit_btn.setToolTip(self.tr("编辑选中项"))
+        remove_btn.setToolTip(tr("config_editor.remove_selected"))
+        edit_btn = QPushButton(tr("config_editor.edit"))
+        edit_btn.setToolTip(tr("config_editor.edit_selected"))
 
         add_btn.clicked.connect(lambda: self._list_add_item(list_widget))
         remove_btn.clicked.connect(lambda: self._list_remove_item(list_widget))
@@ -157,7 +163,7 @@ class ConfigEditorDialog(QDialog):
 
     def _list_add_item(self, list_widget):
         """向列表中添加新项"""
-        text, ok = QInputDialog.getText(self, self.tr("添加"), self.tr("请输入新项:"))
+        text, ok = QInputDialog.getText(self, tr("config_editor.add"), tr("config_editor.input_new_item"))
         if ok and text.strip():
             list_widget.addItem(text.strip())
 
@@ -172,7 +178,7 @@ class ConfigEditorDialog(QDialog):
         current = list_widget.currentItem()
         if current:
             text, ok = QInputDialog.getText(
-                self, self.tr("编辑"), self.tr("修改值:"),
+                self, tr("config_editor.edit"), tr("config_editor.modify_value"),
                 QLineEdit.Normal, current.text()
             )
             if ok and text.strip():
@@ -180,38 +186,40 @@ class ConfigEditorDialog(QDialog):
 
     def _collect_values(self, layout, config_dict, path=""):
         """递归从表单布局中收集修改后的值"""
-        # QFormLayout 按行组织，每行有 label widget 和 field widget
         for i in range(layout.rowCount()):
             label_item = layout.itemAt(i, QFormLayout.LabelRole)
             field_item = layout.itemAt(i, QFormLayout.FieldRole)
 
-            if label_item is None or field_item is None:
+            if field_item is None:
                 continue
 
-            label_widget = label_item.widget()
             field_widget = field_item.widget()
-
-            if label_widget is None or field_widget is None:
+            if field_widget is None:
                 continue
 
-            # 获取 key（从 label 中提取 key）
+            # 情况1：QGroupBox（跨列完整行，LabelRole 为空）
+            if isinstance(field_widget, QGroupBox):
+                key = field_widget.title().strip()
+                if key and key in config_dict and isinstance(config_dict[key], dict):
+                    inner_layout = field_widget.layout()
+                    if isinstance(inner_layout, QFormLayout):
+                        self._collect_values(
+                            inner_layout, config_dict[key],
+                            f"{path}.{key}" if path else key
+                        )
+                continue
+
+            # 情况2：有 label 的普通行
+            if label_item is None:
+                continue
+            label_widget = label_item.widget()
+            if label_widget is None:
+                continue
+
             label_text = label_widget.text() if isinstance(label_widget, QLabel) else ""
             key = label_text.replace(":", "").strip()
 
-            if not key:
-                # 可能是 QGroupBox
-                if isinstance(field_widget, QGroupBox):
-                    key = field_widget.title().strip()
-                    if key and key in config_dict and isinstance(config_dict[key], dict):
-                        inner_layout = field_widget.layout()
-                        if isinstance(inner_layout, QFormLayout):
-                            self._collect_values(
-                                inner_layout, config_dict[key],
-                                f"{path}.{key}" if path else key
-                            )
-                continue
-
-            if key not in config_dict:
+            if not key or key not in config_dict:
                 continue
 
             # 根据控件类型读取值
@@ -239,6 +247,6 @@ class ConfigEditorDialog(QDialog):
             self.accept()
         except Exception as e:
             QMessageBox.warning(
-                self, self.tr("错误"),
-                self.tr("保存配置时出错: {}").format(str(e))
+                self, tr("config_editor.error"),
+                tr("config_editor.save_error").format(error=str(e))
             )

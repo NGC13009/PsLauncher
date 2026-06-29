@@ -13,6 +13,7 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 from PyQt5.QtCore import QThread, pyqtSignal, QMetaObject, Qt, Q_ARG
 
 from aboutandhelp import __version__
+from i18n import tr
 
 
 class ApiRequestHandler(BaseHTTPRequestHandler):
@@ -189,7 +190,7 @@ class ApiRequestHandler(BaseHTTPRequestHandler):
                 from i18n.source_help_page import html_content as hc
             self._send_json({"help": hc})
         except Exception as e:
-            self._send_json({"help": f"帮助页面加载失败: {e}"})
+            self._send_json({"help": tr("api.help_load_failed", error=str(e))})
 
     def _handle_folders(self):
         """枚举文件夹路径列表"""
@@ -359,17 +360,18 @@ class ApiServerThread(QThread):
             self.http_server = HTTPServer((self.bind_ip, self.bind_port), ApiRequestHandler)
             self.http_server.timeout = 1  # 1秒超时以便检查停止标志
             self._running = True
-            print(f"[ApiServer] HTTP API 服务器已启动: http://{self.bind_ip}:{self.bind_port}")
-            print(f"[ApiServer] 验权: {'已启用' if self.auth_token else '未启用'}")
+            auth_status = tr("api.auth_enabled") if self.auth_token else tr("api.auth_disabled")
+            print(tr("api.server_started", ip=self.bind_ip, port=self.bind_port))
+            print(tr("api.auth_status", status=auth_status))
 
             while self._running:
                 self.http_server.handle_request()
         except OSError as e:
-            print(f"[ApiServer] 无法绑定 {self.bind_ip}:{self.bind_port}: {e}")
+            print(tr("api.bind_failed", ip=self.bind_ip, port=self.bind_port, error=str(e)))
             import traceback
             traceback.print_exc()
         except Exception as e:
-            print(f"[ApiServer] 服务器异常: {e}")
+            print(tr("api.server_exception", error=str(e)))
             import traceback
             traceback.print_exc()
 
@@ -381,7 +383,7 @@ class ApiServerThread(QThread):
                 self.http_server.server_close()
             except Exception:
                 pass
-        print("[ApiServer] HTTP API 服务器已停止")
+        print(tr("api.server_stopped"))
 
     def _execute_on_main(self, method_name, args, result_holder):
         """在主线程中执行方法并获取结果（通过信号槽机制）"""

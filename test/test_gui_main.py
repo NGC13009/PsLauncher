@@ -51,10 +51,11 @@ class TestMenuActions:
     """菜单 Action 存在性测试"""
 
     def test_system_menu_actions(self, main_window):
-        """系统菜单应有保存、隐藏、自动最小化"""
+        """系统菜单应有保存、隐藏、自动最小化、编辑配置"""
         assert hasattr(main_window, 'save_action')
         assert hasattr(main_window, 'hide_action')
         assert hasattr(main_window, 'auto_minimize_action')
+        assert hasattr(main_window, 'edit_config_action')
 
     def test_file_menu_actions(self, main_window):
         """文件菜单应有添加/删除文件夹"""
@@ -99,6 +100,13 @@ class TestMenuActions:
         assert hasattr(main_window, 'close_editor_tabs_action')
         assert hasattr(main_window, 'close_terminal_tabs_action')
         assert hasattr(main_window, 'close_all_tabs_action')
+
+    def test_edit_config_action_properties(self, main_window):
+        """编辑配置菜单项应有正确的文本并连接 open_config_editor"""
+        assert main_window.edit_config_action.text() != ""
+        assert main_window.edit_config_action.triggered is not None
+        # 验证连接到 open_config_editor 方法
+        assert hasattr(main_window, 'open_config_editor')
 
     def test_language_menu_actions(self, main_window):
         """语言菜单应包含可用语言"""

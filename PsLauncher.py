@@ -725,16 +725,16 @@ class MainWindow(QMainWindow):
 
         warnings = []
         if missing_in_supported:
-            warnings.append(f"Default suffixes are missing from the supported list: {', '.join(missing_in_supported)}")
+            warnings.append(tr("message.missing_supported_exts", exts=', '.join(missing_in_supported)))
         if missing_in_runnable:
-            warnings.append(f"Default suffixes are missing from the runnable list: {', '.join(missing_in_runnable)}")
+            warnings.append(tr("message.missing_runnable_exts", exts=', '.join(missing_in_runnable)))
 
         if warnings:
-            warning_message = "Warning:\n" + "\n".join(warnings)
-            warning_message += "\n\nUnable to save your current configuration. This may cause some scripts to fail to display or run correctly."
+            warning_details = "\n".join(warnings)
+            warning_message = tr("message.save_config_warning", details=warning_details)
 
             # Display the warning directly in a popup and return immediately without making any changes
-            QMessageBox.warning(self, "Configuration Warning", warning_message)
+            QMessageBox.warning(self, tr("dialog.config_warning"), warning_message)
         else:
             save_json_with_comments(CONFIG_FILE, self.config)
 
@@ -895,7 +895,7 @@ class MainWindow(QMainWindow):
             elif reply == QMessageBox.Save:
                 success = widget.save_file()
                 if not success:
-                    QMessageBox.warning(self, "Save Failed", "File save failed. Please check file permissions or path.", QMessageBox.Ok)
+                    QMessageBox.warning(self, tr("dialog.save_failed"), tr("message.save_file_failed"), QMessageBox.Ok)
                     return
                 else:
                     widget.set_editing(False)
@@ -922,13 +922,13 @@ class MainWindow(QMainWindow):
             editing_count = len(editing_tabs)
             if editing_count == 1:
                 filename = os.path.basename(editing_tabs[0][1].script_path)
-                message = f'Tab "{filename}" is being edited. Do you want to save changes?'
+                message = tr("message.tab_editing_save_single", filename=filename)
             else:
                 filenames = [os.path.basename(widget.script_path) for _, widget in editing_tabs]
                 files_list = "\n".join(f'  • {name}' for name in filenames)
-                message = f'There are {editing_count} tabs being edited:\n{files_list}\n\nDo you want to save changes?'
+                message = tr("message.tabs_editing_save_multi", count=editing_count, files=files_list)
 
-            reply = QMessageBox.question(self, 'Close All Source Code Tabs', message, QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel, QMessageBox.Save)
+            reply = QMessageBox.question(self, tr("dialog.close_all_source_tabs"), message, QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel, QMessageBox.Save)
 
             if reply == QMessageBox.Cancel:
                 return # User cancelled closing
@@ -938,7 +938,7 @@ class MainWindow(QMainWindow):
                 for index, widget in editing_tabs:
                     success = widget.save_file()
                     if not success:
-                        QMessageBox.warning(self, "Save Failed", f'Failed to save file: {os.path.basename(widget.script_path)}\nPlease check file permissions or path.', QMessageBox.Ok)
+                        QMessageBox.warning(self, tr("dialog.save_failed"), tr("message.save_file_failed_with_path", path=os.path.basename(widget.script_path)), QMessageBox.Ok)
                         return # One save failed, cancel all close operations
                     else:
                         widget.set_editing(False)
@@ -971,7 +971,7 @@ class MainWindow(QMainWindow):
             return
 
         # Show confirmation dialog
-        reply = QMessageBox.question(self, 'Confirm', f'Sure you want to close all {terminal_count} running tabs? This will stop all running scripts.', QMessageBox.Yes | QMessageBox.No,
+        reply = QMessageBox.question(self, tr("dialog.close_terminal_tabs"), tr("message.close_terminal_confirm", count=terminal_count), QMessageBox.Yes | QMessageBox.No,
                                      QMessageBox.No)
 
         if reply == QMessageBox.Yes:
@@ -1003,13 +1003,13 @@ class MainWindow(QMainWindow):
             editing_count = len(editing_tabs)
             if editing_count == 1:
                 filename = os.path.basename(editing_tabs[0][1].script_path)
-                message = f'Tab "{filename}" is being edited. Do you want to save changes?'
+                message = tr("message.tab_editing_save_single", filename=filename)
             else:
                 filenames = [os.path.basename(widget.script_path) for _, widget in editing_tabs]
                 files_list = "\n".join(f'  • {name}' for name in filenames)
-                message = f'The following {editing_count} tabs are being edited:\n{files_list}\n\nDo you want to save changes?'
+                message = tr("message.tabs_editing_save_multi", count=editing_count, files=files_list)
 
-            reply = QMessageBox.question(self, 'Close All Tabs', message, QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel, QMessageBox.Save)
+            reply = QMessageBox.question(self, tr("dialog.close_all_tabs"), message, QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel, QMessageBox.Save)
 
             if reply == QMessageBox.Cancel:
                 return # User cancelled closing
@@ -1019,7 +1019,7 @@ class MainWindow(QMainWindow):
                 for index, widget in editing_tabs:
                     success = widget.save_file()
                     if not success:
-                        QMessageBox.warning(self, "Save Failed", f'Failed to save file: {os.path.basename(widget.script_path)}\nPlease check file permissions or path.', QMessageBox.Ok)
+                        QMessageBox.warning(self, tr("dialog.save_failed"), tr("message.save_file_failed_with_path", path=os.path.basename(widget.script_path)), QMessageBox.Ok)
                         return # One save failed, cancel all close operations
                     else:
                         widget.set_editing(False)
@@ -1035,10 +1035,10 @@ class MainWindow(QMainWindow):
 
         if terminal_tabs:
             terminal_count = len(terminal_tabs)
-            reply = QMessageBox.question(self, 'Confirm', f'Are you sure you want to close all {total_tabs} tabs?\nThis includes {terminal_count} terminal tabs and will stop all running scripts.',
+            reply = QMessageBox.question(self, tr("dialog.confirm"), tr("message.close_all_confirm_with_terminal", total=total_tabs, terminal_count=terminal_count),
                                          QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         else:
-            reply = QMessageBox.question(self, 'Confirm', f'Are you sure you want to close all {total_tabs} tabs?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            reply = QMessageBox.question(self, tr("dialog.confirm"), tr("message.close_all_confirm", total=total_tabs), QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
 
         if reply == QMessageBox.Yes:
             # Stop all terminal processes first
@@ -1316,11 +1316,11 @@ class MainWindow(QMainWindow):
                 # Use the first folder from the configuration as the default path
                 selected_folder = self.config["folders"][0]
             else:
-                QMessageBox.warning(self, "Warning", "Please add a folder path to the program first.", QMessageBox.Ok)
+                QMessageBox.warning(self, tr("dialog.warning"), tr("message.add_folder_first"), QMessageBox.Ok)
                 return
 
         # Pop up a dialog to let the user enter a new folder name
-        folder_name, ok = QInputDialog.getText(self, "New Path", "Please enter the new folder name:\n(Will be created under the selected path)", QLineEdit.Normal, "")
+        folder_name, ok = QInputDialog.getText(self, tr("dialog.new_path"), tr("message.enter_new_folder_name"), QLineEdit.Normal, "")
         if not ok or not folder_name.strip():
             return
 
@@ -1329,19 +1329,19 @@ class MainWindow(QMainWindow):
 
         # Check if the path already exists
         if os.path.exists(new_folder_path):
-            QMessageBox.warning(self, "Warning", f"Path already exists: {new_folder_path}", QMessageBox.Ok)
+            QMessageBox.warning(self, tr("dialog.warning"), tr("message.path_already_exists", path=new_folder_path), QMessageBox.Ok)
             return
 
         try:
             os.makedirs(new_folder_path)
-            QMessageBox.information(self, "Success", f"Folder created successfully: {new_folder_path}", QMessageBox.Ok)
+            QMessageBox.information(self, tr("dialog.success"), tr("message.folder_created_success", path=new_folder_path), QMessageBox.Ok)
             # Optional: Add the new folder to the configuration
             if new_folder_path not in self.config["folders"]:
                 self.config["folders"].append(new_folder_path)
                 self.save_config()
                 self.refresh_tree()
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"Failed to create folder: {str(e)}. Sometimes this is due to permission issues, please check if the program is running with administrator privileges.",
+            QMessageBox.critical(self, tr("dialog.error"), tr("message.folder_create_failed", error=str(e)),
                                  QMessageBox.Ok)
 
     def new_script_in_folder(self):
@@ -1365,19 +1365,18 @@ class MainWindow(QMainWindow):
         if not selected_folder:
             if self.config.get("folders"):
                 # Show folder selection dialog
-                folder, ok = QInputDialog.getItem(self, "Select Folder", "Please select the folder where you want to create the script:", self.config["folders"], 0, False)
+                folder, ok = QInputDialog.getItem(self, tr("dialog.select_folder"), tr("message.select_target_folder"), self.config["folders"], 0, False)
                 if not ok:
                     return
                 selected_folder = folder
             else:
-                QMessageBox.warning(self, "Warning", "Please add a folder path to the program first.", QMessageBox.Ok)
+                QMessageBox.warning(self, tr("dialog.warning"), tr("message.add_folder_first"), QMessageBox.Ok)
                 return
 
         # Show dialog to let user enter file name
+        exts_str = str(DEFAULT_EXT)
         file_name, ok = QInputDialog.getText(
-            self, "New Script", "Please enter the script file name (including extension, e.g., myscript.ps1):\n"
-            "Note: The program will not automatically add the extension. If you do not enter an extension, the file will have no extension.\n"
-            f"Note: PsLauncher only scans {DEFAULT_EXT} extensions. If the extension is incorrect, the created file will not be visible immediately here.", QLineEdit.Normal, "new_script.ps1")
+            self, tr("dialog.new_script"), tr("message.enter_script_name", exts=exts_str), QLineEdit.Normal, "new_script.ps1")
         if not ok or not file_name.strip():
             return
 
@@ -1387,18 +1386,14 @@ class MainWindow(QMainWindow):
         # If the new extension is not a supported type, prompt for confirmation
         if new_ext and new_ext not in DEFAULT_EXT:
             reply = QMessageBox.question(
-                self, "Extension Warning", f"The extension you entered {new_ext} is not a supported script type for PsLauncher ({DEFAULT_EXT}).\n"
-                "This will cause the file to not appear in the list unless the file name extension is manually edited again.\n\n"
-                "Do you confirm to continue naming?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                self, tr("dialog.extension_warning"), tr("message.extension_not_supported", ext=new_ext, exts=exts_str), QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             if reply == QMessageBox.No:
                 return
 
         # If there is no extension, prompt the user to confirm
         if not new_ext:
             reply = QMessageBox.question(
-                self, "No Extension Warning", f"The file name you entered has no extension, which may cause the file to not appear in the list.\n"
-                f"It is recommended to use supported extensions such as {DEFAULT_EXT}.\n\n"
-                "Do you confirm to continue naming?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                self, tr("dialog.no_extension_warning"), tr("message.no_extension_warning", exts=exts_str), QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             if reply == QMessageBox.No:
                 return
 
@@ -1408,7 +1403,7 @@ class MainWindow(QMainWindow):
 
         # Check if the file already exists
         if os.path.exists(new_file_path):
-            reply = QMessageBox.question(self, "Confirm", f"File already exists: {new_file_path}\nOverwrite?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            reply = QMessageBox.question(self, tr("dialog.confirm_overwrite"), tr("message.file_already_exists", path=new_file_path), QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             if reply == QMessageBox.No:
                 return
 
@@ -1426,22 +1421,22 @@ class MainWindow(QMainWindow):
                 else:
                     f.write("")
 
-            QMessageBox.information(self, "Success", f"Script created successfully: {new_file_path}", QMessageBox.Ok)
+            QMessageBox.information(self, tr("dialog.success"), tr("message.script_created_success", path=new_file_path), QMessageBox.Ok)
             self.refresh_tree()
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"Failed to create script: {str(e)}", QMessageBox.Ok)
+            QMessageBox.critical(self, tr("dialog.error"), tr("message.script_create_failed", error=str(e)), QMessageBox.Ok)
 
     def rename_selected_script(self):
         """Rename the selected script name, check if the suffix is a supported script type"""
         # Get the currently selected script item
         current_item = self.tree.currentItem()
         if not current_item:
-            QMessageBox.information(self, "Prompt", "Please select a script first.", QMessageBox.Ok)
+            QMessageBox.information(self, tr("dialog.info"), tr("message.please_select_script"), QMessageBox.Ok)
             return
 
         script_path = current_item.data(0, Qt.UserRole)
         if not script_path:
-            QMessageBox.information(self, "Prompt", "Please select a script file, not a folder.", QMessageBox.Ok)
+            QMessageBox.information(self, tr("dialog.info"), tr("message.please_select_script_file"), QMessageBox.Ok)
             return
 
         old_file_name = os.path.basename(script_path)
@@ -1449,11 +1444,9 @@ class MainWindow(QMainWindow):
         old_ext = os.path.splitext(old_file_name)[1].lower() # Original file extension
 
         # Pop up a dialog to let the user enter the new file name
+        exts_str = str(DEFAULT_EXT)
         new_file_name, ok = QInputDialog.getText(
-            self, "Rename Script", f"Please enter the new script file name:\n"
-            f"Current file name: {old_file_name}\n"
-            "Note: The program will not automatically add the suffix. If you do not enter a suffix, the file will have no extension.\n"
-            f"Note: PsLauncher only scans {DEFAULT_EXT} these three suffixes. If the suffix is incorrect, the file will not be visible immediately after creation.", QLineEdit.Normal, old_file_name)
+            self, tr("dialog.rename_script"), tr("message.rename_script_hint", old_name=old_file_name, exts=exts_str), QLineEdit.Normal, old_file_name)
         if not ok or not new_file_name.strip():
             return
 
@@ -1468,18 +1461,14 @@ class MainWindow(QMainWindow):
         # If the new suffix is not a supported type, prompt for confirmation
         if new_ext and new_ext not in DEFAULT_EXT:
             reply = QMessageBox.question(
-                self, "Suffix Warning", f"The suffix {new_ext} you entered is not a script type supported by PsLauncher ({DEFAULT_EXT}).\n"
-                "This will cause the file to not appear in the list after renaming, unless you manually edit the file name suffix again.\n\n"
-                "Do you confirm to continue renaming?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                self, tr("dialog.suffix_warning"), tr("message.suffix_warning_rename", ext=new_ext, exts=exts_str), QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             if reply == QMessageBox.No:
                 return
 
         # If there is no suffix, prompt the user to confirm
         if not new_ext:
             reply = QMessageBox.question(
-                self, "No Suffix Warning", f"The file name you entered has no suffix, which may cause the file to not appear in the list.\n"
-                f"It is recommended to use supported suffixes such as {DEFAULT_EXT}.\n\n"
-                "Do you confirm to continue renaming?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                self, tr("dialog.no_extension_warning"), tr("message.no_suffix_warning_rename", exts=exts_str), QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             if reply == QMessageBox.No:
                 return
 
@@ -1487,27 +1476,27 @@ class MainWindow(QMainWindow):
 
         # Check if the new file already exists
         if os.path.exists(new_file_path):
-            QMessageBox.warning(self, "Warning", f"File already exists: {new_file_path}", QMessageBox.Ok)
+            QMessageBox.warning(self, tr("dialog.warning"), tr("message.file_already_exists_path", path=new_file_path), QMessageBox.Ok)
             return
 
         try:
             os.rename(script_path, new_file_path)
-            QMessageBox.information(self, "Success", f"Renaming successful: {old_file_name} -> {new_file_name}", QMessageBox.Ok)
+            QMessageBox.information(self, tr("dialog.success"), tr("message.rename_success", old_name=old_file_name, new_name=new_file_name), QMessageBox.Ok)
             self.refresh_tree()
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"Renaming failed: {str(e)}", QMessageBox.Ok)
+            QMessageBox.critical(self, tr("dialog.error"), tr("message.rename_failed", error=str(e)), QMessageBox.Ok)
 
     def copy_selected_script(self):
         """Copy the selected script (prompt the user to rename the file name)"""
         # Get the currently selected script item
         current_item = self.tree.currentItem()
         if not current_item:
-            QMessageBox.information(self, "Prompt", "Please select a script first.", QMessageBox.Ok)
+            QMessageBox.information(self, tr("dialog.info"), tr("message.please_select_script"), QMessageBox.Ok)
             return
 
         script_path = current_item.data(0, Qt.UserRole)
         if not script_path:
-            QMessageBox.information(self, "Prompt", "Please select a script file, not a folder.", QMessageBox.Ok)
+            QMessageBox.information(self, tr("dialog.info"), tr("message.please_select_script_file"), QMessageBox.Ok)
             return
 
         old_file_name = os.path.basename(script_path)
@@ -1518,11 +1507,9 @@ class MainWindow(QMainWindow):
         default_new_name = name + "_copy" + ext
 
         # Pop up dialog to prompt user to rename file
+        exts_str = str(DEFAULT_EXT)
         new_file_name, ok = QInputDialog.getText(
-            self, "Copy Script", f"Please enter the name for the copied script:\n"
-            f"Original filename: {old_file_name}\n"
-            "Note: The program will not automatically add an extension. If you do not enter an extension, the file will have no extension.\n"
-            f"Note: PsLauncher only scans {DEFAULT_EXT} extensions. If the extension is incorrect, the file will not appear immediately after creation.", QLineEdit.Normal, default_new_name)
+            self, tr("dialog.copy_script"), tr("message.copy_script_hint", old_name=old_file_name, exts=exts_str), QLineEdit.Normal, default_new_name)
 
         if not ok or not new_file_name.strip():
             return # User canceled or input is empty
@@ -1538,48 +1525,45 @@ class MainWindow(QMainWindow):
 
         # Check if a file with the same name exists
         if os.path.exists(new_file_path):
-            QMessageBox.warning(self, "Warning", f"File '{new_file_name}' already exists in the target folder.\n"
-                                "Please use a different filename. Copy operation canceled.", QMessageBox.Ok)
+            QMessageBox.warning(self, tr("dialog.warning"), tr("message.copy_file_exists", name=new_file_name), QMessageBox.Ok)
             return # Refuse to perform any copy operation
 
         # Execute copy operation
         try:
             shutil.copy2(script_path, new_file_path)
-            QMessageBox.information(self, "Success", f"Copy successful!\n"
-                                    f"Original file: {old_file_name}\n"
-                                    f"New file: {new_file_name}", QMessageBox.Ok)
+            QMessageBox.information(self, tr("dialog.success"), tr("message.copy_success", old_name=old_file_name, new_name=new_file_name), QMessageBox.Ok)
             self.refresh_tree()
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"Copy failed: {str(e)}", QMessageBox.Ok)
+            QMessageBox.critical(self, tr("dialog.error"), tr("message.copy_failed", error=str(e)), QMessageBox.Ok)
 
     def move_selected_script(self):
         """Move current script to a loaded path (requires confirmation)"""
         # Get currently selected script item
         current_item = self.tree.currentItem()
         if not current_item:
-            QMessageBox.information(self, "Info", "Please select a script first.", QMessageBox.Ok)
+            QMessageBox.information(self, tr("dialog.info"), tr("message.please_select_script"), QMessageBox.Ok)
             return
 
         script_path = current_item.data(0, Qt.UserRole)
         if not script_path:
-            QMessageBox.information(self, "Info", "Please select a script file, not a folder.", QMessageBox.Ok)
+            QMessageBox.information(self, tr("dialog.info"), tr("message.please_select_script_file"), QMessageBox.Ok)
             return
 
         old_file_name = os.path.basename(script_path)
 
         # If no available target folder, prompt user
         if not self.config.get("folders"):
-            QMessageBox.warning(self, "Warning", "No available target folder. Please add folder path first.", QMessageBox.Ok)
+            QMessageBox.warning(self, tr("dialog.warning"), "No available target folder. Please add folder path first.", QMessageBox.Ok)
             return
 
         # Pop up dialog to let user select target folder
-        target_folder, ok = QInputDialog.getItem(self, "Move Script", f"Select folder to move script '{old_file_name}' to:", self.config["folders"], 0, False)
+        target_folder, ok = QInputDialog.getItem(self, tr("dialog.move_script"), tr("message.move_script_select", script_name=old_file_name), self.config["folders"], 0, False)
         if not ok:
             return
 
         # Check if target folder exists
         if not os.path.exists(target_folder):
-            QMessageBox.warning(self, "Warning", f"Target folder does not exist: {target_folder}", QMessageBox.Ok)
+            QMessageBox.warning(self, tr("dialog.warning"), tr("message.target_folder_not_exist", path=target_folder), QMessageBox.Ok)
             return
 
         # Construct target path
@@ -1587,59 +1571,59 @@ class MainWindow(QMainWindow):
 
         # Check if target file already exists
         if os.path.exists(target_path):
-            reply = QMessageBox.question(self, "Confirm", f"Target folder already contains a file with the same name: {old_file_name}\nOverwrite?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            reply = QMessageBox.question(self, tr("dialog.confirm"), tr("message.move_file_exists", name=old_file_name), QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             if reply == QMessageBox.No:
                 return
 
         # Display confirmation dialog
-        reply = QMessageBox.question(self, "Confirm Move", f"Are you sure you want to move script '{old_file_name}' to '{target_folder}'?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        reply = QMessageBox.question(self, tr("dialog.confirm"), tr("message.confirm_move", script_name=old_file_name, target_folder=target_folder), QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if reply == QMessageBox.No:
             return
 
         try:
             shutil.move(script_path, target_path)
-            QMessageBox.information(self, "Success", f"Move successful: {old_file_name} has been moved to {target_folder}", QMessageBox.Ok)
+            QMessageBox.information(self, tr("dialog.success"), tr("message.move_success", script_name=old_file_name, target_folder=target_folder), QMessageBox.Ok)
             self.refresh_tree()
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"Move failed: {str(e)}", QMessageBox.Ok)
+            QMessageBox.critical(self, tr("dialog.error"), tr("message.move_failed", error=str(e)), QMessageBox.Ok)
 
     def delete_selected_script(self):
         """Delete selected script (requires confirmation dialog)"""
         # Get currently selected script item
         current_item = self.tree.currentItem()
         if not current_item:
-            QMessageBox.information(self, "Prompt", "Please select a script first.", QMessageBox.Ok)
+            QMessageBox.information(self, tr("dialog.info"), tr("message.please_select_script"), QMessageBox.Ok)
             return
 
         script_path = current_item.data(0, Qt.UserRole)
         if not script_path:
-            QMessageBox.information(self, "Prompt", "Please select a script file, not a folder.", QMessageBox.Ok)
+            QMessageBox.information(self, tr("dialog.info"), tr("message.please_select_script_file"), QMessageBox.Ok)
             return
 
         file_name = os.path.basename(script_path)
 
         # Display confirmation dialog
-        reply = QMessageBox.question(self, "Confirm Delete",
-                                     f"Are you sure you want to delete script '{file_name}'?\nThis operation is irreversible! Files are directly deleted, not moved to Recycle Bin or similar.",
+        reply = QMessageBox.question(self, tr("dialog.confirm_delete"),
+                                     tr("message.confirm_delete_script", file_name=file_name),
                                      QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if reply == QMessageBox.No:
             return
 
         try:
             os.remove(script_path)
-            QMessageBox.information(self, "Success", f"Delete successful: {file_name}", QMessageBox.Ok)
+            QMessageBox.information(self, tr("dialog.success"), tr("message.delete_success", file_name=file_name), QMessageBox.Ok)
             self.refresh_tree()
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"Delete failed: {str(e)}", QMessageBox.Ok)
+            QMessageBox.critical(self, tr("dialog.error"), tr("message.delete_failed", error=str(e)), QMessageBox.Ok)
 
     def open_in_vsc(self, file_path):
         """Open the specified file in VSCode"""
         try:
             subprocess.run(['code', file_path], check=True)
         except FileNotFoundError:
-            QMessageBox.warning(self, "Failed", "VSCode (code command) not found.\nPlease ensure VSCode is installed and added to the system environment variable PATH.", QMessageBox.Ok)
+            QMessageBox.warning(self, tr("dialog.failed"), tr("message.vsc_not_found"), QMessageBox.Ok)
         except Exception as e:
-            QMessageBox.warning(self, "Failed", f"Error calling VSCode:\n{str(e)}", QMessageBox.Ok)
+            QMessageBox.warning(self, tr("dialog.failed"), tr("message.vsc_call_error", error=str(e)), QMessageBox.Ok)
 
     def show_tree_context_menu(self, position):
         """Display the right-click menu for the tree widget"""

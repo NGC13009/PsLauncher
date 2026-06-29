@@ -554,11 +554,12 @@ This program only has one icon as media data, which has been processed into base
 The correct release workflow is as follows:
 
 1. Update `__version__` and `__devdate__` inside `aboutandhelp.py`.
-2. Execute `python get_help_page.py` to compile help pages for all languages (reads `README.md` for English, `README_CN.md` for Chinese, etc.).
-3. If the .ico file has been updated, recompile it using `python get_ico.py`.
-4. Compile the executable by running `pyinstaller -w ./PsLauncher.py -i ./logo.ico -y --distpath ./exe --paths ./`.
-5. If necessary, include the help documentation as well.
-6. run `get_zip_release.ps1` pack.
+2. Execute `python check_i18n_coverage.py` to confirm i18n coverage rate.
+3. Execute `python get_help_page.py` to compile help pages for all languages (reads `README.md` for English, `README_CN.md` for Chinese, etc.).
+4. If the .ico file has been updated, recompile it using `python get_ico.py`.
+5. Compile the executable by running `pyinstaller -w ./PsLauncher.py -i ./logo.ico -y --distpath ./exe --paths ./`.
+6. If necessary, include the help documentation as well.
+7. run `get_zip_release.ps1` pack.
 
 Correct release version structure:
 
