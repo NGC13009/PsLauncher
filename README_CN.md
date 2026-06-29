@@ -123,6 +123,7 @@ token 不正确时返回 `401 Unauthorized`。
 | `POST /script/run` | 运行脚本 | `{"folder":"C:/scripts","script":"test0.ps1"}` |
 | `GET/POST /terminals` | 枚举终端界面（含ID） | 无参数 |
 | `POST /terminal/stop` | 终止终端 | `{"id":0}` 或 `{"name":"test0.ps1"}` |
+| `POST /terminal/stop_all` | 终止所有终端 | 无需参数 |
 | `GET/POST /terminal/output` | 查看终端输出 | `?id=0` 或 `?name=test0.ps1` |
 | `POST /terminal/clear` | 清空终端输出 | `{"id":0}` |
 | `POST /terminal/input` | 向终端发送字符串 | `{"id":0,"text":"hello\n"}` |
@@ -179,7 +180,10 @@ curl.exe --% -X POST http://127.0.0.1:13025/terminal/clear -H "Content-Type: app
 # ===== 13. 终止 id=1（test2.ps1）的终端进程 =====
 curl.exe --% -X POST http://127.0.0.1:13025/terminal/stop -H "Content-Type: application/json" -d "{\"id\":1}"
 
-# ===== 14. 关闭 PsLauncher =====
+# ===== 14. 终止所有终端进程 =====
+curl.exe --% -X POST http://127.0.0.1:13025/terminal/stop_all
+
+# ===== 15. 关闭 PsLauncher =====
 curl.exe --% -X POST http://127.0.0.1:13025/shutdown
 ```
 

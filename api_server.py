@@ -126,6 +126,8 @@ class ApiRequestHandler(BaseHTTPRequestHandler):
             self._handle_script_run()
         elif path == "/terminal/stop":
             self._handle_terminal_stop()
+        elif path == "/terminal/stop_all":
+            self._handle_terminal_stop_all()
         elif path == "/terminal/clear":
             self._handle_terminal_clear()
         elif path == "/terminal/input":
@@ -270,6 +272,11 @@ class ApiRequestHandler(BaseHTTPRequestHandler):
             self._send_json(result)
         else:
             self._send_error(result.get("error", "Failed"), 400)
+
+    def _handle_terminal_stop_all(self):
+        """终止所有终端"""
+        result = self._invoke_main("api_stop_all_terminals")
+        self._send_json(result)
 
     def _handle_terminal_output(self, query):
         """查看终端输出记录"""

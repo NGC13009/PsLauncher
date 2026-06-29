@@ -2085,6 +2085,18 @@ class MainWindow(QMainWindow):
                 break
         return {"success": True, "message": f"已终止终端 ID={widget.terminal_id}"}
 
+    def api_stop_all_terminals(self):
+        """终止所有终端标签页"""
+        count = 0
+        # 从后往前遍历并关闭所有终端标签页
+        for i in range(self.tabs.count() - 1, -1, -1):
+            widget = self.tabs.widget(i)
+            if isinstance(widget, TerminalTab):
+                widget.stop_process()
+                self.tabs.removeTab(i)
+                count += 1
+        return {"success": True, "message": f"已终止 {count} 个终端"}
+
     def api_get_terminal_output(self, terminal_id=None, terminal_name=None):
         """查看终端输出记录"""
         widget = None

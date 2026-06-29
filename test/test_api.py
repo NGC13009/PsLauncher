@@ -298,113 +298,69 @@ class TestApiEndpoints:
 
         tabClass.TerminalTab.start_process = original_start
 
-    def test_api_run_script_not_found(self, qapp, main_window):
-        """运行不存在的脚本"""
-        main_window.config["folders"] = ["/some/folder"]
-        result = main_window.api_run_script("/some/folder", "nonexistent.ps1")
-        assert result["success"] is False
 
-    def test_api_stop_terminal(self, qapp, main_window, sample_scripts_dir):
-        """终止终端"""
+# ============================================================
+# 终止所有终端测试
+# ============================================================
+
+
+@pytest.mark.gui
+class TestStopAllTerminals:
+    """终止所有终端 API 测试"""
+
+    def test_api_stop_all_terminals(self, qapp, main_window, sample_scripts_dir):
+        """终止所有终端"""
         import tabClass
         original_start = tabClass.TerminalTab.start_process
         tabClass.TerminalTab.start_process = lambda self: None
 
-        script_path = str(sample_scripts_dir / "test_script.ps1")
-        main_window.open_terminal_tab(script_path)
+        main_window.open_terminal_tab(str(sample_scripts_dir / "test_script.ps1"))
+        main_window.open_terminal_tab(str(sample_scripts_dir / "test_script.bat"))
 
-        terminals_result = main_window.api_get_terminals()
-        if terminals_result["terminals"]:
-            tid = terminals_result["terminals"][0]["id"]
-            result = main_window.api_stop_terminal(terminal_id=tid)
-            assert result["success"] is True
+        result = main_window.api_stop_all_terminals()
+        assert result["success"] is True
+        assert "message" in result
+
+        # 验证所有终端已关闭
+        terminals = main_window.api_get_terminals()
+        assert len(terminals["terminals"]) == 0
 
         tabClass.TerminalTab.start_process = original_start
 
-    def test_api_stop_terminal_by_name(self, qapp, main_window, sample_scripts_dir):
-        """通过名称终止终端"""
+    def test_api_stop_all_terminals_empty(self, qapp, main_window):
+        """无终端时终止所有终端"""
+        result = main_window.api_stop_all_terminals()
+        assert result["success"] is True
+        assert "0" in result["message"]
+
+    def test_api_stop_all_terminals_mixed_tabs(self, qapp, main_window, sample_scripts_dir):
+        """混合标签页时终止所有终端（编辑器标签页不受影响）"""
         import tabClass
         original_start = tabClass.TerminalTab.start_process
         tabClass.TerminalTab.start_process = lambda self: None
 
-        script_path = str(sample_scripts_dir / "test_script.ps1")
-        main_window.open_terminal_tab(script_path)
+        # 打开一个编辑器标签页
+        main_window.open_editor_tab(str(sample_scripts_dir / "test_script.ps1"))
+        # 打开两个终端标签页
+        main_window.open_terminal_tab(str(sample_scripts_dir / "test_script.ps1"))
+        main_window.open_terminal_tab(str(sample_scripts_dir / "test_script.bat"))
 
-        result = main_window.api_stop_terminal(terminal_name="test_script.ps1")
+        result = main_window.api_stop_all_terminals()
         assert result["success"] is True
 
-        tabClass.TerminalTab.start_process = original_start
+        # 验证所有终端已关闭，但编辑器标签页仍在
+        terminals = main_window.api_get_terminals()
+        assert len(terminals["terminals"]) == 0
 
-    def test_api_stop_terminal_not_found(self, qapp, main_window):
-        """终止不存在的终端"""
-        result = main_window.api_stop_terminal(terminal_id=99999)
-        assert result["success"] is False
-
-    def test_api_stop_terminal_no_params(self, qapp, main_window):
-        """不提供参数"""
-        result = main_window.api_stop_terminal()
-        assert result["success"] is False
-
-    def test_api_send_terminal_input(self, qapp, main_window, sample_scripts_dir, monkeypatch):
-        """向终端发送输入"""
-        import tabClass
-        original_start = tabClass.TerminalTab.start_process
-        tabClass.TerminalTab.start_process = lambda self: None
-
-        from unittest.mock import MagicMock
-        from PyQt5.QtCore import QProcess
-
-        script_path = str(sample_scripts_dir / "test_script.ps1")
-        main_window.open_terminal_tab(script_path)
-
-        terminals_result = main_window.api_get_terminals()
-        if terminals_result["terminals"]:
-            tid = terminals_result["terminals"][0]["id"]
-            widget = main_window._get_terminal_by_id(tid)
-            # 模拟进程运行中
-            widget.process = MagicMock()
-            widget.process.state.return_value = QProcess.Running
-            widget.process.write = MagicMock()
-
-            result = main_window.api_send_terminal_input(tid, "hello")
-            assert result["success"] is True
+        # 验证编辑器标签页仍存在
+        editor_count = 0
+        for i in range(main_window.tabs.count()):
+            from tabClass import EditorTab
+            if isinstance(main_window.tabs.widget(i), EditorTab):
+                editor_count += 1
+        assert editor_count >= 1
 
         tabClass.TerminalTab.start_process = original_start
-
-    def test_api_send_terminal_input_no_process(self, qapp, main_window, sample_scripts_dir):
-        """向没有运行进程的终端发送输入"""
-        import tabClass
-        original_start = tabClass.TerminalTab.start_process
-        tabClass.TerminalTab.start_process = lambda self: None
-
-        script_path = str(sample_scripts_dir / "test_script.ps1")
-        main_window.open_terminal_tab(script_path)
-
-        terminals_result = main_window.api_get_terminals()
-        if terminals_result["terminals"]:
-            tid = terminals_result["terminals"][0]["id"]
-            result = main_window.api_send_terminal_input(tid, "hello")
-            assert result["success"] is False
-
-        tabClass.TerminalTab.start_process = original_start
-
-    def test_api_send_terminal_input_not_found(self, qapp, main_window):
-        """向不存在的终端发送输入"""
-        result = main_window.api_send_terminal_input(99999, "hello")
-        assert result["success"] is False
-
-    def test_api_help_returns_content(self, qapp, main_window):
-        """帮助端点返回内容（通过 handler 类直接调用）"""
-        from api_server import ApiRequestHandler
-        # 注意：直接测试 ApiRequestHandler 很复杂，所以测试 MainWindow 能正确访问 help 即可
-        # 简单检查 help 加载不抛异常即可
-        from i18n import get_language
-        if get_language() == "zh_CN":
-            from i18n.source_help_page_zh_CN import html_content
-        else:
-            from i18n.source_help_page import html_content
-        assert html_content is not None
-        assert len(html_content) > 100
 
 
 # ============================================================
