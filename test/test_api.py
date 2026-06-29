@@ -443,6 +443,91 @@ class TestHeadlessMode:
 
 
 # ============================================================
+# 美化输出（pretty）测试
+# ============================================================
+
+
+@pytest.mark.algo
+class TestApiPrettyOutput:
+    """JSON 美化输出测试"""
+
+    def _make_handler(self, path):
+        """创建一个模拟 handler 并绑定真实方法"""
+        from api_server import ApiRequestHandler
+        handler = MagicMock(spec=ApiRequestHandler)
+        handler.path = path
+        handler._parse_query = ApiRequestHandler._parse_query.__get__(handler, ApiRequestHandler)
+        handler._is_pretty = ApiRequestHandler._is_pretty.__get__(handler, ApiRequestHandler)
+        return handler
+
+    def test_pretty_off_by_default(self):
+        """默认不带 pretty 参数时不应美化"""
+        handler = self._make_handler("/status")
+        assert handler._is_pretty() is False
+
+    def test_pretty_true(self):
+        """?pretty=true 应启用美化"""
+        handler = self._make_handler("/status?pretty=true")
+        assert handler._is_pretty() is True
+
+    def test_pretty_1(self):
+        """?pretty=1 应启用美化"""
+        handler = self._make_handler("/status?pretty=1")
+        assert handler._is_pretty() is True
+
+    def test_pretty_yes(self):
+        """?pretty=yes 应启用美化"""
+        handler = self._make_handler("/status?pretty=yes")
+        assert handler._is_pretty() is True
+
+    def test_pretty_false(self):
+        """?pretty=false 不应启用美化"""
+        handler = self._make_handler("/status?pretty=false")
+        assert handler._is_pretty() is False
+
+    def test_pretty_0(self):
+        """?pretty=0 不应启用美化"""
+        handler = self._make_handler("/status?pretty=0")
+        assert handler._is_pretty() is False
+
+    def test_pretty_unknown_value(self):
+        """?pretty=xxx（未知值）不应启用美化"""
+        handler = self._make_handler("/status?pretty=xxx")
+        assert handler._is_pretty() is False
+
+    def test_send_json_pretty_contains_newlines(self):
+        """美化模式输出的 JSON 应包含换行符"""
+        handler = self._make_handler("/status?pretty=true")
+        handler.send_response = MagicMock()
+        handler.send_header = MagicMock()
+        handler.end_headers = MagicMock()
+        handler.wfile = MagicMock()
+        from api_server import ApiRequestHandler
+        data = {"status": "ok", "version": "1.0", "app": "PsLauncher"}
+        # 绑定 _send_json 并使用绑定好的方法
+        handler._send_json = ApiRequestHandler._send_json.__get__(handler, ApiRequestHandler)
+        handler._send_json(data)
+        written = handler.wfile.write.call_args[0][0].decode("utf-8")
+        assert "\n" in written
+        assert "  " in written  # 缩进
+        assert '"status": "ok"' in written
+
+    def test_send_json_normal_no_newlines(self):
+        """非美化模式输出的 JSON 不应含额外换行"""
+        handler = self._make_handler("/status")
+        handler.send_response = MagicMock()
+        handler.send_header = MagicMock()
+        handler.end_headers = MagicMock()
+        handler.wfile = MagicMock()
+        from api_server import ApiRequestHandler
+        data = {"status": "ok", "version": "1.0", "app": "PsLauncher"}
+        handler._send_json = ApiRequestHandler._send_json.__get__(handler, ApiRequestHandler)
+        handler._send_json(data)
+        written = handler.wfile.write.call_args[0][0].decode("utf-8")
+        assert "\n" not in written
+
+
+# ============================================================
 # TerminalTab ID 测试
 # ============================================================
 

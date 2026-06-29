@@ -42,11 +42,20 @@ class ApiRequestHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Access-Control-Allow-Origin", "*")
         self.end_headers()
-        self.wfile.write(json.dumps(data, ensure_ascii=False).encode("utf-8"))
+        if self._is_pretty():
+            json_bytes = json.dumps(data, indent=2, ensure_ascii=False).encode("utf-8")
+        else:
+            json_bytes = json.dumps(data, ensure_ascii=False).encode("utf-8")
+        self.wfile.write(json_bytes)
 
     def _send_error(self, message, status=400):
         """发送错误响应"""
         self._send_json({"success": False, "error": message}, status=status)
+
+    def _is_pretty(self):
+        """检查请求是否要求美化输出（?pretty=true/1/yes）"""
+        query = self._parse_query()
+        return query.get("pretty", "").lower() in ("true", "1", "yes")
 
     def _read_body(self):
         """读取请求体 JSON"""

@@ -114,10 +114,12 @@ Authorization: Bearer <your-token>
 
 Returns `401 Unauthorized` for incorrect tokens.
 
+> **Pretty Output**: All endpoints support `?pretty=true` query parameter to return formatted (indented) JSON for human readability. By default without `pretty`, JSON is compact for programmatic use.
+
 #### API Endpoints
 
 | Endpoint | Description | Request Body/Params |
-|---|---|---|
+| ---|---|---|---|
 | `GET/POST /status` | Check server status | None |
 | `GET/POST /help` | Get help page HTML | None |
 | `GET/POST /folders` | List folder paths | None |
@@ -127,6 +129,7 @@ Returns `401 Unauthorized` for incorrect tokens.
 | `POST /script/run` | Run a script | `{"folder":"C:/scripts","script":"test0.ps1"}` |
 | `GET/POST /terminals` | List terminals (with IDs) | None |
 | `POST /terminal/stop` | Stop terminal | `{"id":0}` or `{"name":"test0.ps1"}` |
+| `POST /terminal/stop_all` | Stop all terminals | None |
 | `GET/POST /terminal/output` | View terminal output | `?id=0` or `?name=test0.ps1` |
 | `POST /terminal/clear` | Clear terminal output | `{"id":0}` |
 | `POST /terminal/input` | Send input to terminal | `{"id":0,"text":"hello\n"}` |
@@ -181,6 +184,10 @@ curl.exe --% -X POST http://127.0.0.1:13025/terminal/stop -H "Content-Type: appl
 
 # ===== 14. Shutdown PsLauncher =====
 curl.exe --% -X POST http://127.0.0.1:13025/shutdown
+
+# ===== 15. Query with pretty output (human readable) =====
+curl.exe "http://127.0.0.1:13025/status?pretty=true"
+curl.exe "http://127.0.0.1:13025/terminals?pretty=true"
 ```
 
 Example:

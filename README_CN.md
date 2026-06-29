@@ -108,12 +108,14 @@ Authorization: Bearer <your-token>
 
 token 不正确时返回 `401 Unauthorized`。
 
+> **美化输出**：所有端点都支持 `?pretty=true` 查询参数，返回格式化的 JSON（带缩进和换行），方便人类阅读。不带 `pretty` 参数时默认返回紧凑格式，便于程序解析。
+
 #### API 端点列表
 
 所有端点支持 POST 请求，大部分查询类端点同时支持 GET。
 
 | 端点 | 说明 | 请求体/参数 |
-|---|---|---|
+| ---|---|---|---|
 | `GET/POST /status` | 查看状态 | 无参数 |
 | `GET/POST /help` | 查看帮助信息 | 无参数 |
 | `GET/POST /folders` | 枚举文件夹路径列表 | 无参数 |
@@ -185,6 +187,10 @@ curl.exe --% -X POST http://127.0.0.1:13025/terminal/stop_all
 
 # ===== 15. 关闭 PsLauncher =====
 curl.exe --% -X POST http://127.0.0.1:13025/shutdown
+
+# ===== 16. 使用美化输出（人类可读） =====
+curl.exe "http://127.0.0.1:13025/status?pretty=true"
+curl.exe "http://127.0.0.1:13025/terminals?pretty=true"
 ```
 
 例子:
