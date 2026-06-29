@@ -443,6 +443,122 @@ class TestHeadlessMode:
 
 
 # ============================================================
+# POST /help 端点测试
+# ============================================================
+
+
+@pytest.mark.algo
+class TestApiHelpPost:
+    """POST /help 端点测试（返回所有 API 端点格式列表）"""
+
+    def test_help_post_returns_success(self):
+        """POST /help 应返回 success=True"""
+        from api_server import ApiRequestHandler
+        handler = MagicMock(spec=ApiRequestHandler)
+        handler.send_response = MagicMock()
+        handler.send_header = MagicMock()
+        handler.end_headers = MagicMock()
+        handler.wfile = MagicMock()
+        handler._is_pretty = MagicMock(return_value=False)
+        handler._send_json = ApiRequestHandler._send_json.__get__(handler, ApiRequestHandler)
+
+        handler._handle_help_post = ApiRequestHandler._handle_help_post.__get__(handler, ApiRequestHandler)
+        handler._handle_help_post()
+
+        written = handler.wfile.write.call_args[0][0].decode("utf-8")
+        data = json.loads(written)
+        assert data["success"] is True
+        assert "endpoints" in data
+
+    def test_help_post_contains_all_endpoints(self):
+        """POST /help 应包含所有预期的 API 端点"""
+        from api_server import ApiRequestHandler
+        handler = MagicMock(spec=ApiRequestHandler)
+        handler.send_response = MagicMock()
+        handler.send_header = MagicMock()
+        handler.end_headers = MagicMock()
+        handler.wfile = MagicMock()
+        handler._is_pretty = MagicMock(return_value=False)
+        handler._send_json = ApiRequestHandler._send_json.__get__(handler, ApiRequestHandler)
+
+        handler._handle_help_post = ApiRequestHandler._handle_help_post.__get__(handler, ApiRequestHandler)
+        handler._handle_help_post()
+
+        written = handler.wfile.write.call_args[0][0].decode("utf-8")
+        data = json.loads(written)
+        endpoints = data["endpoints"]
+
+        # 检查所有预期的端点路径和方法都存在
+        expected_endpoints = [
+            ("GET", "/status"),
+            ("GET", "/help"),
+            ("POST", "/help"),
+            ("GET", "/folders"),
+            ("GET", "/scripts"),
+            ("POST", "/folder/add"),
+            ("POST", "/folder/remove"),
+            ("POST", "/script/run"),
+            ("GET", "/terminals"),
+            ("POST", "/terminal/stop"),
+            ("POST", "/terminal/stop_all"),
+            ("GET", "/terminal/output"),
+            ("POST", "/terminal/clear"),
+            ("POST", "/terminal/input"),
+            ("GET", "/shutdown"),
+        ]
+        endpoint_set = {(ep["method"], ep["path"]) for ep in endpoints}
+        for method, path in expected_endpoints:
+            assert (method, path) in endpoint_set, f"缺少端点: {method} {path}"
+
+    def test_help_post_endpoint_has_description(self):
+        """每个端点应包含 description 字段"""
+        from api_server import ApiRequestHandler
+        handler = MagicMock(spec=ApiRequestHandler)
+        handler.send_response = MagicMock()
+        handler.send_header = MagicMock()
+        handler.end_headers = MagicMock()
+        handler.wfile = MagicMock()
+        handler._is_pretty = MagicMock(return_value=False)
+        handler._send_json = ApiRequestHandler._send_json.__get__(handler, ApiRequestHandler)
+
+        handler._handle_help_post = ApiRequestHandler._handle_help_post.__get__(handler, ApiRequestHandler)
+        handler._handle_help_post()
+
+        written = handler.wfile.write.call_args[0][0].decode("utf-8")
+        data = json.loads(written)
+        for ep in data["endpoints"]:
+            assert "description" in ep, f"端点 {ep['method']} {ep['path']} 缺少 description"
+
+    def test_help_post_endpoint_has_response_field(self):
+        """每个端点应包含 response 字段"""
+        from api_server import ApiRequestHandler
+        handler = MagicMock(spec=ApiRequestHandler)
+        handler.send_response = MagicMock()
+        handler.send_header = MagicMock()
+        handler.end_headers = MagicMock()
+        handler.wfile = MagicMock()
+        handler._is_pretty = MagicMock(return_value=False)
+        handler._send_json = ApiRequestHandler._send_json.__get__(handler, ApiRequestHandler)
+
+        handler._handle_help_post = ApiRequestHandler._handle_help_post.__get__(handler, ApiRequestHandler)
+        handler._handle_help_post()
+
+        written = handler.wfile.write.call_args[0][0].decode("utf-8")
+        data = json.loads(written)
+        for ep in data["endpoints"]:
+            assert "response" in ep, f"端点 {ep['method']} {ep['path']} 缺少 response"
+
+    def test_help_post_does_not_require_auth(self):
+        """POST /help 应当在请求处理器中通过认证"""
+        from api_server import ApiRequestHandler
+        ApiRequestHandler.auth_token = ""
+        handler = MagicMock(spec=ApiRequestHandler)
+        handler.headers = {}
+        handler._check_auth = ApiRequestHandler._check_auth.__get__(handler, ApiRequestHandler)
+        assert handler._check_auth() is True
+
+
+# ============================================================
 # 美化输出（pretty）测试
 # ============================================================
 

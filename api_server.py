@@ -126,6 +126,8 @@ class ApiRequestHandler(BaseHTTPRequestHandler):
 
         if path == "/status" or path == "":
             self._handle_status()
+        elif path == "/help":
+            self._handle_help_post()
         elif path == "/shutdown":
             self._handle_shutdown()
         elif path == "/folder/add":
@@ -152,8 +154,6 @@ class ApiRequestHandler(BaseHTTPRequestHandler):
                 self._handle_terminals()
             elif path == "/terminal/output":
                 self._handle_terminal_output(self._parse_query())
-            elif path == "/help":
-                self._handle_help()
             else:
                 self._send_error("Not Found", 404)
 
@@ -200,6 +200,148 @@ class ApiRequestHandler(BaseHTTPRequestHandler):
             self._send_json({"help": hc})
         except Exception as e:
             self._send_json({"help": tr("api.help_load_failed", error=str(e))})
+
+    def _handle_help_post(self):
+        """返回所有可用的 API 端点格式列表"""
+        endpoints = [
+            {
+                "method": "GET",
+                "path": "/status",
+                "description": "检查服务器状态",
+                "params": None,
+                "body": None,
+                "response": {
+                    "status": "ok",
+                    "version": "x.x.x",
+                    "app": "PsLauncher"
+                }
+            },
+            {
+                "method": "GET",
+                "path": "/help",
+                "description": "获取帮助页面 HTML",
+                "params": None,
+                "body": None,
+                "response": {"help": "string"}
+            },
+            {
+                "method": "POST",
+                "path": "/help",
+                "description": "获取所有可用的 API 端点格式列表",
+                "params": None,
+                "body": None,
+                "response": {
+                    "success": True,
+                    "endpoints": [
+                        {
+                            "method": "GET",
+                            "path": "/status",
+                            "description": "说明",
+                            "params": "查询参数（可选）",
+                            "body": "请求体参数（可选）",
+                            "response": "响应格式描述"
+                        }
+                    ]
+                }
+            },
+            {
+                "method": "GET",
+                "path": "/folders",
+                "description": "列出所有已添加的脚本文件夹路径",
+                "params": None,
+                "body": None,
+                "response": {"folders": ["string"]}
+            },
+            {
+                "method": "GET",
+                "path": "/scripts",
+                "description": "列出所有可运行的脚本",
+                "params": {"folder": "可选，按文件夹筛选"},
+                "body": None,
+                "response": {"scripts": [{"folder": "string", "name": "string", "path": "string"}]}
+            },
+            {
+                "method": "POST",
+                "path": "/folder/add",
+                "description": "添加文件夹路径",
+                "params": None,
+                "body": {"path": "string (必填)"},
+                "response": {"success": True, "message": "string"}
+            },
+            {
+                "method": "POST",
+                "path": "/folder/remove",
+                "description": "移除文件夹路径",
+                "params": None,
+                "body": {"path": "string (必填)"},
+                "response": {"success": True, "message": "string"}
+            },
+            {
+                "method": "POST",
+                "path": "/script/run",
+                "description": "运行指定脚本",
+                "params": None,
+                "body": {"folder": "string (必填)", "script": "string (必填)"},
+                "response": {"success": True, "terminal_id": "int", "message": "string"}
+            },
+            {
+                "method": "GET",
+                "path": "/terminals",
+                "description": "列出所有打开的终端及其状态",
+                "params": None,
+                "body": None,
+                "response": {"terminals": [{"id": "int", "name": "string", "script": "string", "running": "bool"}]}
+            },
+            {
+                "method": "POST",
+                "path": "/terminal/stop",
+                "description": "终止指定终端",
+                "params": None,
+                "body": {"id": "int (选填)", "name": "string (选填)"},
+                "response": {"success": True, "message": "string"}
+            },
+            {
+                "method": "POST",
+                "path": "/terminal/stop_all",
+                "description": "终止所有终端",
+                "params": None,
+                "body": None,
+                "response": {"success": True, "message": "string"}
+            },
+            {
+                "method": "GET",
+                "path": "/terminal/output",
+                "description": "查看终端输出",
+                "params": {"id": "int (选填)", "name": "string (选填)"},
+                "body": None,
+                "response": {"success": True, "id": "int", "name": "string", "output": "string"}
+            },
+            {
+                "method": "POST",
+                "path": "/terminal/clear",
+                "description": "清空终端输出",
+                "params": None,
+                "body": {"id": "int (必填)"},
+                "response": {"success": True, "message": "string"}
+            },
+            {
+                "method": "POST",
+                "path": "/terminal/input",
+                "description": "向终端发送输入",
+                "params": None,
+                "body": {"id": "int (必填)", "text": "string (必填)"},
+                "response": {"success": True, "message": "string"}
+            },
+            {
+                "method": "GET",
+                "path": "/shutdown",
+                "description": "关闭 PsLauncher 程序",
+                "params": None,
+                "body": None,
+                "response": {"success": True, "message": "string"}
+            }
+        ]
+        self._send_json({"success": True, "endpoints": endpoints})
 
     def _handle_folders(self):
         """枚举文件夹路径列表"""

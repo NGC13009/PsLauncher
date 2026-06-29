@@ -117,7 +117,8 @@ token 不正确时返回 `401 Unauthorized`。
 | 端点 | 说明 | 请求体/参数 |
 | ---|---|---|---|
 | `GET/POST /status` | 查看状态 | 无参数 |
-| `GET/POST /help` | 查看帮助信息 | 无参数 |
+| `GET /help` | 查看帮助信息（HTML格式） | 无参数 |
+| `POST /help` | 获取所有可用 API 端点格式列表（请求体结构参考） | 无参数 |
 | `GET/POST /folders` | 枚举文件夹路径列表 | 无参数 |
 | `GET/POST /scripts` | 枚举脚本列表 | `?folder=<路径>`（可选） |
 | `POST /folder/add` | 增加路径 | `{"path":"C:/scripts"}` |
@@ -140,6 +141,9 @@ token 不正确时返回 `401 Unauthorized`。
 ```powershell
 # ===== 0. 检查服务状态 =====
 curl.exe http://127.0.0.1:13025/status
+
+# ===== 0.1 获取所有可用 API 端点格式列表(美观格式化) =====
+curl.exe -X POST http://127.0.0.1:13025/help?pretty=true
 
 # ===== 1. 添加 test_script 文件夹到扫描列表 =====
 curl.exe --% -X POST http://127.0.0.1:13025/folder/add -H "Content-Type: application/json" -d "{\"path\":\"E:\\project_file\\limitless\\PsLauncher\\test_script\"}"

@@ -121,7 +121,8 @@ Returns `401 Unauthorized` for incorrect tokens.
 | Endpoint | Description | Request Body/Params |
 | ---|---|---|---|
 | `GET/POST /status` | Check server status | None |
-| `GET/POST /help` | Get help page HTML | None |
+| `GET /help` | Get help page HTML | None |
+| `POST /help` | Get all available API endpoint formats (request body schema) | None |
 | `GET/POST /folders` | List folder paths | None |
 | `GET/POST /scripts` | List scripts | `?folder=<path>` (optional) |
 | `POST /folder/add` | Add folder | `{"path":"C:/scripts"}` |
@@ -142,6 +143,9 @@ Returns `401 Unauthorized` for incorrect tokens.
 ```powershell
 # ===== 0. Check server status =====
 curl.exe http://127.0.0.1:13025/status
+
+# ===== 0.1 Get all available API endpoint formats =====
+curl.exe -X POST http://127.0.0.1:13025/help?pretty=true
 
 # ===== 1. Add test_script folder =====
 curl.exe --% -X POST http://127.0.0.1:13025/folder/add -H "Content-Type: application/json" -d "{\"path\":\"<SCRIPT_DIR>\"}"
