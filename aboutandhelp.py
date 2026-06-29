@@ -12,6 +12,7 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 
 from source_help_page import html_content
+from i18n import tr
 
 __version__ = "v1.0.8"
 __devdate__ = "JUNE 28, 2026"
@@ -45,7 +46,7 @@ class AboutDialog(PsLauncherDiag):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("About")
+        self.setWindowTitle(tr("about.title"))
         self.resize(800, 600)
 
         # 1. Set up the layout
@@ -60,9 +61,9 @@ class AboutDialog(PsLauncherDiag):
         # 3. Create buttons
         btn_layout = QVBoxLayout() # Or use QHBoxLayout for horizontal arrangement
 
-        self.btn_copy = QPushButton("Copy info to clipboard")
-        self.btn_github = QPushButton("GitHub/PsLauncher")
-        self.btn_close = QPushButton("❎")
+        self.btn_copy = QPushButton(tr("about.copy_info"))
+        self.btn_github = QPushButton(tr("about.github"))
+        self.btn_close = QPushButton(tr("about.close_btn"))
 
         btn_layout.addWidget(self.btn_copy)
         btn_layout.addWidget(self.btn_github)
@@ -97,7 +98,7 @@ class HelpDialog(PsLauncherDiag):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Help")
+        self.setWindowTitle(tr("help.title"))
         self.resize(1366, 768)
 
         # 1. Set up the layout
@@ -112,8 +113,8 @@ class HelpDialog(PsLauncherDiag):
         # 3. Create buttons
         btn_layout = QVBoxLayout() # Or use QHBoxLayout for horizontal arrangement
 
-        self.btn_copy = QPushButton("Copy information to clipboard")
-        self.btn_close = QPushButton("Close")
+        self.btn_copy = QPushButton(tr("help.copy_info"))
+        self.btn_close = QPushButton(tr("help.close_btn"))
 
         btn_layout.addWidget(self.btn_copy)
         btn_layout.addWidget(self.btn_close)

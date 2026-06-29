@@ -203,7 +203,7 @@ class MainWindow(QMainWindow):
         self.edit_menu.addAction(self.copy_all_action)
 
         # Clear terminal screen menu item
-        self.clear_screen_action = QAction("🧹" + tr("action.clear_terminal"), self)
+        self.clear_screen_action = QAction(tr("action.clear_terminal"), self)
         self.clear_screen_action.triggered.connect(self.clear_current_terminal)
         self.clear_screen_action.setShortcut("Ctrl+L")
         self.clear_screen_action.setToolTip(tr("tooltip.clear_terminal"))
@@ -388,34 +388,34 @@ class MainWindow(QMainWindow):
 
         # System tray button
         self.tray_btn = QAction(self)
-        self.tray_btn.setText("📌" + tr("toolbar.hide"))
+        self.tray_btn.setText(tr("toolbar.hide"))
         self.tray_btn.setToolTip(tr("tooltip.hide_to_tray"))
         self.tray_btn.triggered.connect(self.hide_to_tray)
         self.toolbar.addAction(self.tray_btn)
 
         self.toolbar.addSeparator()
         self.run_btn = QAction(self)
-        self.run_btn.setText("▶️" + tr("toolbar.run"))
+        self.run_btn.setText(tr("toolbar.run"))
         self.run_btn.setToolTip(tr("tooltip.run"))
         self.run_btn.triggered.connect(self.run_selected_script)
         self.toolbar.addAction(self.run_btn)
 
         self.stop_btn = QAction(self)
-        self.stop_btn.setText("⏹️" + tr("toolbar.stop"))
+        self.stop_btn.setText(tr("toolbar.stop"))
         self.stop_btn.setToolTip(tr("tooltip.stop"))
         self.stop_btn.triggered.connect(self.stop_current_script)
         self.toolbar.addAction(self.stop_btn)
 
         # Send Ctrl+C interrupt button
         self.send_ctrlc_btn = QAction(self)
-        self.send_ctrlc_btn.setText("❌" + tr("toolbar.interrupt"))
+        self.send_ctrlc_btn.setText(tr("toolbar.interrupt"))
         self.send_ctrlc_btn.setToolTip(tr("tooltip.interrupt"))
         self.send_ctrlc_btn.triggered.connect(self.send_ctrl_c_to_current_terminal)
         self.toolbar.addAction(self.send_ctrlc_btn)
 
         # 清除终端屏幕按钮
         self.clear_screen_btn = QAction(self)
-        self.clear_screen_btn.setText("🧹" + tr("toolbar.clear"))
+        self.clear_screen_btn.setText(tr("toolbar.clear"))
         self.clear_screen_btn.setToolTip(tr("tooltip.clear_terminal"))
         self.clear_screen_btn.triggered.connect(self.clear_current_terminal)
         self.toolbar.addAction(self.clear_screen_btn)
@@ -424,28 +424,28 @@ class MainWindow(QMainWindow):
 
         # Copy/Paste function buttons
         self.copy_btn = QAction(self)
-        self.copy_btn.setText("📋" + tr("toolbar.copy"))
+        self.copy_btn.setText(tr("toolbar.copy"))
         self.copy_btn.setToolTip(tr("tooltip.copy"))
 
         self.copy_btn.triggered.connect(self.copy_selected_text)
         self.toolbar.addAction(self.copy_btn)
 
         self.paste_btn = QAction(self)
-        self.paste_btn.setText("📤" + tr("toolbar.paste"))
+        self.paste_btn.setText(tr("toolbar.paste"))
         self.paste_btn.setToolTip(tr("tooltip.paste"))
         self.paste_btn.triggered.connect(self.paste_text)
         self.toolbar.addAction(self.paste_btn)
 
         self.toolbar.addSeparator()
         self.close_editor_tabs_btn = QAction(self)
-        self.close_editor_tabs_btn.setText("🗑️" + tr("toolbar.close_source"))
+        self.close_editor_tabs_btn.setText(tr("toolbar.close_source"))
         self.close_editor_tabs_btn.setToolTip(tr("tooltip.close_source"))
         self.close_editor_tabs_btn.triggered.connect(self.close_all_editor_tabs)
         self.toolbar.addAction(self.close_editor_tabs_btn)
 
         # Edit/Save Button
         self.edit_save_btn = QAction(self)
-        self.edit_save_btn.setText("✏️" + tr("toolbar.quick_edit"))
+        self.edit_save_btn.setText(tr("toolbar.quick_edit"))
         self.edit_save_btn.setToolTip(tr("tooltip.edit_save"))
         self.edit_save_btn.triggered.connect(self.toggle_edit_save)
         self.toolbar.addAction(self.edit_save_btn)
@@ -455,13 +455,13 @@ class MainWindow(QMainWindow):
         # Quick Close Button
 
         self.close_terminal_tabs_btn = QAction(self)
-        self.close_terminal_tabs_btn.setText("🚫" + tr("toolbar.terminate_all"))
+        self.close_terminal_tabs_btn.setText(tr("toolbar.terminate_all"))
         self.close_terminal_tabs_btn.setToolTip(tr("tooltip.close_terminal"))
         self.close_terminal_tabs_btn.triggered.connect(self.close_all_terminal_tabs)
         self.toolbar.addAction(self.close_terminal_tabs_btn)
 
         self.close_all_tabs_btn = QAction(self)
-        self.close_all_tabs_btn.setText("💥" + tr("toolbar.close_all"))
+        self.close_all_tabs_btn.setText(tr("toolbar.close_all"))
         self.close_all_tabs_btn.setToolTip(tr("tooltip.close_all"))
         self.close_all_tabs_btn.triggered.connect(self.close_all_tabs)
         self.toolbar.addAction(self.close_all_tabs_btn)
@@ -567,13 +567,13 @@ class MainWindow(QMainWindow):
 
     def _set_edit_save_texts(self, saving=False):
         if saving:
-            self.edit_save_action.setText("💾" + tr("toolbar.save"))
-            self.edit_save_btn.setText("💾" + tr("toolbar.save"))
+            self.edit_save_action.setText(tr("toolbar.save"))
+            self.edit_save_btn.setText(tr("toolbar.save"))
             self.edit_save_action.setToolTip(tr("tooltip.save_script"))
             self.edit_save_btn.setToolTip(tr("tooltip.save_script"))
         else:
-            self.edit_save_action.setText("✏️" + tr("toolbar.edit_mode"))
-            self.edit_save_btn.setText("✏️" + tr("toolbar.edit"))
+            self.edit_save_action.setText(tr("toolbar.edit_mode"))
+            self.edit_save_btn.setText(tr("toolbar.edit"))
             self.edit_save_action.setToolTip(tr("tooltip.edit_save"))
             self.edit_save_btn.setToolTip(tr("tooltip.edit_save"))
 
@@ -599,7 +599,7 @@ class MainWindow(QMainWindow):
         self.copy_action.setText(tr("action.copy_selected"))
         self.paste_action.setText(tr("action.paste"))
         self.copy_all_action.setText(tr("action.copy_all_tabs"))
-        self.clear_screen_action.setText("🧹" + tr("action.clear_terminal"))
+        self.clear_screen_action.setText(tr("action.clear_terminal"))
         self.clear_screen_action.setToolTip(tr("tooltip.clear_terminal"))
         self.run_action.setText(tr("action.start_script"))
         self.stop_action.setText(tr("action.stop_script"))
@@ -624,25 +624,25 @@ class MainWindow(QMainWindow):
         self.about_action.setText(tr("action.about"))
 
         self.toolbar.setWindowTitle(tr("toolbar.name"))
-        self.tray_btn.setText("📌" + tr("toolbar.hide"))
+        self.tray_btn.setText(tr("toolbar.hide"))
         self.tray_btn.setToolTip(tr("tooltip.hide_to_tray"))
-        self.run_btn.setText("▶️" + tr("toolbar.run"))
+        self.run_btn.setText(tr("toolbar.run"))
         self.run_btn.setToolTip(tr("tooltip.run"))
-        self.stop_btn.setText("⏹️" + tr("toolbar.stop"))
+        self.stop_btn.setText(tr("toolbar.stop"))
         self.stop_btn.setToolTip(tr("tooltip.stop"))
-        self.send_ctrlc_btn.setText("❌" + tr("toolbar.interrupt"))
+        self.send_ctrlc_btn.setText(tr("toolbar.interrupt"))
         self.send_ctrlc_btn.setToolTip(tr("tooltip.interrupt"))
-        self.clear_screen_btn.setText("🧹" + tr("toolbar.clear"))
+        self.clear_screen_btn.setText(tr("toolbar.clear"))
         self.clear_screen_btn.setToolTip(tr("tooltip.clear_terminal"))
-        self.copy_btn.setText("📋" + tr("toolbar.copy"))
+        self.copy_btn.setText(tr("toolbar.copy"))
         self.copy_btn.setToolTip(tr("tooltip.copy"))
-        self.paste_btn.setText("📤" + tr("toolbar.paste"))
+        self.paste_btn.setText(tr("toolbar.paste"))
         self.paste_btn.setToolTip(tr("tooltip.paste"))
-        self.close_editor_tabs_btn.setText("🗑️" + tr("toolbar.close_source"))
+        self.close_editor_tabs_btn.setText(tr("toolbar.close_source"))
         self.close_editor_tabs_btn.setToolTip(tr("tooltip.close_source"))
-        self.close_terminal_tabs_btn.setText("🚫" + tr("toolbar.terminate_all"))
+        self.close_terminal_tabs_btn.setText(tr("toolbar.terminate_all"))
         self.close_terminal_tabs_btn.setToolTip(tr("tooltip.close_terminal"))
-        self.close_all_tabs_btn.setText("💥" + tr("toolbar.close_all"))
+        self.close_all_tabs_btn.setText(tr("toolbar.close_all"))
         self.close_all_tabs_btn.setToolTip(tr("tooltip.close_all"))
         self.tree.setHeaderLabel(tr("tree.header"))
 
@@ -774,7 +774,7 @@ class MainWindow(QMainWindow):
 
     def open_editor_tab(self, script_path):
         filename = os.path.basename(script_path)
-        tab_name = f"📝 {filename}"
+        tab_name = tr("tab.editor_prefix") + filename
 
         # Avoid opening the same source code tab repeatedly
         for i in range(self.tabs.count()):
@@ -846,7 +846,7 @@ class MainWindow(QMainWindow):
     def open_terminal_tab(self, script_path):
         filename = os.path.basename(script_path)
         # Create a separate tab for the running program, using different emojis for visual distinction
-        tab_name = f"🖥️ {filename}"
+        tab_name = tr("tab.terminal_prefix") + filename
         terminal = TerminalTab(script_path, self.font_family, self.dark_mode, self.config['line_wrap_mode'])
         idx = self.tabs.addTab(terminal, tab_name)
         self.tabs.setCurrentIndex(idx)
@@ -879,8 +879,7 @@ class MainWindow(QMainWindow):
         # First check if it is a source code tab and is in editing mode
         if isinstance(widget, EditorTab) and widget.is_editing:
             filename = os.path.basename(widget.script_path)
-            reply = QMessageBox.question(self, tr("dialog.close_tab"), tr("message.tab_editing_save", filename=filename), QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel,
-                                         QMessageBox.Save)
+            reply = QMessageBox.question(self, tr("dialog.close_tab"), tr("message.tab_editing_save", filename=filename), QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel, QMessageBox.Save)
 
             if reply == QMessageBox.Cancel:
                 return
@@ -1133,8 +1132,7 @@ class MainWindow(QMainWindow):
                     # Update buttons and menu text
                     self._set_edit_save_texts(saving=False)
                 else:
-                    QMessageBox.warning(self, tr("dialog.failed"), tr("message.save_file_failed_admin"),
-                                        QMessageBox.Ok)
+                    QMessageBox.warning(self, tr("dialog.failed"), tr("message.save_file_failed_admin"), QMessageBox.Ok)
             else:
                 # User cancelled save, need to reload file content to restore original state
                 editor_tab.set_editing(False)
@@ -1259,12 +1257,11 @@ class MainWindow(QMainWindow):
 
         if self.tabs.count() != 0:
             # Display confirmation dialog
-            reply = QMessageBox.Yes                                                                                                                                                       # Went through a round of all source code tabs, what's the point of confirming?
+            reply = QMessageBox.Yes # Went through a round of all source code tabs, what's the point of confirming?
             for i in range(self.tabs.count()):
                 widget = self.tabs.widget(i)
                 if isinstance(widget, TerminalTab):
-                    reply = QMessageBox.question(self, tr("dialog.confirm_exit"), tr("message.confirm_exit_inline"), QMessageBox.Yes | QMessageBox.No,
-                                                 QMessageBox.No)
+                    reply = QMessageBox.question(self, tr("dialog.confirm_exit"), tr("message.confirm_exit_inline"), QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
                     break
         else:
             reply = QMessageBox.Yes
@@ -1647,7 +1644,7 @@ class MainWindow(QMainWindow):
                 # Determine if it's a folder or a script file
                 if os.path.isdir(path):
                     # Folder item: show folder-related menu
-                    open_folder_action = QAction("📂 Open in Explorer", self)
+                    open_folder_action = QAction(tr("context.open_in_explorer"), self)
                     open_folder_action.triggered.connect(lambda: os.startfile(path))
                     menu.addAction(open_folder_action)
 
@@ -1655,13 +1652,13 @@ class MainWindow(QMainWindow):
                     ext = os.path.splitext(path)[1].lower()
                     if ext in self.config.get('supported_extensions', DEFAULT_EXT):
                         # Script item: show script management menu
-                        run_action = QAction("▶️ Run", self)
+                        run_action = QAction(tr("context.run"), self)
                         run_action.triggered.connect(lambda: self.run_selected_script(path))
                         menu.addAction(run_action)
 
                         menu.addSeparator()
 
-                        edit_action = QAction("✏️ Edit/Save", self)
+                        edit_action = QAction(tr("context.edit_save"), self)
                         edit_action.triggered.connect(lambda: (self.open_editor_tab(path), self.toggle_edit_save()))
                         menu.addAction(edit_action)
 
@@ -1670,9 +1667,9 @@ class MainWindow(QMainWindow):
                         if ext in runnable_ext:
                             script_path = path # 捕获当前路径供 lambda 使用（闭包捕获）
                             if self.is_script_auto_run(path):
-                                auto_run_action = QAction("🔄 Stop auto-starting this script on launch", self)
+                                auto_run_action = QAction(tr("context.stop_auto_start"), self)
                             else:
-                                auto_run_action = QAction("🔄 Auto-start this script on launch", self)
+                                auto_run_action = QAction(tr("context.auto_start"), self)
                                                # triggered 信号会传入 checked(bool) 参数，必须显式接收并忽略
                             auto_run_action.triggered.connect(lambda _checked=False, sp=script_path: self.toggle_auto_run_script(sp))
                             menu.addAction(auto_run_action)
@@ -1680,31 +1677,31 @@ class MainWindow(QMainWindow):
                             menu.addSeparator()
 
                         # Edit with VSCode
-                        vsc_action = QAction("💻 Edit with VSC", self)
-                        vsc_action.setToolTip("Try calling VSCode to open the file for editing")
+                        vsc_action = QAction(tr("context.edit_with_vsc"), self)
+                        vsc_action.setToolTip(tr("context.edit_with_vsc"))
                         vsc_action.triggered.connect(lambda _checked=False, p=path: self.open_in_vsc(p))
                         menu.addAction(vsc_action)
 
                         menu.addSeparator()
 
-                        rename_action = QAction("📝 Rename", self)
+                        rename_action = QAction(tr("action.rename_script"), self)
                         rename_action.triggered.connect(self.rename_selected_script)
                         menu.addAction(rename_action)
 
-                        copy_action = QAction("📋 Copy", self)
+                        copy_action = QAction(tr("action.copy_script"), self)
                         copy_action.triggered.connect(self.copy_selected_script)
                         menu.addAction(copy_action)
 
-                        move_action = QAction("🚚 Move", self)
+                        move_action = QAction(tr("action.move_script"), self)
                         move_action.triggered.connect(self.move_selected_script)
                         menu.addAction(move_action)
 
-                        delete_action = QAction("🗑️ Delete", self)
+                        delete_action = QAction(tr("action.delete_script"), self)
                         delete_action.triggered.connect(self.delete_selected_script)
                         menu.addAction(delete_action)
                     else:
                         # Other file types, only show View menu
-                        view_action = QAction("📄 View", self)
+                        view_action = QAction(tr("context.view"), self)
                         view_action.triggered.connect(lambda: self.open_editor_tab(path))
                         menu.addAction(view_action)
                 else:
@@ -1715,7 +1712,7 @@ class MainWindow(QMainWindow):
                 pass
         else:
             # Blank area: show Add Folder
-            add_action = QAction("📂 Add Folder Path", self)
+            add_action = QAction(tr("action.add_folder"), self)
             add_action.triggered.connect(self.add_folder)
             menu.addAction(add_action)
 
@@ -1803,15 +1800,15 @@ class MainWindow(QMainWindow):
         menu = QMenu(self)
 
         # Cut, copy, paste functions
-        cut_action = QAction("✂️ Cut", self)
+        cut_action = QAction(tr("context.cut"), self)
         cut_action.triggered.connect(self.cut_selected_text)
         menu.addAction(cut_action)
 
-        copy_action = QAction("📋 Copy", self)
+        copy_action = QAction(tr("action.copy_selected"), self)
         copy_action.triggered.connect(self.copy_selected_text)
         menu.addAction(copy_action)
 
-        paste_action = QAction("📤 Paste", self)
+        paste_action = QAction(tr("action.paste"), self)
         paste_action.triggered.connect(self.paste_text)
         menu.addAction(paste_action)
 
@@ -1821,18 +1818,18 @@ class MainWindow(QMainWindow):
         current_widget = self.tabs.widget(tab_idx)
         if isinstance(current_widget, EditorTab):
             if current_widget.is_editing:
-                save_action = QAction("💾 Save", self)
+                save_action = QAction(tr("toolbar.save"), self)
                 save_action.triggered.connect(self.toggle_edit_save)
                 menu.addAction(save_action)
             else:
-                edit_action = QAction("✏️ Edit", self)
+                edit_action = QAction(tr("toolbar.edit"), self)
                 edit_action.triggered.connect(self.toggle_edit_save)
                 menu.addAction(edit_action)
 
         menu.addSeparator()
 
         # Close tab
-        close_action = QAction("🗑️ Close Tab", self)
+        close_action = QAction(tr("context.close_tab"), self)
         close_action.triggered.connect(lambda: self.close_tab(tab_idx))
         menu.addAction(close_action)
 

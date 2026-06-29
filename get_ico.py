@@ -10,7 +10,7 @@
 
 import base64
 
-icon_file = 'logo.ico'                 # 替换成你的 ico 文件路径
+icon_file = 'logo.ico'                    # 替换成你的 ico 文件路径
 output_variable_name = 'icon_base64_data' # 输出的 Python 变量名
 
 try:
@@ -22,7 +22,7 @@ try:
     # 打印出可以直接复制到代码中的 Python 变量赋值语句
     print(f"{output_variable_name} = '''{base64_string}'''")
     print("\n将上面这行代码复制到你的 Tkinter 程序中。")
-    with open("source_ico.py", "w",encoding='utf-8') as f:
+    with open("source_ico.py", "w", encoding='utf-8') as f:
         f.write(f"#程序图标文件, 请使用 get_ico.py 生成这个代码.\nicon_base64_data = '''{base64_string}'''")
         print("现在方便了,直接把生成的东西自动更新到资源包了. 已经写入 source_ico.py ,无需额外调整.")
 

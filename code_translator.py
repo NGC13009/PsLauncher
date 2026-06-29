@@ -34,7 +34,7 @@ TRANSLATION_TASKS = [
     ("PsLauncher/aboutandhelp.py", "PsLauncher/en/aboutandhelp.py"),
     ("PsLauncher/PsLauncher.py", "PsLauncher/en/PsLauncher.py"),
     ("PsLauncher/tabClass.py", "PsLauncher/en/tabClass.py"),
-    # ("PsLauncher/utils.py", "PsLauncher/en/utils.py"),
+                                                                     # ("PsLauncher/utils.py", "PsLauncher/en/utils.py"),
 ]
 
 # --- 翻译行为 ---
