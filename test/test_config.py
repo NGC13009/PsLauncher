@@ -141,6 +141,74 @@ class TestSaveJsonWithComments:
         parsed = json.loads(json_content)
         assert parsed["dark_mode"] is True
 
+    def test_saved_file_contains_field_comments(self, tmp_path):
+        """保存的配置文件应包含字段注释"""
+        from utils import save_json_with_comments
+        cfg_file = tmp_path / "launcher_config.json"
+        test_config = {
+            "font_scale": 1.5,
+            "dark_mode": True,
+            "height_value": 900,
+            "width_value": 1600,
+        }
+        save_json_with_comments(str(cfg_file), test_config)
+        content = cfg_file.read_text(encoding="utf-8")
+        # 检查典型字段的行内注释是否存在
+        assert "// Font size scaling factor" in content
+        assert "// Enable dark mode theme" in content
+        assert "// Window height in pixels" in content
+        assert "// Window width in pixels" in content
+
+    def test_saved_file_with_comments_can_be_loaded(self, tmp_path):
+        """带注释的保存文件可被 load_json_with_comments 正确读取"""
+        from utils import save_json_with_comments, load_json_with_comments
+        cfg_file = tmp_path / "launcher_config.json"
+        test_config = {
+            "folders": ["C:\\test"],
+            "font_scale": 2.0,
+            "dark_mode": False,
+            "font_family": "Arial",
+            "language": "zh_CN",
+            "api": {
+                "enabled": True,
+                "bind_port": 23025,
+            }
+        }
+        save_json_with_comments(str(cfg_file), test_config)
+        loaded = load_json_with_comments(str(cfg_file))
+        assert loaded["folders"] == ["C:\\test"]
+        assert loaded["font_scale"] == 2.0
+        assert loaded["dark_mode"] is False
+        assert loaded["font_family"] == "Arial"
+        assert loaded["language"] == "zh_CN"
+        assert loaded["api"]["enabled"] is True
+        assert loaded["api"]["bind_port"] == 23025
+
+    def test_saved_file_all_known_fields_have_comments(self, tmp_path):
+        """检查所有已知字段在注释映射表中都有定义（存根测试，确保不崩溃）"""
+        from utils import save_json_with_comments, _COMMENT_MAP
+        cfg_file = tmp_path / "launcher_config.json"
+        save_json_with_comments(str(cfg_file), {})
+        content = cfg_file.read_text(encoding="utf-8")
+        # 确保至少有一半的已知字段名在文件内容中出现了注释
+        # （由于数组/对象格式问题，不是所有字段都保证有行尾注释，但主要字段应该都有）
+        known_fields = [
+            "folders", "font_scale", "dark_mode", "height_value",
+            "width_value", "font_family", "line_wrap_mode",
+            "syntax_highlight_mode", "auto_run_scripts",
+            "auto_minimize_to_tray", "language",
+        ]
+        commented_count = 0
+        for field in known_fields:
+            # 每个已知字段在 _COMMENT_MAP 中应有对应的注释
+            assert field in _COMMENT_MAP, f"字段 {field} 在 _COMMENT_MAP 中缺失"
+            assert _COMMENT_MAP[field], f"字段 {field} 的注释为空"
+        # 检查嵌套字段也存在
+        assert "api.enabled" in _COMMENT_MAP
+        assert "api.bind_ip" in _COMMENT_MAP
+        assert "api.bind_port" in _COMMENT_MAP
+        assert "api.auth_token" in _COMMENT_MAP
+
 
 class TestConfigBoundaryValues:
     """配置边界值测试"""

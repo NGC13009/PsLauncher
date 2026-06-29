@@ -40,6 +40,28 @@ _default_config = {
     }
 }
 
+# Field comment map for self-documenting JSON config
+_COMMENT_MAP = {
+    "folders": "List of folder paths to scan for scripts",
+    "font_scale": "Font size scaling factor (e.g., 1.5 = 150%)",
+    "dark_mode": "Enable dark mode theme",
+    "height_value": "Window height in pixels",
+    "width_value": "Window width in pixels",
+    "font_family": "Font family for editor and terminal",
+    "line_wrap_mode": "Enable automatic line wrapping",
+    "supported_extensions": "File extensions to display in the script tree",
+    "runnable_extensions": "File extensions that can be executed",
+    "syntax_highlight_mode": "Syntax highlighting mode: auto, ps1, bash, command, none",
+    "auto_run_scripts": "List of script paths to auto-run on startup",
+    "auto_minimize_to_tray": "Auto-minimize to system tray on startup",
+    "language": "UI language code (e.g., en, zh_CN)",
+    "api": "HTTP API server configuration",
+    "api.enabled": "Whether to enable the HTTP API server",
+    "api.bind_ip": "IP address to bind the API server (127.0.0.1 = localhost only)",
+    "api.bind_port": "Port number for the API server",
+    "api.auth_token": "Bearer token for API authentication (empty = no auth)",
+}
+
 
 # Parse comments in JSON
 def load_json_with_comments(filepath):
@@ -57,13 +79,73 @@ def load_json_with_comments(filepath):
         return _default_config
 
 
+def _add_inline_comments(json_str):
+    """Add inline // comments to each JSON key-value line based on _COMMENT_MAP."""
+    lines = json_str.split('\n')
+    result_lines = []
+    path_stack = []  # Track nested object path, e.g. ["api"]
+
+    for line in lines:
+        stripped = line.strip()
+
+        # Track entering/leaving nested objects (only api dict at top level)
+        # Match '"key": {' style lines for top-level objects
+        obj_match = re.match(r'^(\s*)"(\w+)"\s*:\s*\{\s*$', line)
+        if obj_match:
+            indent = obj_match.group(1)
+            key = obj_match.group(2)
+            comment = _COMMENT_MAP.get(key, "")
+            if comment:
+                # Check if the next non-empty line exists (meaning there are children)
+                rest_lines = lines[lines.index(line) + 1:]
+                next_non_empty = next((l for l in rest_lines if l.strip()), None)
+                if next_non_empty and next_non_empty.strip() != '}':
+                    line = f"{indent}\"{key}\": {{  // {comment}"
+                else:
+                    line = f"{indent}\"{key}\": {{  // {comment}"
+            path_stack.append(key)
+            result_lines.append(line)
+            continue
+
+        # Match closing brace '}' - pop from path stack
+        if stripped == '}' or stripped.startswith('}'):
+            if path_stack:
+                path_stack.pop()
+            result_lines.append(line)
+            continue
+
+        # Match key-value lines: "key": value, (possibly at end or nested)
+        kv_match = re.match(r'^(\s*)"(\w+)"\s*:\s*(.*)$', line)
+        if kv_match:
+            indent = kv_match.group(1)
+            key = kv_match.group(2)
+            rest = kv_match.group(3)
+
+            # Build full path key for comment lookup
+            full_key = key
+            if path_stack:
+                full_key = ".".join(path_stack) + "." + key
+
+            comment = _COMMENT_MAP.get(full_key, "")
+            if comment:
+                # Only add comment if rest doesn't already end with one
+                if '//' not in rest:
+                    # Pad rest to align comments (rough alignment)
+                    line = f"{indent}\"{key}\": {rest.rstrip()}  // {comment}"
+
+        result_lines.append(line)
+
+    return '\n'.join(result_lines)
+
+
 # Store configuration
 def save_json_with_comments(filepath, config):
     data = {**_default_config, **config}
     json_str = json.dumps(data, indent=4, ensure_ascii=False)
     comment = "// PsLauncher program configuration file\n" # Include a descriptive comment when writing
+    json_str_with_comments = _add_inline_comments(json_str)
     with open(filepath, 'w', encoding='utf-8') as f:
-        f.write(comment + json_str)
+        f.write(comment + json_str_with_comments)
 
 
 # Syntax highlighter
