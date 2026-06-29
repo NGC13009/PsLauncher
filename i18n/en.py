@@ -20,6 +20,7 @@ messages = {
     "menu.tab": "Tab",
     "menu.help": "Help",
     "action.save_config": "Save current configuration",
+    "action.edit_config": "Edit Configuration File",
     "action.hide_to_tray": "Hide window to system tray",
     "action.auto_minimize": "Auto-minimize to tray on startup",
     "action.add_folder": "⛏️ Add folder path",

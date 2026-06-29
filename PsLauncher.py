@@ -26,6 +26,7 @@ from aboutandhelp import AboutDialog, HelpDialog
 from source_ico import icon_base64_data
 from i18n import available_languages, set_language, tr
 from api_server import ApiServerThread
+from config_editor import ConfigEditorDialog
 
 
 # Main window
@@ -173,6 +174,11 @@ class MainWindow(QMainWindow):
         self.auto_minimize_action.setChecked(self.config.get('auto_minimize_to_tray', False))
         self.auto_minimize_action.triggered.connect(self.toggle_auto_minimize_to_tray)
         self.sys_menu.addAction(self.auto_minimize_action)
+
+        self.sys_menu.addSeparator()
+        self.edit_config_action = QAction(tr("action.edit_config"), self)
+        self.edit_config_action.triggered.connect(self.open_config_editor)
+        self.sys_menu.addAction(self.edit_config_action)
 
         # File menu
         self.file_menu = menubar.addMenu(tr("menu.file"))
@@ -596,6 +602,7 @@ class MainWindow(QMainWindow):
         self.save_action.setText(tr("action.save_config"))
         self.hide_action.setText(tr("action.hide_to_tray"))
         self.auto_minimize_action.setText(tr("action.auto_minimize"))
+        self.edit_config_action.setText(tr("action.edit_config"))
         self.addpath_action.setText(tr("action.add_folder"))
         self.removepath_action.setText(tr("action.remove_folder"))
         self.copy_action.setText(tr("action.copy_selected"))
@@ -1956,6 +1963,48 @@ class MainWindow(QMainWindow):
             if ext in self.config.get('supported_extensions', DEFAULT_EXT):
                 return full_path
         return None
+
+    def open_config_editor(self):
+        """打开配置文件编辑器"""
+        # 确保 config 中包含所有默认键（缺失的用默认值填充）
+        from utils import _default_config
+        for key, value in _default_config.items():
+            if key not in self.config:
+                self.config[key] = value
+        # api 字典特殊处理
+        if 'api' not in self.config:
+            self.config['api'] = dict(_default_config['api'])
+        else:
+            for api_key, api_value in _default_config['api'].items():
+                if api_key not in self.config['api']:
+                    self.config['api'][api_key] = api_value
+
+        dialog = ConfigEditorDialog(self.config, self)
+        if dialog.exec_():
+            # 用户点击保存后，立即同步配置
+            self.on_config_edited()
+
+    def on_config_edited(self):
+        """配置被编辑后同步 UI 状态"""
+        # 更新自动换行菜单状态
+        self.toggle_wrap_action.setChecked(self.config.get('line_wrap_mode', True))
+
+        # 更新语法高亮菜单状态
+        syntax_mode = self.config.get('syntax_highlight_mode', 'auto')
+        self.syntax_auto_action.setChecked(syntax_mode == 'auto')
+        self.syntax_ps1_action.setChecked(syntax_mode == 'ps1')
+        self.syntax_bash_action.setChecked(syntax_mode == 'bash')
+        self.syntax_command_action.setChecked(syntax_mode == 'command')
+        self.syntax_none_action.setChecked(syntax_mode == 'none')
+
+        # 更新启动时最小化到托盘
+        self.auto_minimize_action.setChecked(self.config.get('auto_minimize_to_tray', False))
+
+        # 刷新文件树以反映文件夹等变化
+        self.refresh_tree()
+
+        # 保存配置到文件
+        self.save_config()
 
     def start_api_server(self):
         """启动 HTTP API 服务器"""

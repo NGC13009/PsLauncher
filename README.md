@@ -404,6 +404,14 @@ The file tree on the left supports right-click menu operations, and the tabs on 
 
 #### New Right-Click Menu Features
 
+**Folder right-click menu:**
+
+- **📂 Open in Explorer**: Open the folder in the system file manager.
+- **📂 Remove folder path**: Remove the current folder from the scan list (with confirmation dialog).
+- **📂 Add folder path**: Add a new script folder to the scan list.
+
+**Script file right-click menu:**
+
 - **▶️ Run**: Directly execute the selected script.
 - **✏️ Edit/Save**: Open the script source code and enter edit mode.
 - **🔄 Auto-start on Launch / 🔄 Stop Auto-start**: Mark the script to run automatically at launch (only available for executable extensions `.ps1`/`.bat`/`.sh`). When marked, the script will be highlighted in blue within the file tree, and the hover tooltip will indicate "Auto-starting on launch".
@@ -411,7 +419,6 @@ The file tree on the left supports right-click menu operations, and the tabs on 
 - **📝 Rename**: Rename the selected script.
 - **📋 Copy**: Copy the selected script.
 - **🚚 Move**: Move the script to another folder.
-- **🗑️ Delete**: Permanently delete the selected script.
 
 #### Auto-start Configuration
 

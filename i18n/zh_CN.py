@@ -20,6 +20,7 @@ messages = {
     "menu.tab": "标签页",
     "menu.help": "帮助",
     "action.save_config": "保存当前配置",
+    "action.edit_config": "编辑配置文件",
     "action.hide_to_tray": "隐藏窗口到系统托盘",
     "action.auto_minimize": "启动时自动最小化到托盘",
     "action.add_folder": "⛏️ 添加文件夹路径",
