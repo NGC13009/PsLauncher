@@ -93,7 +93,7 @@ class ApiRequestHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         """处理 GET 请求"""
         if not self._check_auth():
-            self._send_error("Unauthorized", 401)
+            self._send_error(tr("api.error.unauthorized"), 401)
             return
 
         path = self.path.split("?")[0].rstrip("/")
@@ -114,12 +114,12 @@ class ApiRequestHandler(BaseHTTPRequestHandler):
         elif path == "/shutdown":
             self._handle_shutdown()
         else:
-            self._send_error("Not Found", 404)
+            self._send_error(tr("api.error.not_found"), 404)
 
     def do_POST(self):
         """处理 POST 请求"""
         if not self._check_auth():
-            self._send_error("Unauthorized", 401)
+            self._send_error(tr("api.error.unauthorized"), 401)
             return
 
         path = self.path.split("?")[0].rstrip("/")
@@ -155,7 +155,7 @@ class ApiRequestHandler(BaseHTTPRequestHandler):
             elif path == "/terminal/output":
                 self._handle_terminal_output(self._parse_query())
             else:
-                self._send_error("Not Found", 404)
+                self._send_error(tr("api.error.not_found"), 404)
 
     def do_OPTIONS(self):
         """处理 CORS 预检请求"""
@@ -207,7 +207,7 @@ class ApiRequestHandler(BaseHTTPRequestHandler):
             {
                 "method": "GET",
                 "path": "/status",
-                "description": "检查服务器状态",
+                "description": tr("api.help.GET_status"),
                 "params": None,
                 "body": None,
                 "response": {
@@ -219,7 +219,7 @@ class ApiRequestHandler(BaseHTTPRequestHandler):
             {
                 "method": "GET",
                 "path": "/help",
-                "description": "获取帮助页面 HTML",
+                "description": tr("api.help.GET_help"),
                 "params": None,
                 "body": None,
                 "response": {"help": "string"}
@@ -227,7 +227,7 @@ class ApiRequestHandler(BaseHTTPRequestHandler):
             {
                 "method": "POST",
                 "path": "/help",
-                "description": "获取所有可用的 API 端点格式列表",
+                "description": tr("api.help.POST_help"),
                 "params": None,
                 "body": None,
                 "response": {
@@ -236,10 +236,10 @@ class ApiRequestHandler(BaseHTTPRequestHandler):
                         {
                             "method": "GET",
                             "path": "/status",
-                            "description": "说明",
-                            "params": "查询参数（可选）",
-                            "body": "请求体参数（可选）",
-                            "response": "响应格式描述"
+                            "description": tr("api.help.meta_description"),
+                            "params": tr("api.help.meta_params"),
+                            "body": tr("api.help.meta_body"),
+                            "response": tr("api.help.meta_response")
                         }
                     ]
                 }
@@ -247,7 +247,7 @@ class ApiRequestHandler(BaseHTTPRequestHandler):
             {
                 "method": "GET",
                 "path": "/folders",
-                "description": "列出所有已添加的脚本文件夹路径",
+                "description": tr("api.help.GET_folders"),
                 "params": None,
                 "body": None,
                 "response": {"folders": ["string"]}
@@ -255,39 +255,39 @@ class ApiRequestHandler(BaseHTTPRequestHandler):
             {
                 "method": "GET",
                 "path": "/scripts",
-                "description": "列出所有可运行的脚本",
-                "params": {"folder": "可选，按文件夹筛选"},
+                "description": tr("api.help.GET_scripts"),
+                "params": {"folder": tr("api.help.GET_scripts_param_folder")},
                 "body": None,
                 "response": {"scripts": [{"folder": "string", "name": "string", "path": "string"}]}
             },
             {
                 "method": "POST",
                 "path": "/folder/add",
-                "description": "添加文件夹路径",
+                "description": tr("api.help.POST_folder_add"),
                 "params": None,
-                "body": {"path": "string (必填)"},
+                "body": {"path": tr("api.help.type_string_required")},
                 "response": {"success": True, "message": "string"}
             },
             {
                 "method": "POST",
                 "path": "/folder/remove",
-                "description": "移除文件夹路径",
+                "description": tr("api.help.POST_folder_remove"),
                 "params": None,
-                "body": {"path": "string (必填)"},
+                "body": {"path": tr("api.help.type_string_required")},
                 "response": {"success": True, "message": "string"}
             },
             {
                 "method": "POST",
                 "path": "/script/run",
-                "description": "运行指定脚本",
+                "description": tr("api.help.POST_script_run"),
                 "params": None,
-                "body": {"folder": "string (必填)", "script": "string (必填)"},
+                "body": {"folder": tr("api.help.type_string_required"), "script": tr("api.help.type_string_required")},
                 "response": {"success": True, "terminal_id": "int", "message": "string"}
             },
             {
                 "method": "GET",
                 "path": "/terminals",
-                "description": "列出所有打开的终端及其状态",
+                "description": tr("api.help.GET_terminals"),
                 "params": None,
                 "body": None,
                 "response": {"terminals": [{"id": "int", "name": "string", "script": "string", "running": "bool"}]}
@@ -295,15 +295,15 @@ class ApiRequestHandler(BaseHTTPRequestHandler):
             {
                 "method": "POST",
                 "path": "/terminal/stop",
-                "description": "终止指定终端",
+                "description": tr("api.help.POST_terminal_stop"),
                 "params": None,
-                "body": {"id": "int (选填)", "name": "string (选填)"},
+                "body": {"id": tr("api.help.type_int_optional"), "name": tr("api.help.type_string_optional")},
                 "response": {"success": True, "message": "string"}
             },
             {
                 "method": "POST",
                 "path": "/terminal/stop_all",
-                "description": "终止所有终端",
+                "description": tr("api.help.POST_terminal_stop_all"),
                 "params": None,
                 "body": None,
                 "response": {"success": True, "message": "string"}
@@ -311,31 +311,31 @@ class ApiRequestHandler(BaseHTTPRequestHandler):
             {
                 "method": "GET",
                 "path": "/terminal/output",
-                "description": "查看终端输出",
-                "params": {"id": "int (选填)", "name": "string (选填)"},
+                "description": tr("api.help.GET_terminal_output"),
+                "params": {"id": tr("api.help.type_int_optional"), "name": tr("api.help.type_string_optional")},
                 "body": None,
                 "response": {"success": True, "id": "int", "name": "string", "output": "string"}
             },
             {
                 "method": "POST",
                 "path": "/terminal/clear",
-                "description": "清空终端输出",
+                "description": tr("api.help.POST_terminal_clear"),
                 "params": None,
-                "body": {"id": "int (必填)"},
+                "body": {"id": tr("api.help.type_int_required")},
                 "response": {"success": True, "message": "string"}
             },
             {
                 "method": "POST",
                 "path": "/terminal/input",
-                "description": "向终端发送输入",
+                "description": tr("api.help.POST_terminal_input"),
                 "params": None,
-                "body": {"id": "int (必填)", "text": "string (必填)"},
+                "body": {"id": tr("api.help.type_int_required"), "text": tr("api.help.type_string_required")},
                 "response": {"success": True, "message": "string"}
             },
             {
                 "method": "GET",
                 "path": "/shutdown",
-                "description": "关闭 PsLauncher 程序",
+                "description": tr("api.help.GET_shutdown"),
                 "params": None,
                 "body": None,
                 "response": {"success": True, "message": "string"}
@@ -358,50 +358,50 @@ class ApiRequestHandler(BaseHTTPRequestHandler):
         """添加文件夹路径"""
         body = self._read_body()
         if body is None:
-            self._send_error("Invalid JSON", 400)
+            self._send_error(tr("api.error.invalid_json"), 400)
             return
         path = body.get("path", "")
         if not path:
-            self._send_error("Missing 'path' parameter", 400)
+            self._send_error(tr("api.error.missing_param_path"), 400)
             return
         result = self._invoke_main("api_add_folder", path)
         if result.get("success"):
             self._send_json(result)
         else:
-            self._send_error(result.get("error", "Failed"), 400)
+            self._send_error(result.get("error", tr("api.error.failed")), 400)
 
     def _handle_folder_remove(self):
         """移除文件夹路径"""
         body = self._read_body()
         if body is None:
-            self._send_error("Invalid JSON", 400)
+            self._send_error(tr("api.error.invalid_json"), 400)
             return
         path = body.get("path", "")
         if not path:
-            self._send_error("Missing 'path' parameter", 400)
+            self._send_error(tr("api.error.missing_param_path"), 400)
             return
         result = self._invoke_main("api_remove_folder", path)
         if result.get("success"):
             self._send_json(result)
         else:
-            self._send_error(result.get("error", "Failed"), 400)
+            self._send_error(result.get("error", tr("api.error.failed")), 400)
 
     def _handle_script_run(self):
         """运行指定脚本"""
         body = self._read_body()
         if body is None:
-            self._send_error("Invalid JSON", 400)
+            self._send_error(tr("api.error.invalid_json"), 400)
             return
         folder = body.get("folder", "")
         script = body.get("script", "")
         if not folder or not script:
-            self._send_error("Missing 'folder' or 'script' parameter", 400)
+            self._send_error(tr("api.error.missing_param_folder_script"), 400)
             return
         result = self._invoke_main("api_run_script", folder, script)
         if result.get("success"):
             self._send_json(result)
         else:
-            self._send_error(result.get("error", "Failed"), 400)
+            self._send_error(result.get("error", tr("api.error.failed")), 400)
 
     def _handle_terminals(self):
         """枚举打开的终端界面"""
@@ -412,18 +412,18 @@ class ApiRequestHandler(BaseHTTPRequestHandler):
         """终止终端"""
         body = self._read_body()
         if body is None:
-            self._send_error("Invalid JSON", 400)
+            self._send_error(tr("api.error.invalid_json"), 400)
             return
         terminal_id = body.get("id", None)
         terminal_name = body.get("name", None)
         if terminal_id is None and terminal_name is None:
-            self._send_error("Missing 'id' or 'name' parameter", 400)
+            self._send_error(tr("api.error.missing_param_id_name"), 400)
             return
         result = self._invoke_main("api_stop_terminal", terminal_id, terminal_name)
         if result.get("success"):
             self._send_json(result)
         else:
-            self._send_error(result.get("error", "Failed"), 400)
+            self._send_error(result.get("error", tr("api.error.failed")), 400)
 
     def _handle_terminal_stop_all(self):
         """终止所有终端"""
@@ -435,50 +435,50 @@ class ApiRequestHandler(BaseHTTPRequestHandler):
         terminal_id_str = query.get("id", None)
         terminal_name = query.get("name", None)
         if terminal_id_str is None and terminal_name is None:
-            self._send_error("Missing 'id' or 'name' parameter", 400)
+            self._send_error(tr("api.error.missing_param_id_name"), 400)
             return
         terminal_id = int(terminal_id_str) if terminal_id_str is not None else None
         result = self._invoke_main("api_get_terminal_output", terminal_id, terminal_name)
         if result.get("success"):
             self._send_json(result)
         else:
-            self._send_error(result.get("error", "Failed"), 400)
+            self._send_error(result.get("error", tr("api.error.failed")), 400)
 
     def _handle_terminal_clear(self):
         """清空终端输出"""
         body = self._read_body()
         if body is None:
-            self._send_error("Invalid JSON", 400)
+            self._send_error(tr("api.error.invalid_json"), 400)
             return
         terminal_id = body.get("id", None)
         if terminal_id is None:
-            self._send_error("Missing 'id' parameter", 400)
+            self._send_error(tr("api.error.missing_param_id"), 400)
             return
         result = self._invoke_main("api_clear_terminal", terminal_id)
         if result.get("success"):
             self._send_json(result)
         else:
-            self._send_error(result.get("error", "Failed"), 400)
+            self._send_error(result.get("error", tr("api.error.failed")), 400)
 
     def _handle_terminal_input(self):
         """向终端发送字符串"""
         body = self._read_body()
         if body is None:
-            self._send_error("Invalid JSON", 400)
+            self._send_error(tr("api.error.invalid_json"), 400)
             return
         terminal_id = body.get("id", None)
         text = body.get("text", "")
         if terminal_id is None:
-            self._send_error("Missing 'id' parameter", 400)
+            self._send_error(tr("api.error.missing_param_id"), 400)
             return
         if not text:
-            self._send_error("Missing 'text' parameter", 400)
+            self._send_error(tr("api.error.missing_param_text"), 400)
             return
         result = self._invoke_main("api_send_terminal_input", terminal_id, text)
         if result.get("success"):
             self._send_json(result)
         else:
-            self._send_error(result.get("error", "Failed"), 400)
+            self._send_error(result.get("error", tr("api.error.failed")), 400)
 
     def _handle_shutdown(self):
         """关闭 PsLauncher"""

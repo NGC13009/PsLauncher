@@ -2057,40 +2057,40 @@ class MainWindow(QMainWindow):
     def api_add_folder(self, path):
         """添加文件夹路径"""
         if not path:
-            return {"success": False, "error": "路径不能为空"}
+            return {"success": False, "error": tr("error.path_empty")}
         if not os.path.isdir(path):
-            return {"success": False, "error": f"路径不存在或不是文件夹: {path}"}
+            return {"success": False, "error": tr("error.path_not_exist_or_dir", path=path)}
         if path in self.config["folders"]:
-            return {"success": True, "message": "文件夹已存在"}
+            return {"success": True, "message": tr("msg.folder_already_exists")}
         self.config["folders"].append(path)
         self.refresh_tree()
         self.save_config()
-        return {"success": True, "message": f"已添加文件夹: {path}"}
+        return {"success": True, "message": tr("msg.folder_added", path=path)}
 
     def api_remove_folder(self, path):
         """移除文件夹路径"""
         if path not in self.config["folders"]:
-            return {"success": False, "error": f"文件夹不在列表中: {path}"}
+            return {"success": False, "error": tr("error.folder_not_in_list", path=path)}
         self.config["folders"].remove(path)
         self.refresh_tree()
         self.save_config()
-        return {"success": True, "message": f"已移除文件夹: {path}"}
+        return {"success": True, "message": tr("msg.folder_removed", path=path)}
 
     def api_run_script(self, folder, script):
         """运行指定脚本"""
         script_path = self._find_script_by_folder_and_name(folder, script)
         if not script_path:
-            return {"success": False, "error": f"脚本未找到: {folder}/{script}"}
+            return {"success": False, "error": tr("error.script_not_found", folder=folder, script=script)}
         ext = os.path.splitext(script_path)[1].lower()
         if ext not in self.config.get('runnable_extensions', DEFAULT_EXT):
-            return {"success": False, "error": f"不支持运行该类型脚本: {ext}"}
+            return {"success": False, "error": tr("error.script_type_not_runnable", ext=ext)}
         self.open_terminal_tab(script_path)
         # 找到刚创建的终端标签页
         for i in range(self.tabs.count()):
             widget = self.tabs.widget(i)
             if isinstance(widget, TerminalTab) and widget.script_path == script_path:
-                return {"success": True, "terminal_id": widget.terminal_id, "message": f"已启动脚本: {script}"}
-        return {"success": True, "terminal_id": None, "message": f"已启动脚本: {script}"}
+                return {"success": True, "terminal_id": widget.terminal_id, "message": tr("api.run_script.message", script=script)}
+        return {"success": True, "terminal_id": None, "message": tr("api.run_script.message", script=script)}
 
     def api_get_terminals(self):
         """返回所有打开的终端信息"""
@@ -2114,13 +2114,13 @@ class MainWindow(QMainWindow):
         if terminal_id is not None:
             widget = self._get_terminal_by_id(terminal_id)
             if not widget:
-                return {"success": False, "error": f"未找到 ID 为 {terminal_id} 的终端"}
+                return {"success": False, "error": tr("api.stop_terminal.not_found_id", terminal_id=terminal_id)}
         elif terminal_name:
             widget = self._get_terminal_by_name(terminal_name)
             if not widget:
-                return {"success": False, "error": f"未找到唯一名称为 '{terminal_name}' 的终端（可能有多个同名或不存在）"}
+                return {"success": False, "error": tr("api.stop_terminal.not_found_name", terminal_name=terminal_name)}
         else:
-            return {"success": False, "error": "必须提供 id 或 name 参数"}
+            return {"success": False, "error": tr("api.stop_terminal.missing_id_or_name")}
 
         widget.stop_process()
         # 找到对应的标签页索引并关闭
@@ -2128,7 +2128,7 @@ class MainWindow(QMainWindow):
             if self.tabs.widget(i) is widget:
                 self.tabs.removeTab(i)
                 break
-        return {"success": True, "message": f"已终止终端 ID={widget.terminal_id}"}
+        return {"success": True, "message": tr("api.stop_terminal.success", terminal_id=widget.terminal_id)}
 
     def api_stop_all_terminals(self):
         """终止所有终端标签页"""
@@ -2140,7 +2140,7 @@ class MainWindow(QMainWindow):
                 widget.stop_process()
                 self.tabs.removeTab(i)
                 count += 1
-        return {"success": True, "message": f"已终止 {count} 个终端"}
+        return {"success": True, "message": tr("api.stop_all.success", count=count)}
 
     def api_get_terminal_output(self, terminal_id=None, terminal_name=None):
         """查看终端输出记录"""
@@ -2148,13 +2148,13 @@ class MainWindow(QMainWindow):
         if terminal_id is not None:
             widget = self._get_terminal_by_id(terminal_id)
             if not widget:
-                return {"success": False, "error": f"未找到 ID 为 {terminal_id} 的终端"}
+                return {"success": False, "error": tr("api.terminal_output.not_found_id", terminal_id=terminal_id)}
         elif terminal_name:
             widget = self._get_terminal_by_name(terminal_name)
             if not widget:
-                return {"success": False, "error": f"未找到唯一名称为 '{terminal_name}' 的终端（可能有多个同名或不存在）"}
+                return {"success": False, "error": tr("api.terminal_output.not_found_name", terminal_name=terminal_name)}
         else:
-            return {"success": False, "error": "必须提供 id 或 name 参数"}
+            return {"success": False, "error": tr("api.terminal_output.missing_id_or_name")}
 
         return {
             "success": True,
@@ -2167,22 +2167,22 @@ class MainWindow(QMainWindow):
         """清空终端输出"""
         widget = self._get_terminal_by_id(terminal_id)
         if not widget:
-            return {"success": False, "error": f"未找到 ID 为 {terminal_id} 的终端"}
+            return {"success": False, "error": tr("api.clear_terminal.not_found", terminal_id=terminal_id)}
         widget.clear_screen()
-        return {"success": True, "message": f"已清空终端 ID={terminal_id} 的输出"}
+        return {"success": True, "message": tr("api.clear_terminal.success", terminal_id=terminal_id)}
 
     def api_send_terminal_input(self, terminal_id, text):
         """向终端发送字符串"""
         widget = self._get_terminal_by_id(terminal_id)
         if not widget:
-            return {"success": False, "error": f"未找到 ID 为 {terminal_id} 的终端"}
+            return {"success": False, "error": tr("api.send_input.not_found", terminal_id=terminal_id)}
         if widget.process is None or widget.process.state() != QProcess.Running:
-            return {"success": False, "error": "终端进程未在运行"}
+            return {"success": False, "error": tr("api.send_input.not_running")}
         # 如果文本不以换行结尾，自动追加换行
         if not text.endswith('\n'):
             text += '\n'
         widget.process.write(text.encode('mbcs', errors='replace'))
-        return {"success": True, "message": f"已向终端 ID={terminal_id} 发送输入"}
+        return {"success": True, "message": tr("api.send_input.success", terminal_id=terminal_id)}
 
     def api_shutdown(self):
         """关闭 PsLauncher"""
@@ -2193,7 +2193,7 @@ class MainWindow(QMainWindow):
                 widget.stop_process()
         # 延迟退出，让响应先发送
         QTimer.singleShot(500, QApplication.quit)
-        return {"success": True, "message": "PsLauncher 正在关闭..."}
+        return {"success": True, "message": tr("api.shutdown.message")}
 
     def set_syntax_highlight_mode(self, mode):
         """Set syntax highlighting mode"""

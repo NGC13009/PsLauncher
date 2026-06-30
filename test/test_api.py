@@ -184,7 +184,7 @@ class TestApiEndpoints:
         main_window.config["folders"] = [folder_str]
         result = main_window.api_add_folder(folder_str)
         assert result["success"] is True
-        assert "已存在" in result.get("message", "")
+        assert "already exists" in result.get("message", "").lower()
 
     def test_api_add_folder_invalid(self, qapp, main_window):
         """添加不存在的路径"""
@@ -641,6 +641,208 @@ class TestApiPrettyOutput:
         handler._send_json(data)
         written = handler.wfile.write.call_args[0][0].decode("utf-8")
         assert "\n" not in written
+
+
+# ============================================================
+# API i18n 多语言测试
+# ============================================================
+
+
+def _make_help_post_handler():
+    """创建一个模拟 handler 并绑定 _handle_help_post 真实方法"""
+    from api_server import ApiRequestHandler
+    handler = MagicMock(spec=ApiRequestHandler)
+    handler.send_response = MagicMock()
+    handler.send_header = MagicMock()
+    handler.end_headers = MagicMock()
+    handler.wfile = MagicMock()
+    handler._is_pretty = MagicMock(return_value=False)
+    handler._send_json = ApiRequestHandler._send_json.__get__(handler, ApiRequestHandler)
+    handler._handle_help_post = ApiRequestHandler._handle_help_post.__get__(handler, ApiRequestHandler)
+    return handler
+
+
+@pytest.mark.algo
+class TestApiHelpPostI18n:
+    """POST /help 端点 i18n 多语言测试"""
+
+    def _get_endpoints(self, language):
+        """在指定语言下调用 _handle_help_post，返回 endpoints 列表"""
+        from i18n import set_language
+        set_language(language)
+        handler = _make_help_post_handler()
+        handler._handle_help_post()
+        written = handler.wfile.write.call_args[0][0].decode("utf-8")
+        data = json.loads(written)
+        return data["endpoints"]
+
+    def _get_meta_self_description(self, language):
+        """获取 POST /help 中自描述端点的说明字段"""
+        from i18n import set_language
+        set_language(language)
+        handler = _make_help_post_handler()
+        handler._handle_help_post()
+        written = handler.wfile.write.call_args[0][0].decode("utf-8")
+        data = json.loads(written)
+        # 在 endponts 列表里找第三个元素（POST /help self-description）
+        for ep in data["endpoints"]:
+            if ep["method"] == "POST" and ep["path"] == "/help":
+                return ep
+        return None
+
+    def test_help_post_english_descriptions(self):
+        """英文下所有 description 应为英文"""
+        endpoints = self._get_endpoints("en")
+        for ep in endpoints:
+            desc = ep.get("description", "")
+            assert isinstance(desc, str), f"{ep['method']} {ep['path']} description 不是字符串"
+            assert len(desc) > 0, f"{ep['method']} {ep['path']} description 为空"
+            # 验证不含中文字符
+            assert not any('\u4e00' <= c <= '\u9fff' for c in desc), \
+                f"{ep['method']} {ep['path']} description 包含中文: {desc}"
+
+    def test_help_post_chinese_descriptions(self):
+        """中文下所有 description 应为中文"""
+        endpoints = self._get_endpoints("zh_CN")
+        for ep in endpoints:
+            desc = ep.get("description", "")
+            assert isinstance(desc, str), f"{ep['method']} {ep['path']} description 不是字符串"
+            assert len(desc) > 0, f"{ep['method']} {ep['path']} description 为空"
+            # 验证包含中文字符
+            has_chinese = any('\u4e00' <= c <= '\u9fff' for c in desc)
+            assert has_chinese, f"{ep['method']} {ep['path']} description 不包含中文: {desc}"
+
+    def test_help_post_status_endpoint_en(self):
+        """英文下 /status 端点 description"""
+        endpoints = self._get_endpoints("en")
+        for ep in endpoints:
+            if ep["method"] == "GET" and ep["path"] == "/status":
+                assert "Check server status" in ep["description"]
+                return
+
+    def test_help_post_status_endpoint_zh(self):
+        """中文下 /status 端点 description"""
+        endpoints = self._get_endpoints("zh_CN")
+        for ep in endpoints:
+            if ep["method"] == "GET" and ep["path"] == "/status":
+                assert "检查服务器状态" in ep["description"]
+                return
+
+    def test_help_post_meta_description_en(self):
+        """英文下自描述端点的元说明字段"""
+        meta = self._get_meta_self_description("en")
+        assert meta is not None
+        # 检查 response 结构中的元说明字段
+        response = meta.get("response", {})
+        endpoints_template = response.get("endpoints", [])
+        assert len(endpoints_template) > 0
+        template = endpoints_template[0]
+        assert template["description"] == "Description"
+        assert template["params"] == "Query parameters (optional)"
+        assert template["body"] == "Request body parameters (optional)"
+        assert template["response"] == "Response format description"
+
+    def test_help_post_meta_description_zh(self):
+        """中文下自描述端点的元说明字段"""
+        meta = self._get_meta_self_description("zh_CN")
+        assert meta is not None
+        response = meta.get("response", {})
+        endpoints_template = response.get("endpoints", [])
+        assert len(endpoints_template) > 0
+        template = endpoints_template[0]
+        assert template["description"] == "说明"
+        assert template["params"] == "查询参数（可选）"
+        assert template["body"] == "请求体参数（可选）"
+        assert template["response"] == "响应格式描述"
+
+    def test_help_post_english_params_descriptions(self):
+        """英文下 params/body 说明应为英文"""
+        endpoints = self._get_endpoints("en")
+        for ep in endpoints:
+            params = ep.get("params")
+            if params is not None and isinstance(params, dict):
+                for k, v in params.items():
+                    if isinstance(v, str) and v:
+                        assert not any('\u4e00' <= c <= '\u9fff' for c in v), \
+                            f"{ep['method']} {ep['path']} params.{k} 包含中文: {v}"
+            body = ep.get("body")
+            if body is not None and isinstance(body, dict):
+                for k, v in body.items():
+                    if isinstance(v, str) and v:
+                        assert not any('\u4e00' <= c <= '\u9fff' for c in v), \
+                            f"{ep['method']} {ep['path']} body.{k} 包含中文: {v}"
+
+    def test_help_post_chinese_params_descriptions(self):
+        """中文下 params/body 说明应为中文"""
+        endpoints = self._get_endpoints("zh_CN")
+        for ep in endpoints:
+            params = ep.get("params")
+            if params is not None and isinstance(params, dict):
+                for k, v in params.items():
+                    if isinstance(v, str) and v:
+                        assert any('\u4e00' <= c <= '\u9fff' for c in v), \
+                            f"{ep['method']} {ep['path']} params.{k} 不包含中文: {v}"
+            body = ep.get("body")
+            if body is not None and isinstance(body, dict):
+                for k, v in body.items():
+                    if isinstance(v, str) and v:
+                        assert any('\u4e00' <= c <= '\u9fff' for c in v), \
+                            f"{ep['method']} {ep['path']} body.{k} 不包含中文: {v}"
+
+    def test_help_post_params_scripts_folder_en(self):
+        """英文下 /scripts 的 params.folder 说明"""
+        endpoints = self._get_endpoints("en")
+        for ep in endpoints:
+            if ep["method"] == "GET" and ep["path"] == "/scripts":
+                params = ep.get("params", {})
+                assert "Optional, filter by folder" in params.get("folder", "")
+                return
+
+    def test_help_post_params_scripts_folder_zh(self):
+        """中文下 /scripts 的 params.folder 说明"""
+        endpoints = self._get_endpoints("zh_CN")
+        for ep in endpoints:
+            if ep["method"] == "GET" and ep["path"] == "/scripts":
+                params = ep.get("params", {})
+                assert "可选，按文件夹筛选" in params.get("folder", "")
+                return
+
+
+@pytest.mark.algo
+class TestApiErrorMessagesI18n:
+    """API 错误消息 i18n 测试"""
+
+    def test_error_message_via_tr_en(self):
+        """使用 tr() 获取的错误消息为英文"""
+        from i18n import set_language, tr
+        set_language("en")
+        assert tr("api.error.unauthorized") == "Unauthorized"
+        assert tr("api.error.not_found") == "Not Found"
+        assert tr("api.error.invalid_json") == "Invalid JSON"
+        assert tr("api.error.missing_param_path") == "Missing 'path' parameter"
+        assert tr("api.error.missing_param_id") == "Missing 'id' parameter"
+
+    def test_error_message_via_tr_zh(self):
+        """使用 tr() 获取的错误消息为中文"""
+        from i18n import set_language, tr
+        set_language("zh_CN")
+        assert tr("api.error.unauthorized") == "未授权"
+        assert tr("api.error.not_found") == "未找到"
+        assert tr("api.error.invalid_json") == "无效的 JSON 格式"
+        assert tr("api.error.missing_param_path") == "缺少 'path' 参数"
+        assert tr("api.error.missing_param_id") == "缺少 'id' 参数"
+
+    def test_shutdown_message_en(self):
+        """英文下关闭消息"""
+        from i18n import set_language, tr
+        set_language("en")
+        assert tr("api.shutdown.message") == "PsLauncher is shutting down..."
+
+    def test_shutdown_message_zh(self):
+        """中文下关闭消息"""
+        from i18n import set_language, tr
+        set_language("zh_CN")
+        assert tr("api.shutdown.message") == "PsLauncher 正在关闭..."
 
 
 # ============================================================

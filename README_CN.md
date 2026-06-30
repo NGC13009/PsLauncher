@@ -863,12 +863,13 @@ pyinstaller -w ./PsLauncher.py -i ./logo.ico -y --distpath ./exe  --paths ./
 正确的发布流程如下：
 
 1. 更改 `aboutandhelp.py` 里面的`__version__`和`__devdate__`.
-2. 执行`python check_i18n_coverage.py`确认 i18n 覆盖率.
-3. 执行`python get_help_page.py`编译多语言帮助页面（读取 `README.md` 生成英文、`README_CN.md` 生成中文等）
-4. 如果ico更新了,执行`python get_ico.py`编译一遍ico
-5. 执行`pyinstaller -w ./PsLauncher.py -i ./logo.ico -y --distpath ./exe  --paths ./`编译文件
-6. 如果有必要, 将帮助文档也放一份.
-7. 运行`get_zip_release.ps1`打包.
+2. 运行自动测试：`python -m pytest test/ -q --tb=long -p no:warnings` 确保没问题
+3. 执行`python check_i18n_coverage.py`确认 i18n 覆盖率.
+4. 执行`python get_help_page.py`编译多语言帮助页面（读取 `README.md` 生成英文、`README_CN.md` 生成中文等）
+5. 如果ico更新了,执行`python get_ico.py`编译一遍ico
+6. 执行`pyinstaller -w ./PsLauncher.py -i ./logo.ico -y --distpath ./exe  --paths ./`编译文件
+7. 如果有必要, 将帮助文档也放一份.
+8. 运行`get_zip_release.ps1`打包.
 
 正确的发布版本结构:
 
@@ -881,6 +882,8 @@ exe/
 ### 多语言支持
 
 本程序使用了一个自制的i18n模组实现多国语言兼容。可以查看`i18n`文件夹下的代码，来了解其原理。这十分的简单。
+
+HTTP API 服务器同样支持 i18n：`POST /help` 中的所有端点描述、错误消息和操作响应消息，以及所有 API 端点返回的错误消息，都会根据配置的 `language` 设置自动切换语言。
 
 ### 自动化测试
 
@@ -970,6 +973,7 @@ export PYTEST_QT_API=pyqt5
 - 禁止读取 `source_ico.py`等`source`开头的文件，这些文件是通过编译器自动生成的，很大。
 - GUI 用例在 offscreen 下覆盖有限，托盘/拖动等需人工复核。
 - 开发完成后必须 `python -m pytest test/ -q --tb=long -p no:warnings` 自动测试执行一遍确认没有问题.
+- 开发完成后，如有必要，请修改readme以及添加自动测试用例，以覆盖新功能
 
 #### 人类开发者须知（测试清单）
 

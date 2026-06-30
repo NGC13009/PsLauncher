@@ -2,7 +2,7 @@
 # Arch   = manyArch
 #
 # @File name:       en.py
-# @brief:           英语 i18n 字符串匹配关系
+# @brief:           English i18n string mappings
 # @attention:       None
 # @Author:          NGC13009
 # @History:         2026-06-29		Create
@@ -198,6 +198,69 @@ messages = {
     "api.bind_failed": "[ApiServer] Unable to bind {ip}:{port}: {error}",
     "api.server_exception": "[ApiServer] Server exception: {error}",
     "api.server_stopped": "[ApiServer] HTTP API server has stopped",
+    # API error messages
+    "api.error.unauthorized": "Unauthorized",
+    "api.error.not_found": "Not Found",
+    "api.error.invalid_json": "Invalid JSON",
+    "api.error.missing_param_path": "Missing 'path' parameter",
+    "api.error.missing_param_folder_script": "Missing 'folder' or 'script' parameter",
+    "api.error.missing_param_id_name": "Missing 'id' or 'name' parameter",
+    "api.error.missing_param_id": "Missing 'id' parameter",
+    "api.error.missing_param_text": "Missing 'text' parameter",
+    "api.error.failed": "Failed",
+    # API shutdown message
+    "api.shutdown.message": "PsLauncher is shutting down...",
+    # API help endpoint descriptions
+    "api.help.GET_status": "Check server status",
+    "api.help.GET_help": "Get help page HTML",
+    "api.help.POST_help": "Get list of all available API endpoint formats",
+    "api.help.GET_folders": "List all added script folder paths",
+    "api.help.GET_scripts": "List all runnable scripts",
+    "api.help.POST_folder_add": "Add folder path",
+    "api.help.POST_folder_remove": "Remove folder path",
+    "api.help.POST_script_run": "Run specified script",
+    "api.help.GET_terminals": "List all open terminals and their status",
+    "api.help.POST_terminal_stop": "Stop specified terminal",
+    "api.help.POST_terminal_stop_all": "Stop all terminals",
+    "api.help.GET_terminal_output": "View terminal output",
+    "api.help.POST_terminal_clear": "Clear terminal output",
+    "api.help.POST_terminal_input": "Send input to terminal",
+    "api.help.GET_shutdown": "Shutdown PsLauncher",
+    # API help meta description labels (for POST /help self-description)
+    "api.help.meta_description": "Description",
+    "api.help.meta_params": "Query parameters (optional)",
+    "api.help.meta_body": "Request body parameters (optional)",
+    "api.help.meta_response": "Response format description",
+    # API help param/body field descriptions
+    "api.help.GET_scripts_param_folder": "Optional, filter by folder",
+    "api.help.type_string_required": "string (required)",
+    "api.help.type_string_optional": "string (optional)",
+    "api.help.type_int_required": "int (required)",
+    "api.help.type_int_optional": "int (optional)",
+    # API operation messages (from PsLauncher.py main thread responses)
+    "api.run_script.message": "Started script: {script}",
+    "api.stop_terminal.not_found_id": "Terminal with ID {terminal_id} not found",
+    "api.stop_terminal.not_found_name": "Terminal with name '{terminal_name}' not found (may be duplicate or non-existent)",
+    "api.stop_terminal.missing_id_or_name": "Must provide 'id' or 'name' parameter",
+    "api.stop_terminal.success": "Terminated terminal ID={terminal_id}",
+    "api.stop_all.success": "Terminated {count} terminals",
+    "api.terminal_output.not_found_id": "Terminal with ID {terminal_id} not found",
+    "api.terminal_output.not_found_name": "Terminal with name '{terminal_name}' not found (may be duplicate or non-existent)",
+    "api.terminal_output.missing_id_or_name": "Must provide 'id' or 'name' parameter",
+    "api.clear_terminal.not_found": "Terminal with ID {terminal_id} not found",
+    "api.clear_terminal.success": "Cleared output of terminal ID={terminal_id}",
+    "api.send_input.not_found": "Terminal with ID {terminal_id} not found",
+    "api.send_input.not_running": "Terminal process is not running",
+    "api.send_input.success": "Sent input to terminal ID={terminal_id}",
+    # Folder/script management API messages
+    "error.path_empty": "Path cannot be empty",
+    "error.path_not_exist_or_dir": "Path does not exist or is not a directory: {path}",
+    "error.folder_not_in_list": "Folder not in list: {path}",
+    "error.script_not_found": "Script not found: {folder}/{script}",
+    "error.script_type_not_runnable": "This script type is not supported for running: {ext}",
+    "msg.folder_already_exists": "Folder already exists",
+    "msg.folder_added": "Added folder: {path}",
+    "msg.folder_removed": "Removed folder: {path}",
     "about.title": "About",
     "about.description": "In a lightweight interface, manage scripts under multiple paths, view them anytime, and execute them quickly within a unified window.",
     "about.author": "Author: NGC13009",
