@@ -1,29 +1,29 @@
-# PsLauncher - 轻量级多脚本管理器
+# PsLauncher — 面向本地 LLM 场景的轻量脚本编排器
 
-在一个轻量化的, 类似于vscode的界面中, 通过多标签页统一管理并运行PowerShell/Bash/cmd(Batch)脚本, 支持系统托盘常驻、子进程强杀、ANSI着色的终端输出, 像终端一样的交互式输入输出. 专为本地大模型部署（llama.cpp/litellm）等场景优化.
-
-> 一个很好的使用案例：[如何使用 PsLauncher 自定义本地大模型服务配置](run_llama.cpp_and_litellm_by_PsLauncher.md)
+在一个类 VSCode 的轻量界面中统一管理并运行 PowerShell / Bash / Batch 脚本，同时内置一套 HTTP API 服务，**让人与 AI Agent 能以同一套语义异步的，非阻塞的操作统一管理的本地服务进程**：启动、交互、强杀、查输出、批量回收。支持系统托盘常驻、子进程树强杀、ANSI 着色终端与交互式输入输出，专为 llama.cpp / Ollama / litellm 等本地大模型部署场景优化。兼容Windows，Linux，macos等。
 
 ## 核心亮点
 
-- **多类型脚本统一管理**：支持PowerShell(.ps1)/Bash(.sh)/Batch(.bat), 支持多文件夹扫描且不递归子目录, 记忆配置文件. 让你方便的在一处管理你常用的脚本.
-- **类VSCode多标签体验**：源码查看与脚本运行输出分标签管理, 支持语法高亮、ANSI着色.
-- **全生命周期进程控制**：一键启动/中止脚本, 强杀所有关联子进程, 无残留进程.
-- **系统托盘常驻**：一键隐藏到托盘, 后台不占窗口, 随时唤起使用.
-- **交互式终端支持**：运行标签页支持实时输入, 适配交互式脚本.
-- **个性化界面定制**：支持暗色/亮色主题切换, 字体大小/DPI缩放自由调节.
+- **ai不再因为程序进程而阻塞**：当程序执行在终端内的时候，ai仍旧可以选择随时查看日志或进行其他操作。同时管理多个程序的输入输出，彻底解耦程序和ai的交互时序问题。
+- **人机同源的双向控制**：打破AI Agent与人类操作的隔离墙，机器的指令与人工的图形界面操作共享同一状态，消除人机双轨制带来的状态冲突与接管壁垒，真正实现AI执行、人可接管。
+- **异构脚本的统一治理**：终结本地大模型生态中各类推理脚本分散、异构的混乱局面，将不同目录、不同语言的启动逻辑收敛为单一调度视角，大幅降低环境维护的心智负担。
+- **计算资源的确定性回收**：直击僵尸进程与显存泄漏的顽疾，提供从优雅终止到进程树强杀的彻底回收能力，保障硬件资源在多服务切换中的稳定释放。不再产生cpu/内存/GPU的额外占用。
+- **长任务的动态托管闭环**：将传统终端从一次性升级为可视化任务容器，支持在任务运行期间随时查阅历史轨迹并动态注入新指令，完美适配AI长时编排与交互式脚本的运行诉求。无惧程序卡死导致agent loop被打断。
+- **全场景形态的无缝切换**：兼顾桌面开发的低打扰常驻需求与无头服务器的纯后端托管诉求，以同一套系统消除不同部署环境下的体验割裂。
 
 ## 解决的痛点
 
-- 比如本地部署llama.cpp、litellm等工具时, 多个脚本散落在不同文件夹, 每次运行要反复切换目录、找文件
-- 或者同时启动多个服务时, 终端窗口混乱, 无法统一管理&中止
-- 一些项目的自动化脚本需要经常执行, 但是我就是运维, 我不想搞个IDE打开还得等几秒, 况且我的服务器不一定有足够的内存或者磁盘支持它.
-- 只想简单管理运行脚本, 不想为了这个需求打开VSCode等重量级IDE
-- 我的脚本运行时间长, 需要脚本工具后台常驻, 随时快速唤起执行, 不占用前台窗口资源, 也不会因为任务窗口分散我的注意力.
+- **环境碎片化与调度混乱**：各类推理工具与网关的脚本散落在不同角落，多服务并行时面临终端窗口爆炸、参数记忆繁琐等问题。缺乏一个统一的控制中枢来消除手动穿梭目录与环境切换的割裂感。
+- **资源泄漏与硬件冲突**：异常退出后常遗留难以清理的僵尸子进程，导致处理器/内存/显存被隐性占用，下一次启动时频发硬件资源冲突，缺乏强有力的生命周期兜底机制。
+- **AI与本地环境的交互鸿沟**：大模型难以稳定、安全地操控本地计算环境。传统的Shell命令脆弱且缺乏自描述性，Agent亟需一种结构化、可自省的接口来形成"启动-监控-交互-回收"的闭环控制。
+- **AI agent和程序执行的异步问题**：传统harness程序的agent loop会被程序或脚本执行打断，同步式的阻塞处理可能因脚本超时或者脚本停止执行而中断，因此需要使用更为统一的异步访问接口的令agent处理程序或脚本的输入输出，统一管控进程生命周期。
+- **重运维与轻需求的错位**：管理本地脚本往往被迫引入重量级IDE或复杂的容器编排系统，对于仅需简单调度与后台常驻的需求而言，系统开销与学习成本过高，亟需一种零侵入的轻量化方案。
+
+----
 
 ## 快速开始
 
-> 程序内的帮助文档由Markdown自动生成, 因此Markdown文档或GitHub网页渲染的是正确的, 程序内自带的说明文档不一定是完全可正常访问的. 请以Markdown或网页说明为准.
+> 注意：PsLauncher程序内的帮助文档由Markdown自动生成, 因此Markdown文档或GitHub网页渲染的是正确的, 程序内自带的说明文档不一定是完全可正常访问的. 如果存在渲染问题，请以Markdown或[网页说明](https://github.com/NGC13009/PsLauncher.git)为准.
 
 ### 安装
 
@@ -35,7 +35,6 @@
 #### 源码使用
 
 ```Bash
-# 配置环境
 git clone https://github.com/NGC13009/PsLauncher.git
 cd PsLauncher
 pip install -r ./requirements.txt
@@ -43,211 +42,58 @@ pip install -r ./requirements.txt
 
 #### Windows编译好的exe
 
-从[release](https://github.com/NGC13009/PsLauncher/releases)页面下载exe, 解压并双击运行即可. (或者命令行高级启动, 后面有详细说明)
+从[release](https://github.com/NGC13009/PsLauncher/releases)页面下载exe。
 
 ### 启动
 
-不管何种安装方式, 都有有两种启动方式:
-
-- 编译后**双击exe直接启动**程序, 这会自动载入相关配置.
-- 通过命令行启动程序(或者Python源代码), 这可以设定两个参数, 设定一次后程序会保存配置文件, 后续无需再次设置.
-
-使用命令行:
-
-```bash
-usage: PsLauncher.py [-h] [--scale SCALE] [--light] [--dark] [--font FONT] [--height HEIGHT] [--width WIDTH]
-
-PsLauncher - 通用脚本启动器
-
-options:
-  -h, --help       展示帮助
-  --scale SCALE    设定窗口DPI缩放系数 例如 1.5
-  --light          设定明亮主题
-  --dark           设定暗色主题
-  --font FONT      设定字体            例如 'Consolas'
-  --height HEIGHT  窗口高度            例如 768
-  --width WIDTH    窗口宽度            例如 1366
-  --headless       无头模式，不显示GUI窗口，仅通过HTTP API操作
-```
-
-### HTTP API 服务器
-
-PsLauncher 启动后默认在 `127.0.0.1:13025` 暴露 HTTP API 服务器，任何 LLM 或人类的 POST/GET 请求都可以操作 PsLauncher 的功能。相当于在 GUI 上进行操作。
-
-#### 无头模式
-
-通过 `--headless` 参数启动 PsLauncher，将不显示 GUI 窗口，仅通过 HTTP API 提供服务：
-
-```bash
-python PsLauncher.py --headless
-```
-
-#### API 配置
-
-在 `launcher_config.json` 中配置 API 相关参数：
-
-```json
-{
-    // ...其他配置...
-    "api": {
-        "enabled": true,           // 是否启用API服务器（false可在下次启动关闭）
-        "bind_ip": "127.0.0.1",    // 绑定IP（127.0.0.1不响应公网请求）
-        "bind_port": 13025,        // 绑定端口
-        "auth_token": ""           // Bearer Token（空字符串=不验权）
-    }
-}
-```
-
-#### 验权方式
-
-若配置了 `auth_token`，所有请求需携带 Authorization 头：
-
-```
-Authorization: Bearer <your-token>
-```
-
-token 不正确时返回 `401 Unauthorized`。
-
-> **美化输出**：所有端点都支持 `?pretty=true` 查询参数，返回格式化的 JSON（带缩进和换行），方便人类阅读。不带 `pretty` 参数时默认返回紧凑格式，便于程序解析。
-
-#### API 端点列表
-
-所有端点支持 POST 请求，大部分查询类端点同时支持 GET。
-
-| 端点 | 说明 | 请求体/参数 |
-| ---|---|---|---|
-| `GET/POST /status` | 查看状态 | 无参数 |
-| `GET /help` | 查看帮助信息（HTML格式） | 无参数 |
-| `POST /help` | 获取所有可用 API 端点格式列表（请求体结构参考） | 无参数 |
-| `GET/POST /folders` | 枚举文件夹路径列表 | 无参数 |
-| `GET/POST /scripts` | 枚举脚本列表 | `?folder=<路径>`（可选） |
-| `POST /folder/add` | 增加路径 | `{"path":"C:/scripts"}` |
-| `POST /folder/remove` | 移除路径 | `{"path":"C:/scripts"}` |
-| `POST /script/run` | 运行脚本 | `{"folder":"C:/scripts","script":"test0.ps1"}` |
-| `GET/POST /terminals` | 枚举终端界面（含ID） | 无参数 |
-| `POST /terminal/stop` | 终止终端 | `{"id":0}` 或 `{"name":"test0.ps1"}` |
-| `POST /terminal/stop_all` | 终止所有终端 | 无需参数 |
-| `GET/POST /terminal/output` | 查看终端输出 | `?id=0` 或 `?name=test0.ps1` |
-| `POST /terminal/clear` | 清空终端输出 | `{"id":0}` |
-| `POST /terminal/input` | 向终端发送字符串 | `{"id":0,"text":"hello\n"}` |
-| `GET/POST /shutdown` | 关闭 PsLauncher | 无参数 |
-
-#### 使用示例（完整演示流程）
-
-> **PowerShell 注意**：PowerShell 解析参数的方式与 CMD 不同，推荐使用 `--%`（停止解析符号）。以下示例均采用 `--%` 写法，并用 `\` 表示路径分隔符和转义。
-
-所有示例假设您已启动 PsLauncher，并将以下 `<脚本目录>` 替换为您的 `test_script` 文件夹的**绝对路径**（例如 `E:\project_file\limitless\PsLauncher\test_script`）。当前仓库自带几个测试用的脚本, 可以直接使用. (可能需要下载源代码, 而非release版本, 因为release不包含任何测试脚本)
-
-```powershell
-# ===== 0. 检查服务状态 =====
-curl.exe http://127.0.0.1:13025/status
-
-# ===== 0.1 获取所有可用 API 端点格式列表(美观格式化) =====
-curl.exe -X POST http://127.0.0.1:13025/help?pretty=true
-
-# ===== 1. 添加 test_script 文件夹到扫描列表 =====
-curl.exe --% -X POST http://127.0.0.1:13025/folder/add -H "Content-Type: application/json" -d "{\"path\":\"E:\\project_file\\limitless\\PsLauncher\\test_script\"}"
-
-# ===== 2. 列出所有可运行脚本 =====
-curl.exe http://127.0.0.1:13025/scripts
-
-# ===== 3. 运行 test0.ps1（基础输出 + 显示工作目录）=====
-#     test0.ps1 内容：输出三行文本，然后显示当前工作路径
-curl.exe --% -X POST http://127.0.0.1:13025/script/run -H "Content-Type: application/json" -d "{\"folder\":\"E:\\project_file\\limitless\\PsLauncher\\test_script\",\"script\":\"test0.ps1\"}"
-
-# ===== 4. 查看终端列表（记录终端 ID）=====
-curl.exe http://127.0.0.1:13025/terminals
-
-# ===== 5. 查看终端输出（id=0 是上一步运行的 test0.ps1）=====
-curl.exe "http://127.0.0.1:13025/terminal/output?id=0"
-
-# ===== 6. 运行 test2.ps1（交互式输入演示）=====
-#     test2.ps1 内容：输出三行后通过 Read-Host 等待键盘输入
-curl.exe --% -X POST http://127.0.0.1:13025/script/run -H "Content-Type: application/json" -d "{\"folder\":\"E:\\project_file\\limitless\\PsLauncher\\test_script\",\"script\":\"test2.ps1\"}"
-
-# ===== 7. 查看新终端列表（此时应有 id=0 和 id=1 两个终端）=====
-curl.exe http://127.0.0.1:13025/terminals
-
-# ===== 8. 向 id=1（test2.ps1）发送输入 =====
-curl.exe --% -X POST http://127.0.0.1:13025/terminal/input -H "Content-Type: application/json" -d "{\"id\":1,\"text\":\"Hello PsLauncher\"}"
-
-# ===== 9. 查看 test2.ps1 的输出（应包含刚输入的内容）=====
-curl.exe "http://127.0.0.1:13025/terminal/output?id=1"
-
-# ===== 10. 运行 test3.bat（批处理脚本演示）=====
-curl.exe --% -X POST http://127.0.0.1:13025/script/run -H "Content-Type: application/json" -d "{\"folder\":\"E:\\project_file\\limitless\\PsLauncher\\test_script\",\"script\":\"test3.bat\"}"
-
-# ===== 11. 查看 test3.bat 的输出 =====
-curl.exe "http://127.0.0.1:13025/terminal/output?id=2"
-
-# ===== 12. 清空 test3.bat 的终端输出 =====
-curl.exe --% -X POST http://127.0.0.1:13025/terminal/clear -H "Content-Type: application/json" -d "{\"id\":2}"
-
-# ===== 13. 终止 id=1（test2.ps1）的终端进程 =====
-curl.exe --% -X POST http://127.0.0.1:13025/terminal/stop -H "Content-Type: application/json" -d "{\"id\":1}"
-
-# ===== 14. 终止所有终端进程 =====
-curl.exe --% -X POST http://127.0.0.1:13025/terminal/stop_all
-
-# ===== 15. 关闭 PsLauncher =====
-curl.exe --% -X POST http://127.0.0.1:13025/shutdown
-
-# ===== 16. 使用美化输出（人类可读） =====
-curl.exe "http://127.0.0.1:13025/status?pretty=true"
-curl.exe "http://127.0.0.1:13025/terminals?pretty=true"
-```
-
-例子:
+可直接双击 exe 启动，或通过命令行启动（参数仅首次需指定，程序会自动保存配置）：
 
 ```bash
 # 编译后exe启动
-PsLauncher.exe --scale 2.0                # 缩放200%
-PsLauncher.exe --scale 1.5 --light        # 亮色主题，缩放150%
+PsLauncher.exe
 
 # 源码启动
-python PsLauncher.py --scale 1.5 --light  # 缩放150%
+python PsLauncher.py
 ```
 
 ### 使用
 
-- 打开程序后，通过菜单栏「设置-添加脚本目录」，添加你的脚本存放文件夹（如llama.cpp、litellm所在目录）
-- 左侧列表会自动扫描并分类展示目录下的所有脚本，点击即可在新标签页查看源码
-- 选中脚本后点击「启动」，即可在新标签页运行脚本，查看实时输出，或进行交互式输入 (就像是真正的终端一样). 点击「终止」可一键强制停止所有相关进程，点击「中断」可向进程发送 Ctrl+C 信号优雅中断
-- 简单编辑当前脚本
-- 多个标签页可以方便切换查看, 使用鼠标滚轮也可以滚动超出屏幕的多个标签页.
-- 工具栏是可以挪动位置的
+#### 对于人类用户的直接使用方式
 
-### 配置
+1. 通过菜单栏「设置 → 添加脚本目录」，添加你的脚本存放文件夹
+2. 左侧列表会自动扫描并展示目录下匹配指定后缀的所有脚本，单击脚本即可查看源码
+3. 选中脚本后点击「启动」（或按 F5），即可在新标签页运行脚本，查看实时输出
+4. 点击「终止」（或按 F6）强制停止进程，点击「中断」（或按 F7）发送 Ctrl+C 优雅中断
 
-你也可以手工修改配置文件.
+一个完整使用案例：[如何使用 PsLauncher 自定义的管控本地大模型服务配置，运行实例等](run_llama.cpp_and_litellm_by_PsLauncher.md)
 
-- 程序支持 JSON 格式的配置文件, 用于保存用户指定的扫描路径、字体大小等配置.
-- 配置文件默认路径为 `config.json`, 格式如下:
+#### 通过 skill 向 AI AGENT 接入 PsLauncher
 
-```json
-// PsLauncher 程序配置文件: 配置文件支持注释. 您可以在此手动添加要扫描的文件夹路径. 
-{
-    "folders": [
-        "C:/application/LLMexe/llama.cpp",
-        "C:/application/LLMexe/test_script",
-        "C:/application/LLMexe/litellm"
-    ],
-    "font_scale": 1.5,        // 界面字体缩放因子（例如：1.5相当于Windows上的DPI缩放150%）
-    "dark_mode": true,        // 是否启用暗色模式（默认true）
-    "height_value": 1366,     // 调整窗口宽度
-    "width_value": 768,       // 调整窗口高度
-    "font_family": "Consolas" // 编辑器字体
-}
+你可以将PsLauncher作为skill.md接入你的agent工作流。例如，将本README.md（考虑您的ai能看懂的语言版本）放置于 AI AGENT 的skill文件夹内，然后启动一个PsLauncher实例：
+
+```bash
+# 编译后exe启动
+PsLauncher.exe
+
+# 不启动GUI
+PsLauncher.exe  --headless
+
+# 或者修改配置文件，令启动时自动最小化到托盘（这同时方便人类随时查看状态）。
 ```
 
-### 注意事项
+之后ai即可调用 PsLauncher 进行异步的脚本或进程的启停管控。
 
-- 如果需要源码执行, 请确保系统已安装 Python 3.x 和 Qt5/Qt6.
-- 一些情况下, 程序可能运行时需要管理员权限（视脚本内容而定）.
-- (目前已知问题): 一些情况下终端字符着色似乎是错的
-- (目前已知问题): 编辑时编辑器背景颜色应该会变以提示用户, 但是现在完全没有这个视觉效果.
+> - 对于程序，需要写成执行指令的脚本，以使用PsLauncher进行管理。
+> - 如果只使用LLM操作，那推荐使用[pslauncher_skill.md](pslauncher_skill.md)来作为技能，因为这个文件仅包含api端点调用的说明。
+> - 如果需要人类同时使用，那推荐使用本README，因为它还包括了GUI使用说明，这能让你和ai聊天的时候获得来自于ai看过说明书学会的操作提示。
+
+如果上面的内容看完后，加上程序摸索了一遍，想进一步探索，请继续阅读说明书。
+
+----
 
 ## 详细使用方法与功能说明
+
+下面的说明书包含了几乎程序所有功能的说明，十分详细，没有重点。建议通过ai搜索自己感兴趣的功能并令ai向您解释使用方法，而非直接阅读本说明。
 
 ### 程序界面构成
 
@@ -265,6 +111,7 @@ PsLauncher 采用类 VSCode 的界面布局，主要分为以下几个区域：
 - **保存当前配置** (F2) - 立即保存当前配置到配置文件
 - **隐藏窗口到系统托盘** (F10) - 将程序窗口隐藏到系统托盘，后台运行
 - **启动时自动最小化到托盘** - 勾选后，每次启动程序时自动隐藏到系统托盘
+- **编辑配置文件** - 允许编辑所有配置，但是这个界面是自动展开所有配置的GUI用于用户修改，十分简陋，除非找不到程序中正规的配置项目，或者本身程序不提供设置方式，或者不想编辑配置文件，那么可以从此处修改配置项。
 
 #### 文件菜单
 
@@ -489,64 +336,238 @@ PsLauncher 采用类 VSCode 的界面布局，主要分为以下几个区域：
 
 ### 配置文件
 
-目前一些内容并不能通过程序内实现配置。
+您可以通过程序界面进行大部分配置，也可以手工修改配置文件。
 
-您可以定位到程序exe所在的根目录，找到程序的配置文件（如果没有，运行一次程序会生成）。
+配置文件默认路径为 `config.json`（位于程序根目录，首次运行自动生成），支持 JSON 格式及注释：
 
-然后使用txt格式打开它，就可以手动修改一些参数，例如启动的默认窗口尺寸等。
-
-```python
-_default_config = {
-    "folders": [],                       # list[str] 文件夹路径的列表
-    "font_scale": 1.5,                   # float 字号缩放
-    "dark_mode": True,                   # bool 是否黑夜模式
-    'height_value': 1080,                # int
-    'width_value': 1920,                 # int
-    'font_family': 'Consolas',           # str
-    'line_wrap_mode': True,              # bool
-    'supported_extensions': ['.ps1', '.bat', '.sh'], # list[str] 支持的文件后缀列表（在文件树中显示）, 必须至少包含 ['.ps1', '.bat', '.sh'] 的内容
-    'runnable_extensions': ['.ps1', '.bat', '.sh'],  # list[str] 可运行的文件后缀列表（可以执行）, 必须至少包含 ['.ps1', '.bat', '.sh'] 的内容
-    'syntax_highlight_mode': 'auto'      # 语法着色模式：枚举 'auto', 'ps1', 'bash', 'command', 'none'
+```json
+// PsLauncher 程序配置文件
+{
+    "folders": [  // 扫描脚本的文件夹路径列表
+        "E:/project_file/limitless/PsLauncher/test_script"
+    ],
+    "font_scale": 1.5,  // 字体大小缩放因子 (例如: 1.5 = 150%)
+    "dark_mode": true,  // 启用深色模式主题
+    "height_value": 1080,  // 窗口高度 (像素)
+    "width_value": 1920,  // 窗口宽度 (像素)
+    "font_family": "Consolas",  // 编辑器和终端的字体族
+    "line_wrap_mode": false,  // 启用自动换行
+    "supported_extensions": [  // 在脚本树中显示的文件扩展名
+        ".ps1",
+        ".bat",
+        ".sh",
+        ".json",
+        ".yaml"
+    ],
+    "runnable_extensions": [  // 可以被执行的文件扩展名
+        ".ps1",
+        ".bat",
+        ".sh"
+    ],
+    "syntax_highlight_mode": "auto",  // 语法高亮模式: auto (自动), ps1, bash, command, none
+    "auto_run_scripts": [],  // 启动时自动运行的脚本路径列表
+    "auto_minimize_to_tray": false,  // 启动时自动最小化到系统托盘
+    "language": "zh_CN",  // UI 语言代码 (例如: en, zh_CN)
+    "api": {  // HTTP API 服务器配置
+        "enabled": true,  // 是否启用 HTTP API 服务器
+        "bind_ip": "127.0.0.1",  // 绑定 API 服务器的 IP 地址 (127.0.0.1 = 仅本机)
+        "bind_port": 13025,  // API 服务器的端口号
+        "auth_token": ""  // API 认证的 Bearer 令牌 (留空 = 无需认证)
+    }
 }
 ```
 
 ### 使用流程示例
 
-1. **初始设置**
+#### 初始设置
 
-   1. 启动程序
-   2. 点击"文件"→"添加文件夹路径"或按F2
-   3. 选择包含脚本的文件夹（如llama.cpp目录）
-   4. 程序自动扫描该文件夹下的脚本文件
+1. 启动程序
+2. 点击"文件"→"添加文件夹路径"或按F2
+3. 选择包含脚本的文件夹（如llama.cpp目录）
+4. 程序自动扫描该文件夹下的脚本文件
 
-2. **查看和编辑脚本**
+#### 查看和编辑脚本
 
-   1. 在左侧文件列表中单击脚本文件
-   2. 右侧打开源码标签页显示代码
-   3. 如需修改，点击"✏️快速编辑"按钮进入编辑模式
-   4. 修改后点击"💾保存"保存更改
+1. 在左侧文件列表中单击脚本文件
+2. 右侧打开源码标签页显示代码
+3. 如需修改，点击"✏️快速编辑"按钮进入编辑模式
+4. 修改后点击"💾保存"保存更改
 
-3. **运行脚本**
+#### 运行脚本
 
-   1. 在左侧文件列表中单击脚本文件
-   2. 点击工具栏"▶️运行"按钮或按F5
-   3. 右侧打开终端标签页运行脚本
-   4. 查看实时输出，可进行交互式输入
-   5. 如需强制停止，点击"⏹️终止"按钮或按F6（进程树强杀）；如需优雅中断，点击"❌中断"按钮或按F7（发送 Ctrl+C 信号）
+1. 在左侧文件列表中单击脚本文件
+2. 点击工具栏"▶️运行"按钮或按F5
+3. 右侧打开终端标签页运行脚本
+4. 查看实时输出，可进行交互式输入
+5. 如需强制停止，点击"⏹️终止"按钮或按F6（进程树强杀）；如需优雅中断，点击"❌中断"按钮或按F7（发送 Ctrl+C 信号）
 
-4. **多任务管理**
+#### 多任务管理
 
-   1. 可同时打开多个脚本查看源码
-   2. 可同时运行多个脚本在不同标签页
-   3. 使用鼠标滚轮滚动标签栏切换标签页
-   4. 使用标签管理功能批量关闭标签页
+1. 可同时打开多个脚本查看源码
+2. 可同时运行多个脚本在不同标签页
+3. 使用鼠标滚轮滚动标签栏切换标签页
+4. 使用标签管理功能批量关闭标签页
 
-5. **后台运行**
+#### 后台运行
 
-   1. 点击工具栏"📌隐藏"按钮或按F10
-   2. 程序窗口隐藏到系统托盘
-   3. 脚本继续在后台运行
-   4. 单击托盘图标随时恢复窗口
+1. 点击工具栏"📌隐藏"按钮或按F10
+2. 程序窗口隐藏到系统托盘
+3. 脚本继续在后台运行
+4. 单击托盘图标随时恢复窗口
+
+### 命令行参数说明
+
+```bash
+usage: PsLauncher.py [-h] [--scale SCALE] [--light] [--dark] [--font FONT] [--height HEIGHT] [--width WIDTH]
+
+PsLauncher - 通用脚本启动器
+
+options:
+  -h, --help       展示帮助
+  --scale SCALE    设定窗口DPI缩放系数 例如 1.5
+  --light          设定明亮主题
+  --dark           设定暗色主题
+  --font FONT      设定字体            例如 'Consolas'
+  --height HEIGHT  窗口高度            例如 768
+  --width WIDTH    窗口宽度            例如 1366
+  --headless       无头模式，不显示GUI窗口，仅通过HTTP API操作
+```
+
+### HTTP API 服务器
+
+PsLauncher 启动后默认在 `127.0.0.1:13025` 暴露 HTTP API 服务器，任何 LLM 或人类的 POST/GET 请求都可以操作 PsLauncher 的功能，相当于在 GUI 上进行操作。
+
+#### 无头模式
+
+通过 `--headless` 参数启动 PsLauncher，将不显示 GUI 窗口，仅通过 HTTP API 提供服务：
+
+```bash
+python PsLauncher.py --headless
+```
+
+#### API 配置
+
+在 `launcher_config.json` 中配置 API 相关参数：
+
+```json
+{
+    // ...其他配置...
+    "api": {
+        "enabled": true,           // 是否启用API服务器（false可在下次启动关闭）
+        "bind_ip": "127.0.0.1",    // 绑定IP（127.0.0.1不响应公网请求）
+        "bind_port": 13025,        // 绑定端口
+        "auth_token": ""           // Bearer Token（空字符串=不验权）
+    }
+}
+```
+
+#### 验权方式
+
+若配置了 `auth_token`，所有请求需携带 Authorization 头：
+
+```text
+Authorization: Bearer <your-token>
+```
+
+token 不正确时返回 `401 Unauthorized`。
+
+**美化输出**：所有端点都支持 `?pretty=true` 查询参数，返回格式化的 JSON（带缩进和换行），方便人类阅读。不带 `pretty` 参数时默认返回紧凑格式，同时回车等字符使用斜杠表示，便于程序解析。
+
+#### API 端点列表
+
+所有端点支持 POST 请求，大部分查询类端点同时支持 GET。
+
+| 端点 | 说明 | 请求体/参数 |
+| --- | --- | --- |
+| `GET/POST /status` | 查看状态 | 无参数 |
+| `GET /help` | 查看帮助信息（HTML格式） | 无参数 |
+| `POST /help` | 获取所有可用 API 端点格式列表（请求体结构参考） | 无参数 |
+| `GET/POST /folders` | 枚举文件夹路径列表 | 无参数 |
+| `GET/POST /scripts` | 枚举脚本列表 | `?folder=<路径>`（可选） |
+| `POST /folder/add` | 增加路径 | `{"path":"C:/scripts"}` |
+| `POST /folder/remove` | 移除路径 | `{"path":"C:/scripts"}` |
+| `POST /script/run` | 运行脚本 | `{"folder":"C:/scripts","script":"test0.ps1"}` |
+| `GET/POST /terminals` | 枚举终端界面（含ID） | 无参数 |
+| `POST /terminal/stop` | 终止终端 | `{"id":0}` 或 `{"name":"test0.ps1"}` |
+| `POST /terminal/stop_all` | 终止所有终端 | 无需参数 |
+| `GET/POST /terminal/output` | 查看终端输出 | `?id=0` 或 `?name=test0.ps1` |
+| `POST /terminal/clear` | 清空终端输出 | `{"id":0}` |
+| `POST /terminal/input` | 向终端发送字符串 | `{"id":0,"text":"hello\n"}` |
+| `GET/POST /shutdown` | 关闭 PsLauncher | 无参数 |
+
+#### 使用示例（完整演示流程）
+
+所有示例假设您已启动 PsLauncher，并将以下 `E:\\project_file\\limitless\\PsLauncher\\test_script` 替换为您的 `test_script` 文件夹的**绝对路径**。
+
+当前仓库自带几个测试用的脚本, 可以直接使用. (可能需要下载源代码, 而非release版本, 因为release不包含任何测试脚本)
+
+> **PowerShell 注意**：PowerShell 解析参数的方式与 CMD 不同，推荐使用 `--%`（停止解析符号）。以下示例均采用 `--%` 写法，并用 `\` 表示路径分隔符和转义。下面的例子基于PowerShell语法规则，在Windows11上执行通过测试。
+
+```powershell
+# 0. 检查服务状态
+curl.exe http://127.0.0.1:13025/status
+
+# 0.1 获取所有可用 API 端点格式列表(美观格式化)
+curl.exe -X POST http://127.0.0.1:13025/help?pretty=true
+
+# 1. 添加 test_script 文件夹到扫描列表
+curl.exe --% -X POST http://127.0.0.1:13025/folder/add -H "Content-Type: application/json" -d "{\"path\":\"E:\\project_file\\limitless\\PsLauncher\\test_script\"}"
+
+# 2. 列出所有可运行脚本
+curl.exe http://127.0.0.1:13025/scripts
+
+# 3. 运行 test0.ps1（基础输出 + 显示工作目录）=====
+#     test0.ps1 内容：输出三行文本，然后显示当前工作路径
+curl.exe --% -X POST http://127.0.0.1:13025/script/run -H "Content-Type: application/json" -d "{\"folder\":\"E:\\project_file\\limitless\\PsLauncher\\test_script\",\"script\":\"test0.ps1\"}"
+
+# 4. 查看终端列表（记录终端 ID）=====
+curl.exe http://127.0.0.1:13025/terminals
+
+# 5. 查看终端输出（id=0 是上一步运行的 test0.ps1）=====
+curl.exe "http://127.0.0.1:13025/terminal/output?id=0"
+
+# 6. 运行 test2.ps1（交互式输入演示）=====
+#     test2.ps1 内容：输出三行后通过 Read-Host 等待键盘输入
+curl.exe --% -X POST http://127.0.0.1:13025/script/run -H "Content-Type: application/json" -d "{\"folder\":\"E:\\project_file\\limitless\\PsLauncher\\test_script\",\"script\":\"test2.ps1\"}"
+
+# 7. 查看新终端列表（此时应有 id=0 和 id=1 两个终端）=====
+curl.exe http://127.0.0.1:13025/terminals
+
+# 8. 向 id=1（test2.ps1）发送输入
+curl.exe --% -X POST http://127.0.0.1:13025/terminal/input -H "Content-Type: application/json" -d "{\"id\":1,\"text\":\"Hello PsLauncher\"}"
+
+# 9. 查看 test2.ps1 的输出（应包含刚输入的内容）=====
+curl.exe "http://127.0.0.1:13025/terminal/output?id=1"
+
+# 10. 运行 test3.bat（批处理脚本演示）=====
+curl.exe --% -X POST http://127.0.0.1:13025/script/run -H "Content-Type: application/json" -d "{\"folder\":\"E:\\project_file\\limitless\\PsLauncher\\test_script\",\"script\":\"test3.bat\"}"
+
+# 11. 查看 test3.bat 的输出
+curl.exe "http://127.0.0.1:13025/terminal/output?id=2"
+
+# 12. 清空 test3.bat 的终端输出
+curl.exe --% -X POST http://127.0.0.1:13025/terminal/clear -H "Content-Type: application/json" -d "{\"id\":2}"
+
+# 13. 终止 id=1（test2.ps1）的终端进程
+curl.exe --% -X POST http://127.0.0.1:13025/terminal/stop -H "Content-Type: application/json" -d "{\"id\":1}"
+
+# 14. 终止所有终端进程
+curl.exe --% -X POST http://127.0.0.1:13025/terminal/stop_all
+
+# 15. 关闭 PsLauncher
+curl.exe --% -X POST http://127.0.0.1:13025/shutdown
+
+# 16. 使用美化输出（人类可读）
+curl.exe "http://127.0.0.1:13025/status?pretty=true"
+curl.exe "http://127.0.0.1:13025/terminals?pretty=true"
+```
+
+### 注意事项
+
+- 如果需要源码执行, 请确保系统已安装 Python 3.x 和 Qt5/Qt6.
+- 一些情况下, 程序可能运行时需要管理员权限（视脚本内容而定）.
+- (目前已知问题): 一些情况下终端字符着色似乎是错的
+- (目前已知问题): 编辑时编辑器背景颜色应该会变以提示用户, 但是现在有时候会完全没有这个视觉效果.
 
 ### 常见问题解答
 
@@ -598,24 +619,21 @@ pyinstaller -w ./PsLauncher.py -i ./logo.ico -y --distpath ./exe  --paths ./
 
 ```PowerShell
 exe/
-   PsLauncher_EN.exe
-   PsLauncher_CN.exe
+   PsLauncher.exe
    _internal/*    # 必要的动态链接库
 ```
 
 ### 多语言支持
 
-脚本 `code_translator.py` 用于将程序翻译为多个语言.
+本程序使用了一个自制的i18n模组实现多国语言兼容。可以查看`i18n`文件夹下的代码，来了解其原理。这十分的简单。
 
-> 作者(@NGC13009)在开发的时候使用的是一个本地仓库, 基于中文开发后, 用自动化(且不一定可靠的)方式将代码翻译为英文, 然后更新到当前仓库, 之后, 将中文代码复制一份放在`cn/`下. 中文版本是作者在本地仓库编译的, 之后用当前仓库编译英文版.
-
-## 自动化测试与 CI/CD
+### 自动化测试
 
 项目已搭建完整的自动化测试体系，基于 `pytest` + `pytest-qt` + `pytest-xdist`，支持 headless 并行执行。
 
-### 测试目录结构
+#### 测试目录结构
 
-```
+```text
 test/
 ├── conftest.py              # 全局 fixtures：环境变量、临时配置、main_window 等
 ├── test_config.py           # 功能层：config.json 读写、默认值、注释解析、边界值
@@ -639,7 +657,7 @@ test/
     └── temp_scripts.py      # 临时脚本目录
 ```
 
-### 三层测试分层说明
+#### 三层测试分层说明
 
 | 层级 | 说明 | 并行安全 | 标记 |
 |------|------|---------|------|
@@ -647,7 +665,7 @@ test/
 | **功能层 (func)** | 不实例化 QWidget 的业务逻辑测试（可 mock） | ✅ 安全 | `@pytest.mark.func` |
 | **GUI 层 (gui)** | 基于 pytest-qt 的交互测试，需 qtbot fixture | ⚠️ 慎用 | `@pytest.mark.gui` |
 
-### 执行命令
+#### 执行命令
 
 **精简版**（CI 与本地统一使用）：
 
@@ -669,13 +687,13 @@ python -m pytest test/ -q --tb=short -p no:warnings --no-header -m "not gui"
 
 参数说明：
 
-- `-q`/`--no-header`：精简输出，节省 token
+- `-q`/`--no-header`：精简输出，节省 token。如果你是人类那么可能`-v`更合适。
 - `--tb=short`：简短回溯，避免大量堆栈
 - `-p no:warnings`：屏蔽 Python 警告
 - `-n auto`：启用 pytest-xdist 按 CPU 核心数并行分发
 - `-m "not gui"`：跳过 GUI 标记用例
 
-### Headless 环境要求
+#### Headless 环境要求
 
 pytest-qt 在无显示环境（CI/服务器）下运行需设置：
 
@@ -691,23 +709,14 @@ $env:QT_QPA_PLATFORM="offscreen"   # Windows PowerShell
 export PYTEST_QT_API=pyqt5
 ```
 
-### CI 工作流
+#### AI Agent 注意事项
 
-定义在 `.github/workflows/test.yml`，触发条件：
-
-- `push` 到 `main` 分支
-- `pull_request` 到 `main` 分支
-
-矩阵：`ubuntu-latest` + `windows-latest`，Python 3.12。
-
-### AI Agent 注意事项
-
-- **AI 完成测试代码后只需 `py_compile` 校验**，不得自行执行 GUI 用例，交人类确认。
-- 禁止读取 `source_ico.py`等source开头的文件，这些文件是通过编译器自动生成的，很大。
+- AI 完成测试代码后只需 `py_compile` 校验，或者pytest测试流程，**AI不得自行执行 GUI 用例**（会导致agent loop阻塞）。任何GUI only的测试应告诉并令人类协助测试确认。
+- 禁止读取 `source_ico.py`等`source`开头的文件，这些文件是通过编译器自动生成的，很大。
 - GUI 用例在 offscreen 下覆盖有限，托盘/拖动等需人工复核。
 - 开发完成后必须 `python -m pytest test/ -q --tb=long -p no:warnings` 自动测试执行一遍确认没有问题.
 
-### 人类开发者须知（测试清单）
+#### 人类开发者须知（测试清单）
 
 对照原「人类开发者须知」清单，标注自动化覆盖状态：
 

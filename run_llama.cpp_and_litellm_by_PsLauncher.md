@@ -1,4 +1,4 @@
-# 如何通过PsLauncher配置本地大模型服务
+# 如何使用 PsLauncher 自定义的管控本地大模型服务配置，运行实例等
 
 > Please scroll down the page to view the **English version**
 
