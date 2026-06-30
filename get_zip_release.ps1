@@ -7,15 +7,21 @@
 # @Author:          NGC13009
 # @History:         2026-06-29		Create
 
-# 定义 7-Zip 的路径
-$7zPath = "${env:ProgramFiles}\7-Zip\7z.exe"
-
 # 删除旧的打包文件
 Remove-Item -Path ".\exe\PsLauncher.zip" -ErrorAction SilentlyContinue
 Remove-Item -Path ".\exe\Setup_PsLauncher.exe" -ErrorAction SilentlyContinue
 
+# 定义 7-Zip 的路径
+$7zPath = Join-Path $env:ProgramFiles "7-Zip\7z.exe"
+
+# 检查 7-Zip 是否存在
+if (-not (Test-Path $7zPath)) {
+    Write-Error "7-Zip 未找到，请检查路径: $7zPath"
+    exit 1
+}
+
 # 1. 打包为 .zip 格式
-& $7zPath a -tzip ".\exe\PsLauncher.zip" ".\exe\PsLauncher\*"
+& "$7zPath" a -tzip ".\exe\PsLauncher.zip" ".\exe\PsLauncher\*"
 
 # 2. 打包为自解压 .exe 格式 (SFX)
-& $7zPath a -sfx ".\exe\Setup_PsLauncher.exe" ".\exe\PsLauncher\*"
+& "$7zPath" a -sfx ".\exe\Setup_PsLauncher.exe" ".\exe\PsLauncher\*"
