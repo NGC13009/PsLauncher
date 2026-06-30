@@ -148,6 +148,14 @@ Then the AI can call PsLauncher to asynchronously start/stop scripts or processe
 > - If necessary, translate the `skill.md` into your preferred language. For example, the Chinese version is [pslauncher_skill_CN.md](pslauncher_skill_CN.md).
 > - If humans also need to use it, we recommend this README because it includes GUI usage instructions, allowing you to get operational tips from the AI after it has read the manual.
 
+#### Using Other Programs to Listen for Changes
+
+PsLauncher also exposes a **TCP long‑connection event server** (default port `13026`) to push internal state changes to external programs. When you need to integrate PsLauncher's state into automated monitoring, LLM Agent real‑time awareness workflows, or other scenarios requiring real‑time synchronisation (e.g., an AI Agent monitoring prompt output from multiple automated scripts, or cross‑process synchronisation), you don't need to poll the HTTP API — just establish a TCP long connection to continuously receive event pushes.
+
+> For detailed event types, configuration, and listener script usage, please refer to the "[TCP Event Server](#tcp-event-server)" section of this manual.
+>
+> - This feature may be particularly useful for robotics scenarios, where multiple drivers may execute simultaneously. PsLauncher can provide a unified context and asynchronous execution process, effectively decoupling robot drivers (e.g., servo motors, stepper motors) from the LLM.
+
 If you have read the above and experimented with the program, and want to dive deeper, continue reading the full manual.
 
 ---
@@ -785,6 +793,133 @@ Expected output:
 ```
 
 > At the same time, PsLauncher exits.
+
+### TCP Event Server
+
+PsLauncher exposes a TCP long‑connection event server on `127.0.0.1:13026` by default, used to push internal state changes to connected clients in real time.
+
+> **Use cases**: real‑time monitoring of script status changes, terminal output streams, script list/path changes, etc., avoiding the overhead of polling the HTTP API. For example, an automated operations monitoring system or an LLM Agent can maintain a single long connection to receive real‑time terminal output prompts and status changes, enabling synchronous responses.
+
+#### TCP Event Server Configuration
+
+Configure in `launcher_config.json`:
+
+```json
+{
+    "tcp_event_server": {
+        "enabled": true,            // Enable TCP event server (enabled by default)
+        "bind_ip": "127.0.0.1",     // Bind IP (127.0.0.1 does not respond to public requests)
+        "bind_port": 13026          // Bind port
+    }
+}
+```
+
+#### Protocol
+
+- **Transport**: raw TCP, newline‑delimited JSON (each JSON object occupies one line, terminated by `\n`)
+- **Encoding**: UTF-8
+- **Client subscription** (optional): after connecting, the client can send a subscription message to receive only specific event types
+
+##### Client Subscription Message Format
+
+After a successful connection, the client sends a JSON message:
+
+```json
+{"subscribe": ["path_changed", "terminal_status"]}
+```
+
+- No subscription message = receive all events
+- `{"subscribe": ["*"]}` = reset to all events
+- `{"subscribe": []}` = cancel all subscriptions
+- `{"subscribe": ["path_changed", "terminal_output"]}` = only receive path changes and terminal output events
+
+##### Server Event Push Format
+
+```json
+{
+    "event": "path_changed",
+    "timestamp": "2026-06-30 22:00:00",
+    "data": { ... }
+}
+```
+
+#### Event Types
+
+| Event Type | Trigger | data Field |
+|-----------|---------|------------|
+| `path_changed` | Folder path added or removed | `{"folders": ["path1", "path2", ...]}` |
+| `script_changed` | Script created/renamed/copied/moved/deleted | `{"folder": "C:/scripts", "scripts": [{"name": "file.ps1", "path": "..."}]}` |
+| `terminal_output` | New stdout/stderr output from a terminal | `{"terminal_id": 0, "script": "C:/scripts/test.ps1", "text": "Hello World\n"}` |
+| `terminal_status` | Terminal process status change | `{"terminal_id": 0, "script": "C:/scripts/test.ps1", "status": "started\|finished\|stopped\|closed"}` |
+
+`terminal_status` values:
+
+- `started`: script process started
+- `finished`: script process exited normally
+- `stopped`: script process was forcefully terminated
+- `closed`: terminal tab closed (process no longer running)
+
+#### Using the Listener Script
+
+The project provides `test_event_listener.py` for quick testing and understanding of the feature; you can run it directly to observe real‑time events:
+
+```bash
+# Listen to all events
+python test_event_listener.py
+
+# Only listen to path changes and terminal status changes
+python test_event_listener.py --subscribe path_changed terminal_status
+
+# Specify address and port
+python test_event_listener.py --host 127.0.0.1 --port 13026
+```
+
+Example output:
+
+```
+PsLauncher TCP Event Listener
+Connected to: 127.0.0.1:13026
+Subscribed events: all
+Waiting for events... (press Ctrl+C to exit)
+------------------------------------------------------------
+
+[2026-06-30 22:05:00] Event type: terminal_status
+  Terminal ID: 0
+  Script: C:/scripts/test0.ps1
+  Status: 🚀 Started
+
+[2026-06-30 22:05:01] Event type: terminal_output
+  Terminal ID: 0
+  Script: C:/scripts/test0.ps1
+  Output: Hello World
+
+[2026-06-30 22:05:02] Event type: path_changed
+  Folder list (1 total):
+    - C:/my_scripts
+
+[2026-06-30 22:05:05] Event type: terminal_status
+  Terminal ID: 0
+  Script: C:/scripts/test0.ps1
+  Status: ✅ Finished normally
+```
+
+#### Manual Testing with telnet / nc
+
+```bash
+# Using telnet (requires Windows Telnet Client enabled)
+telnet 127.0.0.1 13026
+
+# Using ncat (recommended, available from nmap)
+ncat 127.0.0.1 13026
+
+# Using PowerShell
+$client = New-Object System.Net.Sockets.TcpClient('127.0.0.1', 13026)
+$stream = $client.GetStream()
+$reader = New-Object System.IO.StreamReader($stream)
+while (($line = $reader.ReadLine()) -ne $null) { Write-Host $line }
+```
+
+Once connected, the terminal will continuously display pushed event JSON lines.
 
 ### Using Pretty Output (Human‑Readable)
 

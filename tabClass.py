@@ -135,6 +135,12 @@ class EditorTab(QWidget):
 
 # Interactive terminal tab
 class TerminalTab(QWidget):
+    # 终端输出信号：terminal_id, text
+    output_signal = pyqtSignal(int, str)
+    # 终端状态信号：terminal_id, status, script_path
+    # status: "started" | "finished" | "stopped" | "closed"
+    status_signal = pyqtSignal(int, str, str)
+
     _next_id = 0  # 类级别计数器，用于给每个终端标签页分配唯一持久ID
 
     def __init__(self, script_path, font_family, isdark, line_wrap_mode=True):
@@ -212,6 +218,8 @@ class TerminalTab(QWidget):
         ext = os.path.splitext(self.script_path)[1].lower()
         time_str = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         self.append_output(tr("terminal.start_header", time=time_str, path=self.script_path), color="#00FF00")
+        # 发射状态信号
+        self.status_signal.emit(self.terminal_id, "started", self.script_path)
 
         # Set the working directory to the directory where the script is located to ensure relative paths work correctly
         script_dir = os.path.dirname(self.script_path)
@@ -227,12 +235,14 @@ class TerminalTab(QWidget):
 
     def stop_process(self):
         if self.process is None:
+            self.status_signal.emit(self.terminal_id, "closed", self.script_path)
             return
         if self.process.state() != QProcess.Running:
             # Process not running, clean up state
             self.process = None
             time_str = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             self.append_output(tr("terminal.process_stopped", time=time_str), color="#F14C4C")
+            self.status_signal.emit(self.terminal_id, "closed", self.script_path)
             return
 
         pid = self.process.processId()
@@ -255,6 +265,8 @@ class TerminalTab(QWidget):
         # Output stop message
         time_str = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         self.append_output(tr("terminal.process_terminated", time=time_str), color="#F14C4C")
+        # 发射停止状态信号
+        self.status_signal.emit(self.terminal_id, "stopped", self.script_path)
 
     def send_ctrl_c(self):
         """send Ctrl+C (0x03) to current progress"""
@@ -339,9 +351,15 @@ class TerminalTab(QWidget):
     def handle_finished(self):
         time_str = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         self.append_output(tr("terminal.process_finished", time=time_str), color="#FFFF00")
+        # 发射完成状态信号
+        self.status_signal.emit(self.terminal_id, "finished", self.script_path)
 
     def inject_output(self, text, default_color=None):
         """ Smart output injection: if the user is typing when output occurs, first store the typed text, then append it after the output is complete """
+        # 发射输出信号（仅当有实际输出文本时）
+        if text and text.strip():
+            self.output_signal.emit(self.terminal_id, text)
+
         cursor = self.terminal.textCursor()
         # Store unsent user input
         cursor.setPosition(self.input_start_pos)

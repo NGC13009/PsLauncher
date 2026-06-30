@@ -146,6 +146,14 @@ PsLauncher.exe  --headless
 > - 如有必要，请自行翻译获得所需语言的`skill.md`。例如中文版是[pslauncher_skill_CN.md](pslauncher_skill_CN.md)。
 > - 如果需要人类同时使用，那推荐使用本README，因为它还包括了GUI使用说明，这能让你和ai聊天的时候获得来自于ai看过说明书学会的操作提示。
 
+#### 使用其他程序监听更改
+
+PsLauncher 同时暴露一个 **TCP 长连接事件服务器**（默认端口 `13026`），用于将程序内部的状态变化推送给外部程序。当你需要将 PsLauncher 的状态集成到自动化运维监控、LLM Agent 的实时感知流程，或其他需要实时同步的场景时（例如一个 AI Agent 监控多个自动化脚本的提示信息输出，或跨进程同步操作状态），无需轮询 HTTP API，只需建立一个 TCP 长连接即可持续接收事件推送。
+
+> 详细的事件类型、配置方式和监听脚本使用方法，请参见本说明书的「[TCP 事件服务器](#TCP事件服务器)」章节。
+>
+> - 该功能可能对于机器人场景非常有效，因为多个驱动可能同时执行，PsLauncher可以提供统一的上下文环境与异步执行过程，并将机器人的驱动（例如伺服电机，舵机等）与LLM端进行很好的解耦。
+
 如果上面的内容看完后，加上程序摸索了一遍，想进一步探索，请继续阅读说明书。
 
 ---
@@ -785,6 +793,133 @@ curl.exe --% -X POST http://127.0.0.1:13025/shutdown
 
 > 同时，PsLauncher结束并退出。
 
+### TCP事件服务器
+
+PsLauncher 启动后默认在 `127.0.0.1:13026` 暴露 TCP 长连接事件服务器，用于将程序内部的状态变更实时推送给已连接的客户端。
+
+> **适用场景**：实时监控脚本状态变化、终端输出流、脚本列表/路径变更等，免去轮询 HTTP API 的开销。例如一个自动化运维监控系统或 LLM Agent 可以通过一条长连接实时感知终端输出的提示信息和状态变化，从而做出同步响应。
+
+#### TCP 事件服务器配置
+
+在 `launcher_config.json` 中配置：
+
+```json
+{
+    "tcp_event_server": {
+        "enabled": true,            // 是否启用 TCP 事件服务器（默认启用）
+        "bind_ip": "127.0.0.1",     // 绑定 IP（127.0.0.1 不响应公网请求）
+        "bind_port": 13026          // 绑定端口
+    }
+}
+```
+
+#### 协议说明
+
+- **传输层**：纯 TCP，使用新行分隔的 JSON（每个 JSON 对象占一行，以 `\n` 结尾）
+- **编码**：UTF-8
+- **客户端订阅**（可选）：客户端连接后可以发送订阅消息来只接收特定类型的事件
+
+##### 客户端订阅消息格式
+
+客户端连接成功后，发送一条 JSON：
+
+```json
+{"subscribe": ["path_changed", "terminal_status"]}
+```
+
+- 不发送订阅消息 = 接收所有事件
+- `{"subscribe": ["*"]}` = 重置为所有事件
+- `{"subscribe": []}` = 取消所有订阅
+- `{"subscribe": ["path_changed", "terminal_output"]}` = 只接收路径变化和终端输出事件
+
+##### 服务器事件推送格式
+
+```json
+{
+    "event": "path_changed",
+    "timestamp": "2026-06-30 22:00:00",
+    "data": { ... }
+}
+```
+
+#### 事件类型一览
+
+| 事件类型 | 触发时机 | data 字段 |
+|---------|---------|----------|
+| `path_changed` | 添加或移除文件夹路径 | `{"folders": ["path1", "path2", ...]}` |
+| `script_changed` | 新建/重命名/复制/移动/删除脚本 | `{"folder": "C:/scripts", "scripts": [{"name": "file.ps1", "path": "..."}]}` |
+| `terminal_output` | 终端有新的 stdout/stderr 输出 | `{"terminal_id": 0, "script": "C:/scripts/test.ps1", "text": "Hello World\n"}` |
+| `terminal_status` | 终端进程状态变化 | `{"terminal_id": 0, "script": "C:/scripts/test.ps1", "status": "started\|finished\|stopped\|closed"}` |
+
+`terminal_status` 的状态值说明：
+
+- `started`：脚本进程已启动
+- `finished`：脚本进程正常结束
+- `stopped`：脚本进程被强制终止
+- `closed`：终端标签页被关闭（进程已不再运行）
+
+#### 使用监听脚本
+
+项目提供了 `test_event_listener.py` 监听脚本，用于快速测试并理解功能，可直接运行以观察实时事件：
+
+```bash
+# 监听所有事件
+python test_event_listener.py
+
+# 只监听路径变化和终端状态变化
+python test_event_listener.py --subscribe path_changed terminal_status
+
+# 指定地址和端口
+python test_event_listener.py --host 127.0.0.1 --port 13026
+```
+
+示例输出：
+
+```
+PsLauncher TCP 事件监听器
+连接至: 127.0.0.1:13026
+订阅事件: 所有
+等待接收事件... (按 Ctrl+C 退出)
+------------------------------------------------------------
+
+[2026-06-30 22:05:00] 事件类型: terminal_status
+  终端 ID: 0
+  脚本: C:/scripts/test0.ps1
+  状态: 🚀 已启动
+
+[2026-06-30 22:05:01] 事件类型: terminal_output
+  终端 ID: 0
+  脚本: C:/scripts/test0.ps1
+  输出: Hello World
+
+[2026-06-30 22:05:02] 事件类型: path_changed
+  文件夹列表 (共 1 个):
+    - C:/my_scripts
+
+[2026-06-30 22:05:05] 事件类型: terminal_status
+  终端 ID: 0
+  脚本: C:/scripts/test0.ps1
+  状态: ✅ 已正常结束
+```
+
+#### 使用 telnet / nc 等工具手动测试
+
+```bash
+# 使用 telnet（需要 Windows 开启 telnet 客户端）
+telnet 127.0.0.1 13026
+
+# 使用 ncat（推荐，可从 nmap 获取）
+ncat 127.0.0.1 13026
+
+# 使用 PowerShell
+$client = New-Object System.Net.Sockets.TcpClient('127.0.0.1', 13026)
+$stream = $client.GetStream()
+$reader = New-Object System.IO.StreamReader($stream)
+while (($line = $reader.ReadLine()) -ne $null) { Write-Host $line }
+```
+
+连接后终端将不断显示推送的事件 JSON 行。
+
 ### 使用美化输出（人类可读）
 
 加上`?pretty=true`参数后，将会变得易于人类阅读。
@@ -909,6 +1044,7 @@ test/
 ├── test_gui_terminal.py     # GUI 层：终端标签 ANSI 渲染、交互输入
 ├── test_gui_editor.py       # GUI 层：源码标签只读/编辑切换、保存、缩放
 ├── test_gui_tabs.py         # GUI 层：标签页批量关闭、F8/F9 快捷键
+├── test_tcp_event.py        # 功能层：TCP 事件服务器协议与格式测试
 └── fixtures/
     ├── __init__.py
     ├── config_factory.py    # 构造不同 config.json 场景

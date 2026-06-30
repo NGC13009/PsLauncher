@@ -37,6 +37,11 @@ _default_config = {
         'bind_ip': '127.0.0.1',          # str IP address to bind the API server
         'bind_port': 13025,              # int Port to bind the API server
         'auth_token': ''                 # str Bearer token for authentication (empty = no auth)
+    },
+    'tcp_event_server': {                # dict TCP 长连接事件服务器配置
+        'enabled': True,                 # bool Whether to enable the TCP event server on startup
+        'bind_ip': '127.0.0.1',          # str IP address to bind the TCP event server
+        'bind_port': 13026               # int Port to bind the TCP event server
     }
 }
 
@@ -60,6 +65,10 @@ _COMMENT_MAP = {
     "api.bind_ip": "IP address to bind the API server (127.0.0.1 = localhost only)",
     "api.bind_port": "Port number for the API server",
     "api.auth_token": "Bearer token for API authentication (empty = no auth)",
+    "tcp_event_server": "TCP long connection event server configuration",
+    "tcp_event_server.enabled": "Whether to enable the TCP event server on startup",
+    "tcp_event_server.bind_ip": "IP address to bind the TCP event server",
+    "tcp_event_server.bind_port": "Port number for the TCP event server",
 }
 
 

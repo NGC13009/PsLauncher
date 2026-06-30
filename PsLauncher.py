@@ -27,6 +27,7 @@ from source_ico import icon_base64_data
 from i18n import available_languages, set_language, tr
 from api_server import ApiServerThread
 from config_editor import ConfigEditorDialog
+from tcp_event_server import TcpEventServer
 
 
 # Main window
@@ -61,6 +62,9 @@ class MainWindow(QMainWindow):
 
         # Track whether the window is hidden to the tray
         self.hidden_to_tray = False
+
+        # 初始化 TCP 事件服务器实例
+        self.tcp_event_server = None
 
         # 安装全局事件过滤器，强制拦截 Ctrl+C/V/X/Y/Z
         QApplication.instance().installEventFilter(self)
@@ -857,6 +861,9 @@ class MainWindow(QMainWindow):
         # Create a separate tab for the running program, using different emojis for visual distinction
         tab_name = tr("tab.terminal_prefix") + filename
         terminal = TerminalTab(script_path, self.font_family, self.dark_mode, self.config['line_wrap_mode'])
+        # 连接终端信号到 TCP 事件广播
+        if hasattr(self, 'tcp_event_server') and self.tcp_event_server:
+            self._connect_terminal_tab_signals(terminal)
         idx = self.tabs.addTab(terminal, tab_name)
         self.tabs.setCurrentIndex(idx)
         terminal.start_process()
@@ -2013,6 +2020,97 @@ class MainWindow(QMainWindow):
             self.api_thread.stop()
             self.api_thread.wait(3000)
 
+    # ======================== TCP 事件服务器 ======================================
+
+    def start_tcp_event_server(self):
+        """启动 TCP 事件服务器"""
+        tcp_config = self.config.get('tcp_event_server', {})
+        enabled = tcp_config.get('enabled', True)
+        if not enabled:
+            print("[MainWindow] TCP 事件服务器已在配置中禁用，跳过启动")
+            return
+
+        bind_ip = tcp_config.get('bind_ip', '127.0.0.1')
+        bind_port = tcp_config.get('bind_port', 13026)
+
+        self.tcp_event_server = TcpEventServer(bind_ip, bind_port)
+
+        # 连接 TerminalTab 信号
+        self.tcp_event_server.terminal_output_signal = None  # 直接通过 Tab 信号连接
+        self._connect_terminal_signals()
+
+        self.tcp_event_server.start()
+        print(f"[MainWindow] TCP 事件服务器已启动: {bind_ip}:{bind_port}")
+
+    def _connect_terminal_signals(self):
+        """连接所有现有和未来 TerminalTab 的信号"""
+        # 连接现有的终端标签页
+        for i in range(self.tabs.count()):
+            widget = self.tabs.widget(i)
+            if isinstance(widget, TerminalTab):
+                self._connect_terminal_tab_signals(widget)
+
+    def _connect_terminal_tab_signals(self, terminal_tab):
+        """连接单个 TerminalTab 的信号到 TCP 事件广播"""
+        try:
+            terminal_tab.output_signal.disconnect(self._on_terminal_output)
+        except TypeError:
+            pass
+        try:
+            terminal_tab.status_signal.disconnect(self._on_terminal_status)
+        except TypeError:
+            pass
+        terminal_tab.output_signal.connect(self._on_terminal_output)
+        terminal_tab.status_signal.connect(self._on_terminal_status)
+
+    def _on_terminal_output(self, terminal_id, text):
+        """终端输出事件回调"""
+        if self.tcp_event_server:
+            # 查找终端以获取脚本路径
+            widget = self._get_terminal_by_id(terminal_id)
+            script_path = widget.script_path if widget else ""
+            self.tcp_event_server.broadcast_terminal_output(terminal_id, script_path, text)
+
+    def _on_terminal_status(self, terminal_id, status, script_path):
+        """终端状态事件回调"""
+        if self.tcp_event_server:
+            self.tcp_event_server.broadcast_terminal_status(terminal_id, script_path, status)
+
+    def _broadcast_path_changed(self):
+        """广播路径列表变化"""
+        if self.tcp_event_server:
+            self.tcp_event_server.broadcast_path_changed(
+                list(self.config.get("folders", []))
+            )
+
+    def _broadcast_script_changed(self):
+        """广播所有脚本列表变化"""
+        if not self.tcp_event_server:
+            return
+        runnable_ext = self.config.get('runnable_extensions', DEFAULT_EXT)
+        for f in self.config.get("folders", []):
+            if not os.path.isdir(f):
+                continue
+            scripts = []
+            for file in sorted(os.listdir(f)):
+                full_path = os.path.join(f, file)
+                if os.path.isfile(full_path):
+                    ext = os.path.splitext(file)[1].lower()
+                    if ext in runnable_ext:
+                        scripts.append({
+                            "name": file,
+                            "path": full_path
+                        })
+            if scripts:
+                self.tcp_event_server.broadcast_script_changed(f, scripts)
+
+    def stop_tcp_event_server(self):
+        """停止 TCP 事件服务器"""
+        if hasattr(self, 'tcp_event_server') and self.tcp_event_server:
+            self.tcp_event_server.stop()
+            self.tcp_event_server.wait(3000)
+            self.tcp_event_server = None
+
     def _handle_api_call(self, method_name, args, result_holder):
         """在主线程中处理 API 调用（由信号触发）"""
         try:
@@ -2331,6 +2429,9 @@ if __name__ == '__main__':
     # 启动 HTTP API 服务器
     window.start_api_server()
 
+    # 启动 TCP 事件服务器
+    window.start_tcp_event_server()
+
     # 启动时自动运行配置中标记的脚本
     window.run_auto_start_scripts()
 
@@ -2359,4 +2460,6 @@ if __name__ == '__main__':
     exit_code = app.exec_()
     # 程序退出前停止 API 服务器
     window.stop_api_server()
+    # 程序退出前停止 TCP 事件服务器
+    window.stop_tcp_event_server()
     sys.exit(exit_code)

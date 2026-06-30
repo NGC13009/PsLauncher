@@ -155,12 +155,17 @@ class TestProcessLifecycle:
             # 验证 process 被清理
             assert tab.process is None
 
-    def test_start_process_sets_working_dir(self, qapp, sample_scripts_dir):
+    def test_start_process_sets_working_dir(self, qapp, sample_scripts_dir, monkeypatch):
         """start_process 应设置工作目录为脚本所在目录"""
         from tabClass import TerminalTab
+        # 模拟 class-level pyqtSignal 避免 C++ 初始化检查
+        monkeypatch.setattr(TerminalTab, 'output_signal', MagicMock())
+        monkeypatch.setattr(TerminalTab, 'status_signal', MagicMock())
         script_path = str(sample_scripts_dir / "test_script.ps1")
+        # 使用 __new__ 创建实例以避免 GUI 依赖
         tab = TerminalTab.__new__(TerminalTab)
         tab.script_path = script_path
+        tab.terminal_id = 9999
         tab.process = MagicMock()
         tab.terminal = MagicMock()
         tab.terminal.textCursor.return_value = MagicMock()
