@@ -143,6 +143,7 @@ PsLauncher.exe  --headless
 
 > - 对于程序，需要写成执行指令的脚本，以使用PsLauncher进行管理。
 > - 如果只使用LLM操作，那推荐使用[pslauncher_skill.md](pslauncher_skill.md)来作为技能，因为这个文件仅包含api端点调用的说明。
+> - 如有必要，请自行翻译获得所需语言的`skill.md`。例如中文版是[pslauncher_skill_CN.md](pslauncher_skill_CN.md)。
 > - 如果需要人类同时使用，那推荐使用本README，因为它还包括了GUI使用说明，这能让你和ai聊天的时候获得来自于ai看过说明书学会的操作提示。
 
 如果上面的内容看完后，加上程序摸索了一遍，想进一步探索，请继续阅读说明书。
