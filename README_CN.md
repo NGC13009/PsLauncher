@@ -2,6 +2,12 @@
 
 在一个类 VSCode 的轻量界面中统一管理并运行 PowerShell / Bash / Batch 脚本，同时内置一套 HTTP API 服务，**让人与 AI Agent 能以同一套语义异步的，非阻塞的操作统一管理的本地服务进程**：启动、交互、强杀、查输出、批量回收。支持系统托盘常驻、子进程树强杀、ANSI 着色终端与交互式输入输出，专为 llama.cpp / Ollama / litellm 等本地大模型部署场景优化。兼容Windows，Linux，macos等。
 
+<center><a href='./README_CN.md'>中文说明书</a> | <a href='./README.md'>English version</a></center>
+
+![pic](pic.jpg)
+
+<center>图. PsLauncher的运行状态展示</center>
+
 ## 核心亮点
 
 - **ai不再因为程序进程而阻塞**：当程序执行在终端内的时候，ai仍旧可以选择随时查看日志或进行其他操作。同时管理多个程序的输入输出，彻底解耦程序和ai的交互时序问题。
@@ -10,6 +16,59 @@
 - **计算资源的确定性回收**：直击僵尸进程与显存泄漏的顽疾，提供从优雅终止到进程树强杀的彻底回收能力，保障硬件资源在多服务切换中的稳定释放。不再产生cpu/内存/GPU的额外占用。
 - **长任务的动态托管闭环**：将传统终端从一次性升级为可视化任务容器，支持在任务运行期间随时查阅历史轨迹并动态注入新指令，完美适配AI长时编排与交互式脚本的运行诉求。无惧程序卡死导致agent loop被打断。
 - **全场景形态的无缝切换**：兼顾桌面开发的低打扰常驻需求与无头服务器的纯后端托管诉求，以同一套系统消除不同部署环境下的体验割裂。
+
+```mermaid
+flowchart TB
+    %% 定义节点样式
+    classDef agentNode fill:#e1f5fe,stroke:#03a9f4,stroke-width:2px,color:#0d47a1;
+    classDef plNode fill:#fff8e1,stroke:#ffa000,stroke-width:2px,color:#e65100;
+    classDef svcNode fill:#e8f5e9,stroke:#43a047,stroke-width:2px,color:#1b5e20;
+    classDef apiNode fill:#ffebee,stroke:#d32f2f,stroke-width:3px,color:#b71c1c;
+    classDef guiNode fill:#f3e5f5,stroke:#8e24aa,stroke-width:2px,color:#4a148c;
+
+    subgraph Agent["AI Agent loop"]
+        AGENT["AI Agent"]:::agentNode
+        skill["LLM + skill.md"]:::agentNode
+    end
+
+    subgraph GUI["人类操作界面"]
+        traynode["托盘"]:::guiNode
+        GUIUI["用户图形界面"]:::guiNode
+    end
+
+    subgraph PL["PsLauncher 内核"]
+        direction TB
+        API["HTTP API<br/>(AI 调用接口)"]:::apiNode
+        core["进程调度器"]:::apiNode
+        logctrl["日志上下文管理"]:::apiNode
+    end
+
+    subgraph SVCS["本地服务进程"]
+        LLAMA["llama.cpp"]:::svcNode
+        OLLAMA["Ollama"]:::svcNode
+        LITELLM["LiteLLM"]:::svcNode
+        TRAIN["模型训练进程"]:::svcNode
+        LORA["LoRA微调任务"]:::svcNode
+        CUSTOM["自定义脚本"]:::svcNode
+    end
+
+    %% 核心交互流
+    Agent <==>|"调用API<br/>(运行/管理/交互/回传结果)"| PL
+    
+    %% GUI 与编排层交互
+    GUI <==>|"双向同步<br/>(状态共享)"| PL
+    GUI -.->|"人工接管/监控"| PL
+    
+    %% 服务管理
+    PL -->|"统一调度"| LLAMA
+    PL -->|"统一调度"| OLLAMA
+    PL -->|"统一调度"| LITELLM
+    PL -->|"统一调度"| TRAIN
+    PL -->|"统一调度"| LORA
+    PL -->|"统一调度"| CUSTOM
+```
+
+<center>图. PsLauncher的架构原理与亮点技术</center>
 
 ## 解决的痛点
 
@@ -496,63 +555,265 @@ token 不正确时返回 `401 Unauthorized`。
 
 > **PowerShell 注意**：PowerShell 解析参数的方式与 CMD 不同，推荐使用 `--%`（停止解析符号）。以下示例均采用 `--%` 写法，并用 `\` 表示路径分隔符和转义。下面的例子基于PowerShell语法规则，在Windows11上执行通过测试。
 
+- 检查服务状态
+
 ```powershell
-# 0. 检查服务状态
 curl.exe http://127.0.0.1:13025/status
+```
 
-# 0.1 获取所有可用 API 端点格式列表(美观格式化)
+预期输出：
+
+```jsonc
+{"status": "ok", "version": "v2.0.1", "app": "PsLauncher"}
+```
+
+- 获取所有可用 API 端点格式列表(美观格式化)
+
+```powershell
 curl.exe -X POST http://127.0.0.1:13025/help?pretty=true
+```
 
-# 1. 添加 test_script 文件夹到扫描列表
+预期输出：
+
+```jsonc
+{
+  "success": true,
+  "endpoints": [
+    {
+      "method": "GET",
+      "path": "/status",
+      "description": "检查服务器状态",
+      "params": null,
+      "body": null,
+      "response": {
+        "status": "ok",
+        "version": "x.x.x",
+        "app": "PsLauncher"
+      }
+    },
+    ..... // 省略多行
+  ]
+}
+```
+
+- 添加 test_script 文件夹到扫描列表
+
+```powershell
 curl.exe --% -X POST http://127.0.0.1:13025/folder/add -H "Content-Type: application/json" -d "{\"path\":\"E:\\project_file\\limitless\\PsLauncher\\test_script\"}"
+```
 
-# 2. 列出所有可运行脚本
+预期输出：
+
+```jsonc
+{"success": true, "message": "已添加文件夹: E:\\project_file\\limitless\\PsLauncher\\test_script"}
+```
+
+- 列出所有可运行脚本
+
+```powershell
 curl.exe http://127.0.0.1:13025/scripts
+```
 
-# 3. 运行 test0.ps1（基础输出 + 显示工作目录）=====
-#     test0.ps1 内容：输出三行文本，然后显示当前工作路径
+预期输出：
+
+```jsonc
+{"scripts": [{"folder": "E:/project_file/limitless/PsLauncher/test_script", "name": "test0.ps1", ...}....}
+```
+
+- 运行 test0.ps1（基础输出 + 显示工作目录）
+
+> test0.ps1 内容：输出三行文本，然后显示当前工作路径
+
+```powershell
 curl.exe --% -X POST http://127.0.0.1:13025/script/run -H "Content-Type: application/json" -d "{\"folder\":\"E:\\project_file\\limitless\\PsLauncher\\test_script\",\"script\":\"test0.ps1\"}"
+```
 
-# 4. 查看终端列表（记录终端 ID）=====
+预期输出：
+
+```jsonc
+{"success": true, "terminal_id": 0, "message": "已启动脚本: test0.ps1"}
+```
+
+同时PsLauncher GUI启动对应脚本
+
+- 查看终端列表（记录终端 ID）
+
+```powershell
 curl.exe http://127.0.0.1:13025/terminals
+```
 
-# 5. 查看终端输出（id=0 是上一步运行的 test0.ps1）=====
+预期输出：
+
+```jsonc
+{"terminals": [{"id": 0, "name": "test0.ps1", "script": "E:\\project_file\\limitless\\PsLauncher\\test_script\\test0.ps1", "running": false}]}
+```
+
+- 查看终端输出（id=0 是上一步运行的 test0.ps1）
+
+```powershell
 curl.exe "http://127.0.0.1:13025/terminal/output?id=0"
+```
 
-# 6. 运行 test2.ps1（交互式输入演示）=====
-#     test2.ps1 内容：输出三行后通过 Read-Host 等待键盘输入
+预期输出：
+
+```jsonc
+{"success": true, "id": 0, "name": "test0.ps1", "output": "[PsLauncher 2026-06-30 21:40:20] start: E:\\project_file\\limitless\\PsLauncher\\test_script\\test0.ps1\ntest0-1\ntest0-2\ntest0-3\nCurrent work path: E:\\project_file\\limitless\\PsLauncher\\test_script\n\n[PsLauncher 2026-06-30 21:40:20] Process terminated.\n"}
+```
+
+- 运行 test2.ps1（交互式输入演示）
+
+> test2.ps1 内容：输出三行后通过 Read-Host 等待键盘输入
+
+```powershell
 curl.exe --% -X POST http://127.0.0.1:13025/script/run -H "Content-Type: application/json" -d "{\"folder\":\"E:\\project_file\\limitless\\PsLauncher\\test_script\",\"script\":\"test2.ps1\"}"
+```
 
-# 7. 查看新终端列表（此时应有 id=0 和 id=1 两个终端）=====
+预期输出：
+
+```jsonc
+{"success": true, "terminal_id": 1, "message": "已启动脚本: test2.ps1"}
+```
+
+- 查看新终端列表（此时应有 id=0 和 id=1 两个终端）
+
+```powershell
 curl.exe http://127.0.0.1:13025/terminals
+```
 
-# 8. 向 id=1（test2.ps1）发送输入
+预期输出：
+
+```jsonc
+{"terminals": [{"id": 0, "name": "test0.ps1", "script": "E:\\project_file\\limitless\\PsLauncher\\test_script\\test0.ps1", "running": false}, {"id": 1, "name": "test2.ps1", "script": "E:\\project_file\\limitless\\PsLauncher\\test_script\\test2.ps1", "running": true}]}
+```
+
+- 向 id=1（test2.ps1）发送输入
+
+```powershell
 curl.exe --% -X POST http://127.0.0.1:13025/terminal/input -H "Content-Type: application/json" -d "{\"id\":1,\"text\":\"Hello PsLauncher\"}"
+```
 
-# 9. 查看 test2.ps1 的输出（应包含刚输入的内容）=====
+预期输出：
+
+```jsonc
+{"success": true, "message": "已向终端 ID=1 发送输入"}
+```
+
+- 查看 test2.ps1 的输出（应包含刚输入的内容）
+
+```powershell
 curl.exe "http://127.0.0.1:13025/terminal/output?id=1"
+```
 
-# 10. 运行 test3.bat（批处理脚本演示）=====
+预期输出：
+
+```jsonc
+{"success": true, "id": 1, "name": "test2.ps1", "output": "[PsLauncher 2026-06-30 21:41:29] start: E:\\project_file\\limitless\\PsLauncher\\test_script\\test2.ps1\ntest2-1\ntest2-2\ntest2-3\nHello PsLauncher\nYou entered: Hello PsLauncher\n\n[PsLauncher 2026-06-30 21:41:44] Process terminated.\n"}
+```
+
+- 运行 test3.bat（批处理脚本演示）
+
+```powershell
 curl.exe --% -X POST http://127.0.0.1:13025/script/run -H "Content-Type: application/json" -d "{\"folder\":\"E:\\project_file\\limitless\\PsLauncher\\test_script\",\"script\":\"test3.bat\"}"
+```
 
-# 11. 查看 test3.bat 的输出
+预期输出：
+
+```jsonc
+{"success": true, "terminal_id": 2, "message": "已启动脚本: test3.bat"}
+```
+
+- 查看 test3.bat 的输出
+
+```powershell
 curl.exe "http://127.0.0.1:13025/terminal/output?id=2"
+```
 
-# 12. 清空 test3.bat 的终端输出
+预期输出：
+
+```jsonc
+{"success": true, "id": 2, "name": "test3.bat", "output": "[PsLauncher 2026-06-30 21:41:55] start: E:\\project_file\\limitless\\PsLauncher\\test_script\\test3.bat\nbat test3-1\nbat test3-2\nbat test3-3\n\n[PsLauncher 2026-06-30 21:41:55] Process terminated.\n"}
+```
+
+- 清空 test3.bat 的终端输出
+
+```powershell
 curl.exe --% -X POST http://127.0.0.1:13025/terminal/clear -H "Content-Type: application/json" -d "{\"id\":2}"
+```
 
-# 13. 终止 id=1（test2.ps1）的终端进程
+预期输出：
+
+```jsonc
+{"success": true, "message": "已清空终端 ID=2 的输出"}
+```
+
+- 终止 id=1（test2.ps1）的终端进程
+
+```powershell
 curl.exe --% -X POST http://127.0.0.1:13025/terminal/stop -H "Content-Type: application/json" -d "{\"id\":1}"
+```
 
-# 14. 终止所有终端进程
+预期输出：
+
+```jsonc
+{"success": true, "message": "已终止终端 ID=1"}
+```
+
+- 终止所有终端进程
+
+```powershell
 curl.exe --% -X POST http://127.0.0.1:13025/terminal/stop_all
+```
 
-# 15. 关闭 PsLauncher
+预期输出：
+
+```jsonc
+{"success": true, "message": "已终止 2 个终端"}
+```
+
+- 关闭 PsLauncher
+
+```powershell
 curl.exe --% -X POST http://127.0.0.1:13025/shutdown
+```
 
-# 16. 使用美化输出（人类可读）
+预期输出：
+
+```jsonc
+{"success": true, "message": "PsLauncher 正在关闭..."}
+```
+
+> 同时，PsLauncher结束并退出。
+
+### 使用美化输出（人类可读）
+
+加上`?pretty=true`参数后，将会变得易于人类阅读。
+
+- 加上`?pretty=true`参数：
+
+```powershell
 curl.exe "http://127.0.0.1:13025/status?pretty=true"
-curl.exe "http://127.0.0.1:13025/terminals?pretty=true"
+```
+
+预期输出：
+
+```jsonc
+{
+  "status": "ok",
+  "version": "v2.0.1",
+  "app": "PsLauncher"
+}
+```
+
+- 不加`?pretty=true`参数：
+
+```powershell
+curl.exe "http://127.0.0.1:13025/status"
+```
+
+预期输出：
+
+```jsonc
+{"status": "ok", "version": "v2.0.1", "app": "PsLauncher"}
 ```
 
 ### 注意事项
